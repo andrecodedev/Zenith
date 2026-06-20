@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
@@ -10,6 +11,14 @@ function App() {
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
   const weekDays = generateWeek(selectedDate);
+
+  const handleNavigateDays = (amount: number) => {
+    setSelectedDate(prev => {
+      const dateObj = parseISO(prev);
+      const newDate = amount > 0 ? addDays(dateObj, amount) : subDays(dateObj, Math.abs(amount));
+      return format(newDate, 'yyyy-MM-dd');
+    });
+  };
 
   const selectedRoutines = routines.filter(r => isTaskDueToday(r, selectedDate));
   
@@ -72,7 +81,10 @@ function App() {
 
           {/* Weekly Calendar Slider */}
           <div className="flex items-center justify-between mb-8">
-            <button className="text-neutral-500 hover:text-white transition-colors">
+            <button 
+              onClick={() => handleNavigateDays(-1)}
+              className="text-neutral-500 hover:text-white transition-colors p-2"
+            >
               <ChevronLeft size={24} />
             </button>
             <div className="flex gap-2 overflow-x-auto px-4 hide-scrollbar">
@@ -102,7 +114,10 @@ function App() {
                 );
               })}
             </div>
-            <button className="text-neutral-500 hover:text-white transition-colors">
+            <button 
+              onClick={() => handleNavigateDays(1)}
+              className="text-neutral-500 hover:text-white transition-colors p-2"
+            >
               <ChevronRight size={24} />
             </button>
           </div>
