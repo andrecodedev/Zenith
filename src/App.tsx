@@ -8,13 +8,14 @@ import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
 import { TaskItem } from './components/ui/TaskItem';
 import { CalendarView } from './components/ui/CalendarView';
+import { Hero } from './components/ui/Hero';
 import type { Routine } from './types';
 
 function App() {
   const { routines, categories, taskInstances, cycleTaskStatus } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'calendar'>('dashboard');
+  const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar'>('hero');
   const weekDays = generateWeek(selectedDate);
 
   const handleNavigateDays = (amount: number) => {
@@ -46,11 +47,13 @@ function App() {
       {/* Floating Header */}
       <header className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl bg-glass border border-border-base rounded-2xl px-6 py-4 flex items-center justify-between shadow-2xl z-50 backdrop-blur-md">
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center">
-            <img src="/logo.png" alt="Rotina Logo" className="w-full h-full object-contain" />
+        <div 
+          className="flex items-center gap-3 cursor-pointer"
+          onClick={() => setCurrentView('hero')}
+        >
+          <div className="w-12 h-12 flex items-center justify-center">
+            <img src="/logo.png" alt="Zenith Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold font-title tracking-widest text-white uppercase">Zenith</h1>
         </div>
 
         {/* Navigation & Actions */}
@@ -61,21 +64,21 @@ function App() {
                 setSelectedDate(today);
                 setCurrentView('dashboard');
               }}
-              className={`transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+              className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
             >
               <LayoutDashboard size={16} />
               Meu Dia
             </button>
             <button 
               onClick={() => setCurrentView('calendar')}
-              className={`transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+              className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
             >
               <Calendar size={16} />
               Calendário
             </button>
             <button 
               onClick={() => setIsCourseModalOpen(true)}
-              className="text-text-tertiary hover:text-white transition-colors flex items-center gap-2"
+              className="cursor-pointer text-text-tertiary hover:text-white transition-colors flex items-center gap-2"
             >
               <Sparkles size={16} />
               Importar Curso
@@ -84,7 +87,7 @@ function App() {
           
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
+            className="cursor-pointer bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
           >
             <Plus size={16} /> Nova Tarefa
           </button>
@@ -92,10 +95,12 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-4xl mx-auto pt-32 pb-12 px-6 flex flex-col">
-        <div className={`w-full flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-3xl mx-auto' : 'max-w-full'}`}>
+      <main className="flex-1 min-h-0 w-full pt-32 pb-12 px-6 flex flex-col">
+        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-3xl' : currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
           
-          {currentView === 'dashboard' ? (
+          {currentView === 'hero' ? (
+            <Hero onStart={() => setCurrentView('dashboard')} />
+          ) : currentView === 'dashboard' ? (
             <div className="w-full h-full flex flex-col min-h-0">
 
               <div className="mb-8 flex justify-between items-end">
@@ -121,7 +126,7 @@ function App() {
                       <button
                         key={dateStr}
                         onClick={() => setSelectedDate(dateStr)}
-                        className={`flex flex-col items-center justify-center min-w-[5rem] px-3 py-3 rounded-lg transition-all ${
+                        className={`cursor-pointer flex flex-col items-center justify-center min-w-[5rem] px-3 py-3 rounded-lg transition-all ${
                           isSelected
                             ? 'bg-elements-hover text-white shadow-md border border-border-gray'
                             : isTodayStr

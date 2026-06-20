@@ -23,7 +23,7 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
   const weekDays = generateCalendarWeek(selectedDate);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold font-title mb-2">Visão Geral</h2>
@@ -33,11 +33,11 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
           <span className="text-lg font-medium">
             {format(parseISO(selectedDate), "MMMM 'de' yyyy", { locale: ptBR })}
           </span>
-          <div className="flex bg-bg-secondary rounded-md border border-border-base p-1">
-            <button onClick={() => onNavigate(-7)} className="p-2 text-text-secondary hover:text-white transition-colors">
+          <div className="flex bg-bg-secondary rounded-md border border-border-base p-1 gap-1">
+            <button onClick={() => onNavigate(-7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-white hover:bg-elements-hover transition-colors">
               <ChevronLeft size={20} />
             </button>
-            <button onClick={() => onNavigate(7)} className="p-2 text-text-secondary hover:text-white transition-colors">
+            <button onClick={() => onNavigate(7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-white hover:bg-elements-hover transition-colors">
               <ChevronRight size={20} />
             </button>
           </div>
