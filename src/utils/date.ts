@@ -35,6 +35,14 @@ export const generateCalendarWeek = (baseDateStr: string) => {
 };
 
 export const isTaskDueToday = (routine: Routine, dateStr: string) => {
+  // Não exibe a tarefa em dias anteriores à sua criação
+  if (routine.createdAt) {
+    const createdDateStr = format(new Date(routine.createdAt), 'yyyy-MM-dd');
+    if (dateStr < createdDateStr) {
+      return false;
+    }
+  }
+
   const date = parseISO(dateStr);
   const dayOfWeek = getDay(date); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 

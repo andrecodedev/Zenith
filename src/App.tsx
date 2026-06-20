@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
-import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -18,6 +18,20 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar'>('hero');
   const weekDays = generateWeek(selectedDate);
+
+  const [isLightMode, setIsLightMode] = useState(() => {
+    return localStorage.getItem('theme') === 'light';
+  });
+
+  useEffect(() => {
+    if (isLightMode) {
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    }
+  }, [isLightMode]);
 
   const handleNavigateDays = (amount: number) => {
     setSelectedDate(prev => {
@@ -69,12 +83,20 @@ function App() {
         </div>
 
         {currentView === 'hero' ? (
-          <button 
-            onClick={() => setIsAuthModalOpen(true)}
-            className="cursor-pointer text-white hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
-          >
-            Login
-          </button>
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => setIsLightMode(!isLightMode)}
+              className="cursor-pointer text-text-secondary hover:text-white transition-colors"
+            >
+              {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+            <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="cursor-pointer text-white hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
+            >
+              Login
+            </button>
+          </div>
         ) : (
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -102,6 +124,12 @@ function App() {
                 <Sparkles size={16} />
                 Importar Curso
               </button>
+              <button 
+                onClick={() => setIsLightMode(!isLightMode)}
+                className="cursor-pointer text-text-tertiary hover:text-white transition-colors flex items-center"
+              >
+                {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
             </nav>
             
             <button 
@@ -112,12 +140,20 @@ function App() {
             </button>
             
             {/* Mobile menu button */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden text-text-secondary hover:text-white transition-colors cursor-pointer"
-            >
-              <Menu size={24} />
-            </button>
+            <div className="md:hidden flex items-center gap-4">
+              <button 
+                onClick={() => setIsLightMode(!isLightMode)}
+                className="cursor-pointer text-text-secondary hover:text-white transition-colors"
+              >
+                {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+              </button>
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="text-text-secondary hover:text-white transition-colors cursor-pointer"
+              >
+                <Menu size={24} />
+              </button>
+            </div>
           </div>
         )}
       </header>
@@ -181,7 +217,7 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 min-h-0 w-full pt-28 px-6 flex flex-col">
-        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-3xl' : currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
+        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
           
           {currentView === 'hero' ? (
             <Hero onStart={() => setIsAuthModalOpen(true)} />
@@ -212,7 +248,7 @@ function App() {
                         key={dateStr}
                         id={`dash-day-${dateStr}`}
                         onClick={() => setSelectedDate(dateStr)}
-                        className={`relative snap-center flex-shrink-0 cursor-pointer flex flex-col items-center justify-center min-w-[4.5rem] md:min-w-[5rem] px-2 py-2 rounded-lg transition-all ${
+                        className={`relative snap-center flex-shrink-0 cursor-pointer flex flex-col items-center justify-center min-w-[4.5rem] md:min-w-[5rem] md:flex-1 px-2 py-2 rounded-lg transition-all ${
                           isSelected
                             ? 'bg-elements-hover text-white shadow-md border border-border-gray'
                             : isTodayStr

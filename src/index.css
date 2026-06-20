@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: #121212;
-  --color-bg-secondary: #1f1f1f;
-  --color-bg-tertiary: #ffffff;
-  --color-elements: #333333;
-  --color-elements-hover: #555555;
-  --color-glass: #1f1f1f97;
-  --color-menu: #121212;
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-elements: var(--elements);
+  --color-elements-hover: var(--elements-hover);
+  --color-glass: var(--glass);
+  --color-menu: var(--menu);
 
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #e0e0e0;
-  --color-text-tertiary: #a0a0a0;
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
 
-  --color-btn-bg: #ffffff1a;
-  --color-btn-hover: #363636;
-  --color-btn-active: #1d1d1d;
+  --color-btn-bg: var(--btn-bg);
+  --color-btn-hover: var(--btn-hover);
+  --color-btn-active: var(--btn-active);
 
-  --color-border-base: #282828a0;
-  --color-border-gray: #636363;
-  --color-grid-bg: #ffffff1a;
+  --color-border-base: var(--border-base);
+  --color-border-gray: var(--border-gray);
+  --color-grid-bg: var(--grid-bg);
 
   --color-feedback-error: #ff4d4d;
   --color-feedback-error-hover: #ff3333;
@@ -33,21 +33,47 @@
   :root {
     --bg-primary: #121212;
     --bg-secondary: #1f1f1f;
-    --bg-terceiro: #ffffff;
+    --bg-tertiary: #ffffff;
+    --elements: #333333;
+    --elements-hover: #555555;
+    --glass: #1f1f1f97;
+    --menu: #121212;
+
     --text-primary: #ffffff;
     --text-secondary: #e0e0e0;
-    --text-terceiro: #a0a0a0;
+    --text-tertiary: #a0a0a0;
+
+    --btn-bg: #ffffff1a;
+    --btn-hover: #363636;
+    --btn-active: #1d1d1d;
+
+    --border-base: #282828a0;
+    --border-gray: #636363;
+    --grid-bg: #ffffff1a;
   }
-  
-  .light-theme {
-    --bg-primary: #f5f5f5;
+
+  .light {
+    --bg-primary: #f8fafc;
     --bg-secondary: #ffffff;
-    --bg-terceiro: #e0e0e0;
-    --text-primary: #333333;
-    --text-secondary: #555555;
-    --text-terceiro: #535353;
+    --bg-tertiary: #000000;
+    --elements: #e2e8f0;
+    --elements-hover: #cbd5e1;
+    --glass: #ffffffcc;
+    --menu: #f8fafc;
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-tertiary: #64748b;
+
+    --btn-bg: #e2e8f0;
+    --btn-hover: #cbd5e1;
+    --btn-active: #94a3b8;
+
+    --border-base: #e2e8f0;
+    --border-gray: #cbd5e1;
+    --grid-bg: #0f172a0a;
   }
-  
+
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
