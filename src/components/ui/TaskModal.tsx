@@ -188,8 +188,6 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     // const prompt = `Crie uma descrição para a tarefa "${title}". Contexto adicional do usuário: "${description}"`;
     
     setTimeout(() => {
-      let generatedText = '';
-      
       const mockDescriptions: Record<string, string> = {
         'react': 'Estudar os fundamentos do React, incluindo componentes, hooks (useState, useEffect) e gerenciamento de estado.',
         'node': 'Revisar a arquitetura do Node.js, Event Loop, criação de APIs REST e middlewares.',
@@ -205,12 +203,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         ? mockDescriptions[foundKey] 
         : `Executar a tarefa "${title.trim()}" seguindo os requisitos estabelecidos.`;
 
-      if (description.trim().length > 0) {
-        // Simula uma resposta fluída que integra as anotações do usuário no meio do texto gerado
-        generatedText = `${baseText} O foco principal desta execução será atender o que foi planejado: "${description.trim()}". Validar os resultados e revisar possíveis gargalos antes da conclusão para garantir excelência técnica.`;
-      } else {
-        generatedText = `${baseText} Validar os resultados e revisar possíveis gargalos antes da conclusão.`;
-      }
+      const generatedText = `${baseText} Validar os resultados e revisar possíveis gargalos antes da conclusão.`;
       
       setDescription(generatedText);
       setIsGenerating(false);

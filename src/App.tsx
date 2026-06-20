@@ -197,7 +197,7 @@ function App() {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col p-6 md:hidden">
+        <div className="fixed inset-0 z-[100] bg-bg-primary/95 backdrop-blur-md flex flex-col p-6 md:hidden">
           <div className="flex justify-end mb-8">
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
