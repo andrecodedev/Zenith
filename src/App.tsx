@@ -16,7 +16,7 @@ import { NotificationCenterModal } from './components/ui/NotificationCenterModal
 import type { Routine } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { registerServiceWorker, sendTaskNotification } from './utils/notifications';
+import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 import { Bell } from 'lucide-react';
 
 function App() {
@@ -119,7 +119,9 @@ function App() {
   }, [routines, taskInstances, notificationsEnabled]);
 
   useEffect(() => {
-    registerServiceWorker();
+    registerServiceWorker().then(() => {
+      if (session && notificationsEnabled) subscribeToPush();
+    });
 
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'NOTIFICATION_ACTION') {

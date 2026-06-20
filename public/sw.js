@@ -3,6 +3,22 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? { title: 'Zenith', body: 'Você tem uma tarefa agora!' };
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/logo.png',
+      badge: '/logo.png',
+      data: data.payload ?? {},
+      actions: [
+        { action: 'completed', title: 'Concluído' },
+        { action: 'in_progress', title: 'Em andamento' },
+      ]
+    })
+  );
+});
+
 self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activate');
   event.waitUntil(self.clients.claim());
