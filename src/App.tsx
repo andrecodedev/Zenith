@@ -11,12 +11,16 @@ import { CalendarView } from './components/ui/CalendarView';
 import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
 import type { Routine } from './types';
+import { supabase } from './lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 
 function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar'>('hero');
+  const [session, setSession] = useState<Session | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const weekDays = generateWeek(selectedDate);
 
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -32,6 +36,27 @@ function App() {
       localStorage.setItem('theme', 'dark');
     }
   }, [isLightMode]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session && currentView === 'hero') setCurrentView('dashboard');
+      setAuthInitialized(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        if (currentView === 'hero') setCurrentView('dashboard');
+      } else {
+        setCurrentView('hero');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNavigateDays = (amount: number) => {
     setSelectedDate(prev => {
@@ -90,12 +115,21 @@ function App() {
             >
               {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
             </button>
-            <button 
-              onClick={() => setIsAuthModalOpen(true)}
-              className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
-            >
-              Login
-            </button>
+            {session ? (
+              <button 
+                onClick={() => supabase.auth.signOut()}
+                className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
+              >
+                Sair
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsAuthModalOpen(true)}
+                className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
+              >
+                Login
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-4">
@@ -220,7 +254,7 @@ function App() {
         <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
           
           {currentView === 'hero' ? (
-            <Hero onStart={() => setIsAuthModalOpen(true)} />
+            <Hero onStart={() => session ? setCurrentView('dashboard') : setIsAuthModalOpen(true)} />
           ) : currentView === 'dashboard' ? (
             <div className="w-full h-full flex flex-col min-h-0">
 
