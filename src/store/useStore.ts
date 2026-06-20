@@ -11,6 +11,7 @@ interface StoreState {
   addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
   addRoutine: (routine: Omit<Routine, 'id' | 'createdAt'>) => Promise<void>;
   updateRoutine: (id: string, updates: Partial<Routine>) => Promise<void>;
+  deleteRoutine: (id: string) => Promise<void>;
   toggleTask: (routineId: string, date: string) => Promise<void>;
   cycleTaskStatus: (routineId: string, date: string) => Promise<void>;
   setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string) => Promise<void>;
@@ -141,6 +142,15 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime;
 
     await supabase.from('routines').update(dbUpdates).eq('id', id);
+  },
+
+  deleteRoutine: async (id) => {
+    set(state => ({
+      routines: state.routines.filter(r => r.id !== id),
+      taskInstances: state.taskInstances.filter(t => t.routineId !== id),
+    }));
+    await supabase.from('task_instances').delete().eq('routine_id', id);
+    await supabase.from('routines').delete().eq('id', id);
   },
 
   toggleTask: async (routineId, date) => {

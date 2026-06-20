@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, ChevronDown, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, ChevronDown, Sparkles, Loader2, CheckCircle2, Trash2 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { getCategoryStyles } from '../../utils/colors';
 import type { RecurrenceType, Routine } from '../../types';
@@ -12,7 +12,7 @@ interface TaskModalProps {
 }
 
 export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
-  const { categories, addRoutine, updateRoutine } = useStore();
+  const { categories, addRoutine, updateRoutine, deleteRoutine } = useStore();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
@@ -26,6 +26,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [feedbackState, setFeedbackState] = useState<{type: 'success' | 'error' | null, message: string}>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -144,12 +145,48 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     }
   };
 
+  const computeHasChanges = (): boolean => {
+    if (!initialData) {
+      return title.trim().length > 0 || description.trim().length > 0;
+    }
+    if (title.trim() !== initialData.title) return true;
+    if (description.trim() !== (initialData.description || '')) return true;
+    if (time !== (initialData.time || '')) return true;
+    if (endTime !== (initialData.endTime || '')) return true;
+    if (categoryId !== initialData.categoryId) return true;
+
+    let origMenu: string;
+    if (initialData.recurrence === 'once') {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+      if (initialData.date === todayStr) origMenu = 'today';
+      else if (initialData.date === tomorrowStr) origMenu = 'tomorrow';
+      else origMenu = 'specific_date';
+    } else {
+      origMenu = initialData.recurrence;
+    }
+    if (recurrenceMenu !== origMenu) return true;
+    if (recurrenceMenu === 'specific_date' && specificDate !== (initialData.date || '')) return true;
+    if (recurrenceMenu === 'custom') {
+      const orig = [...(initialData.customDays || [])].sort().join();
+      if ([...customDays].sort().join() !== orig) return true;
+    }
+    return false;
+  };
+
   const handleCloseRequest = () => {
-    if (title.trim() || description.trim()) {
+    if (computeHasChanges()) {
       setShowConfirmClose(true);
     } else {
       handleDiscardAndClose();
     }
+  };
+
+  const handleDelete = async () => {
+    if (!initialData) return;
+    await deleteRoutine(initialData.id);
+    setShowDeleteConfirm(false);
+    onClose();
   };
 
   const handleDiscardAndClose = () => {
@@ -221,6 +258,26 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     >
       <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-md max-h-[90vh] shadow-2xl relative flex flex-col overflow-hidden">
         
+        {/* Confirmação de exclusão */}
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 bg-bg-secondary/95 backdrop-blur-md z-50 flex items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="max-w-sm w-full space-y-6">
+              <div>
+                <h3 className="text-xl font-bold font-title text-red-500 mb-2">Excluir Tarefa</h3>
+                <p className="text-sm text-text-secondary">Tem certeza que quer excluir <span className="font-semibold text-text-primary">"{initialData?.title}"</span>? Todas as instâncias serão removidas permanentemente.</p>
+              </div>
+              <div className="space-y-3">
+                <button onClick={handleDelete} className="w-full bg-red-500 hover:bg-red-600 text-white rounded-lg py-3 font-bold transition-colors cursor-pointer">
+                  Sim, excluir
+                </button>
+                <button onClick={() => setShowDeleteConfirm(false)} className="w-full bg-elements hover:bg-elements-hover text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal de Confirmação de Saída */}
         {showConfirmClose && (
           <div className="absolute inset-0 bg-bg-secondary/95 backdrop-blur-md z-50 flex items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
@@ -433,8 +490,18 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             </div>
           </div>
 
-          <div className="pt-4">
-            <button 
+          <div className="pt-4 space-y-3">
+            {initialData && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full flex items-center justify-center gap-2 rounded-lg py-3 font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer border border-red-500/20"
+              >
+                <Trash2 size={16} />
+                Excluir Tarefa
+              </button>
+            )}
+            <button
               type="submit"
               disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0) || isSubmitting || feedbackState.type === 'success'}
               className={`relative w-full rounded-lg py-3 font-bold transition-all cursor-pointer flex items-center justify-center gap-2 overflow-hidden ${
