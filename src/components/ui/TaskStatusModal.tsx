@@ -96,15 +96,15 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-sm shadow-2xl relative flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-5 border-b border-border-base flex justify-between items-center bg-bg-secondary/50">
+      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-sm shadow-2xl relative flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="p-5 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 shrink-0">
           <h2 className="text-lg font-bold text-text-primary">Status da Tarefa</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-5 overflow-y-auto flex-1">
           <div>
             <div className="text-sm text-text-secondary mb-1">Tarefa</div>
             <div className="font-medium text-text-primary truncate">{routine.title}</div>

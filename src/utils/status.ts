@@ -1,26 +1,24 @@
 import { parseISO, isPast, startOfToday } from 'date-fns';
 import type { Routine, TaskInstance, TaskStatus } from '../types';
 
-export function computeTaskStatus(routine: Routine, dateStr: string, instance?: TaskInstance): TaskStatus | 'late' {
-  const explicitStatus = instance?.status || routine.statusOverride || (instance?.completed ? 'completed' : 'pending');
-  
-  if (explicitStatus === 'completed') {
-    return 'completed';
-  }
+export function computeTaskStatus(routine: Routine, dateStr: string, instance?: TaskInstance): TaskStatus {
+  // Status explícito do usuário tem prioridade absoluta
+  if (instance?.status) return instance.status;
 
-  // If time exists, check if past that exact time
+  // Override global da rotina
+  if (routine.statusOverride) return routine.statusOverride;
+
+  // Flag legada de completed
+  if (instance?.completed) return 'completed';
+
+  // Sem status explícito: calcula automaticamente
   if (routine.time) {
     const scheduledDateTime = parseISO(`${dateStr}T${routine.time}`);
-    if (isPast(scheduledDateTime)) {
-      return 'late';
-    }
+    if (isPast(scheduledDateTime)) return 'late';
   } else {
-    // If no time, it's late if the date is strictly before today
     const taskDate = parseISO(dateStr);
-    if (taskDate < startOfToday()) {
-      return 'late';
-    }
+    if (taskDate < startOfToday()) return 'late';
   }
 
-  return explicitStatus;
+  return 'pending';
 }

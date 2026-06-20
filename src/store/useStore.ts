@@ -271,14 +271,13 @@ export const useStore = create<StoreState>((set, get) => ({
       'late': 'Atrasada',
       'canceled': 'Cancelada'
     };
-    
+
     const label = status ? statusLabels[status] || status : 'Automático';
-    
+    const taskTitle = get().routines.find(r => r.id === routineId)?.title || 'Tarefa';
+
     get().addNotification(
-      'Status Alterado', 
-      `A tarefa mudou para o status: ${label}.`,
-      routineId,
-      date
+      'Status Alterado',
+      `"${taskTitle}" mudou para: ${label}.`
     );
   },
 

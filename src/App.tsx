@@ -166,7 +166,7 @@ function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
 
-  const unreadCount = useStore(state => state.appNotifications.filter(n => !n.read).length);
+  const unreadCount = useStore(state => state.appNotifications.length);
 
   useEffect(() => {
     if (currentView === 'dashboard') {
@@ -244,7 +244,6 @@ function App() {
               </button>
               <button 
                 onClick={() => {
-                  useStore.getState().markNotificationsAsRead();
                   setIsNotificationCenterOpen(true);
                 }}
                 className="relative cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
@@ -277,7 +276,6 @@ function App() {
             <div className="md:hidden flex items-center gap-4">
               <button 
                 onClick={() => {
-                  useStore.getState().markNotificationsAsRead();
                   setIsNotificationCenterOpen(true);
                 }}
                 className="relative cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
