@@ -182,7 +182,7 @@ function App() {
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden">
       {/* Floating Header */}
-      <header className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between z-50 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)]">
+      <header className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between z-50 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"

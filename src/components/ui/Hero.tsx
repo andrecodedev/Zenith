@@ -41,7 +41,7 @@ export function Hero({ onStart }: HeroProps) {
         {/* Headline */}
         <h1 className="font-bold font-title uppercase text-text-primary drop-shadow-2xl mb-6 leading-none">
           <span className="block text-5xl md:text-7xl tracking-widest mb-1">Domine</span>
-          <span className="block text-6xl md:text-8xl tracking-[0.2em] text-transparent bg-clip-text bg-linear-to-r from-white via-neutral-300 to-neutral-500">
+          <span className="block text-6xl md:text-8xl tracking-[0.2em] text-transparent bg-clip-text bg-linear-to-r from-white via-neutral-300 to-neutral-500 [html.light_&]:from-neutral-900 [html.light_&]:via-neutral-600 [html.light_&]:to-neutral-400">
             O Tempo
           </span>
         </h1>
@@ -55,7 +55,7 @@ export function Hero({ onStart }: HeroProps) {
         {/* CTA */}
         <button
           onClick={onStart}
-          className="group pointer-events-auto cursor-pointer border border-white/30 hover:border-white/80 hover:bg-white hover:text-black text-white px-7 py-2.5 text-xs font-bold uppercase tracking-[0.25em] flex items-center gap-3 transition-all duration-500 active:scale-95"
+          className="group pointer-events-auto cursor-pointer border border-white/30 hover:border-white/80 hover:bg-white hover:text-black text-white px-7 py-2.5 text-xs font-bold uppercase tracking-[0.25em] flex items-center gap-3 transition-all duration-500 active:scale-95 [html.light_&]:text-neutral-900 [html.light_&]:border-neutral-900/30 [html.light_&]:hover:border-neutral-900 [html.light_&]:hover:bg-neutral-900 [html.light_&]:hover:text-white"
         >
           Acessar Plataforma
           <ArrowRight size={14} className="transition-transform duration-500 group-hover:translate-x-1.5" />
