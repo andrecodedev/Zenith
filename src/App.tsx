@@ -7,6 +7,7 @@ import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
 import { TaskItem } from './components/ui/TaskItem';
+import { FilterBar } from './components/ui/FilterBar';
 import { CalendarView } from './components/ui/CalendarView';
 import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
@@ -149,8 +150,8 @@ function App() {
   };
 
   const selectedRoutines = routines.filter(r => isTaskDueToday(r, selectedDate));
-  
-  const completedCount = selectedRoutines.filter(r => 
+
+  const completedCount = selectedRoutines.filter(r =>
     taskInstances.find(t => t.routineId === r.id && t.date === selectedDate)?.completed
   ).length;
 
@@ -164,9 +165,15 @@ function App() {
     routine: null,
     dateStr: null
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+
+  const filteredRoutines = selectedRoutines
+    .filter(r => !searchQuery || r.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(r => !selectedCategoryFilter || r.categoryId === selectedCategoryFilter);
 
   const unreadCount = useStore(state => state.appNotifications.filter(n => !n.read).length);
 
@@ -434,14 +441,25 @@ function App() {
                 </button>
               </div>
 
+              {/* FilterBar */}
+              <FilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedCategory={selectedCategoryFilter}
+                onCategoryChange={setSelectedCategoryFilter}
+                categories={categories}
+              />
+
               {/* Task List */}
               <div className="space-y-3 flex-1 overflow-y-auto pb-12">
-                {selectedRoutines.length === 0 ? (
+                {filteredRoutines.length === 0 ? (
                   <div className="text-center py-12 px-6 text-text-tertiary bg-bg-secondary/50 rounded-lg border border-border-base border-dashed">
-                    Nenhuma tarefa para este dia. Crie uma para começar!
+                    {selectedRoutines.length === 0
+                      ? 'Nenhuma tarefa para este dia. Crie uma para começar!'
+                      : 'Nenhuma tarefa encontrada com esses filtros.'}
                   </div>
                 ) : (
-                  selectedRoutines.map(routine => {
+                  filteredRoutines.map(routine => {
                     const category = categories.find(c => c.id === routine.categoryId);
                     const instance = taskInstances.find(t => t.routineId === routine.id && t.date === selectedDate);
 
