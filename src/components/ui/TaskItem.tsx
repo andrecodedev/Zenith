@@ -19,10 +19,8 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
   const [isEditing, setIsEditing] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
 
-  const { taskInstances, toggleTimeSlot } = useStore(s => ({
-    taskInstances: s.taskInstances,
-    toggleTimeSlot: s.toggleTimeSlot,
-  }));
+  const taskInstances = useStore(s => s.taskInstances);
+  const toggleTimeSlot = useStore(s => s.toggleTimeSlot);
 
   const isMultipleTimes = routine.recurrence === 'multiple_times';
   const times = routine.times || [];
@@ -80,7 +78,10 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
           : 'bg-bg-secondary border-border-gray hover:border-neutral-500'
       }`}>
         <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={handleRowClick}>
-          <button className="shrink-0 transition-colors cursor-pointer">
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            className="shrink-0 transition-colors cursor-pointer"
+          >
             {status === 'completed' && <CheckCircle2 size={24} className="text-emerald-500" />}
             {status === 'in_progress' && <Clock size={24} className="text-yellow-500" />}
             {status === 'late' && <AlertCircle size={24} className="text-red-500" />}

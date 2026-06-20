@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { X, CheckCircle2, Clock, AlertCircle, Circle, RefreshCcw, XCircle, Loader2 } from 'lucide-react';
+import { InfoTooltip } from './InfoTooltip';
 import type { Routine, TaskStatus } from '../../types';
 
 
@@ -110,6 +111,18 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
             <div className="font-medium text-text-primary truncate">{routine.title}</div>
           </div>
 
+          <div className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+            Status
+            <InfoTooltip>
+              <strong className="text-text-primary block mb-1">Significado de cada status:</strong>
+              ✅ Concluído — tarefa feita<br/>
+              🕐 Em Andamento — está sendo executada<br/>
+              🔴 Em Atraso — não foi feita no prazo<br/>
+              🚫 Cancelado — não será feita<br/>
+              ⬜ Pendente — aguardando execução<br/>
+              🔄 Automático — calculado pelo horário
+            </InfoTooltip>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {statuses.map((s) => {
               const Icon = s.icon;
@@ -133,8 +146,9 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
 
           {selectedStatus !== 'auto' && (
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Observações (opcional)
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                Observações
+                <InfoTooltip>Anotações sobre este status — aparecem no painel expandido da tarefa. Use para justificativas, links ou contexto.</InfoTooltip>
               </label>
               <textarea 
                 value={note}
@@ -157,7 +171,10 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
                 />
                 <div className="w-9 h-5 bg-elements peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-primary after:border-border-gray after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
               </label>
-              <span className="text-sm font-medium text-text-primary">Aplicar a todas as datas</span>
+              <span className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
+                Aplicar a todas as datas
+                <InfoTooltip>Sobrescreve o status em TODAS as datas desta tarefa recorrente, não só nesta. Use com cuidado — não pode ser desfeito em massa.</InfoTooltip>
+              </span>
             </div>
           )}
         </div>

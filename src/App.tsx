@@ -14,7 +14,7 @@ import { NotificationCenterModal } from './components/ui/NotificationCenterModal
 import type { Routine } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { registerServiceWorker, requestNotificationPermission, sendTaskNotification } from './utils/notifications';
+import { registerServiceWorker, sendTaskNotification } from './utils/notifications';
 import { Bell } from 'lucide-react';
 
 function App() {
@@ -238,13 +238,6 @@ function App() {
                 Calendário
               </button>
               <button 
-                onClick={() => setIsCourseModalOpen(true)}
-                className="cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center gap-2"
-              >
-                <Sparkles size={16} />
-                Importar Curso
-              </button>
-              <button 
                 onClick={() => {
                   setIsNotificationCenterOpen(true);
                 }}
@@ -264,15 +257,6 @@ function App() {
               </button>
             </nav>
             
-            <button 
-              onClick={async () => {
-                await requestNotificationPermission();
-                setIsModalOpen(true);
-              }}
-              className="hidden md:flex cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-5 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
-            >
-              <Plus size={16} /> Nova Tarefa
-            </button>
             
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-4">
@@ -337,29 +321,6 @@ function App() {
             >
               <Calendar size={24} />
               Calendário
-            </button>
-            <button 
-              onClick={() => {
-                setIsCourseModalOpen(true);
-                setIsMobileMenuOpen(false);
-              }}
-              className="cursor-pointer text-text-tertiary hover:text-text-primary active:bg-btn-bg p-4 rounded-xl transition-colors flex items-center gap-4"
-            >
-              <Sparkles size={24} />
-              Importar Curso
-            </button>
-            
-
-            
-            <button 
-              onClick={async () => {
-                await requestNotificationPermission();
-                setIsModalOpen(true);
-                setIsMobileMenuOpen(false);
-              }}
-              className="mt-8 cursor-pointer bg-text-primary text-bg-primary px-6 py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 w-full"
-            >
-              <Plus size={20} /> Nova Tarefa
             </button>
           </nav>
         </div>
@@ -457,10 +418,26 @@ function App() {
                 </div>
               </div>
 
+              {/* Ações rápidas */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex-1 cursor-pointer bg-btn-bg hover:bg-btn-hover text-text-primary px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all border border-border-base active:scale-95"
+                >
+                  <Plus size={16} /> Nova Tarefa
+                </button>
+                <button
+                  onClick={() => setIsCourseModalOpen(true)}
+                  className="cursor-pointer bg-btn-bg hover:bg-btn-hover text-text-primary px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all border border-border-base active:scale-95 whitespace-nowrap"
+                >
+                  <Sparkles size={16} /> Importar Curso
+                </button>
+              </div>
+
               {/* Task List */}
               <div className="space-y-3 flex-1 overflow-y-auto pb-12">
                 {selectedRoutines.length === 0 ? (
-                  <div className="text-center py-12 text-text-tertiary bg-bg-secondary/50 rounded-lg border border-border-base border-dashed">
+                  <div className="text-center py-12 px-6 text-text-tertiary bg-bg-secondary/50 rounded-lg border border-border-base border-dashed">
                     Nenhuma tarefa para este dia. Crie uma para começar!
                   </div>
                 ) : (

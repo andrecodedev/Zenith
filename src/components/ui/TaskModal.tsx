@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { X, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Trash2, Plus, Minus } from 'lucide-react';
+import { InfoTooltip } from './InfoTooltip';
 import { format, addDays } from 'date-fns';
 import { getCategoryStyles } from '../../utils/colors';
 import type { RecurrenceType, Routine } from '../../types';
@@ -296,7 +297,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onMouseDown={(e) => { if (e.target === e.currentTarget) handleCloseRequest(); }}
     >
-      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-md max-h-[90vh] shadow-2xl relative flex flex-col overflow-hidden">
+      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-2xl max-h-[90vh] shadow-2xl relative flex flex-col overflow-hidden">
 
         {/* Confirmação de exclusão */}
         {showDeleteConfirm && (
@@ -348,7 +349,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           {/* Templates */}
           {!initialData && (
             <div>
-              <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Templates rápidos</label>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">
+                Templates rápidos
+                <InfoTooltip>Atalhos pré-configurados para tarefas comuns. Clique uma vez para preencher o formulário automaticamente. Clique novamente para desselecionar e limpar.</InfoTooltip>
+              </label>
               <div className="relative flex items-center gap-1">
                 <button
                   type="button"
@@ -386,7 +390,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
 
           {/* Título */}
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Título da Tarefa</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+              Título da Tarefa
+              <InfoTooltip>Nome da tarefa exibido na lista do dia. Seja objetivo — ex: "Estudar React Hooks" em vez de "Estudar".</InfoTooltip>
+            </label>
             <input
               type="text"
               value={title}
@@ -399,7 +406,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           {/* Descrição */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-text-secondary">Descrição (Opcional)</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+                Descrição (Opcional)
+                <InfoTooltip>Detalhes extras visíveis ao expandir a tarefa. Use para anotações, links ou instruções de execução.</InfoTooltip>
+              </label>
               <button
                 type="button"
                 onClick={handleGenerateDescription}
@@ -421,7 +431,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
 
           {/* Categoria */}
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Categoria</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+              Categoria
+              <InfoTooltip>Agrupa tarefas por área. A cor da categoria aparece como tag colorida na lista do dia.</InfoTooltip>
+            </label>
             <div className="grid grid-cols-3 gap-3">
               {categories.map(cat => (
                 <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
@@ -434,7 +447,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
 
           {/* Repetição */}
           <div className="relative">
-            <label className="block text-sm font-medium text-text-secondary mb-2">Repetição</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+              Repetição
+              <InfoTooltip>Define com que frequência esta tarefa aparece na sua agenda. "Horários Específicos" cria sub-itens independentes por horário — ideal para metas como beber água ou tomar remédio.</InfoTooltip>
+            </label>
             <button
               ref={dropdownBtnRef}
               type="button"
@@ -475,7 +491,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           {recurrenceMenu === 'multiple_times' && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-text-secondary">Horários do dia</label>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+                  Horários do dia
+                  <InfoTooltip>Cada horário vira um sub-item independente com progresso próprio. Adicione quantos quiser — ex: 3 horários = "1/3 completos".</InfoTooltip>
+                </label>
                 <button type="button" onClick={addTimeSlot}
                   className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-sm bg-elements border border-border-base hover:bg-elements-hover cursor-pointer transition-all text-text-secondary hover:text-text-primary">
                   <Plus size={12} /> Adicionar
@@ -535,13 +554,19 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           {recurrenceMenu !== 'multiple_times' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Horário de Início (Opcional)</label>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                  Horário de Início
+                  <InfoTooltip>Dispara a notificação de lembrete neste horário. Tarefas não concluídas após este horário ficam marcadas como "Atrasadas".</InfoTooltip>
+                </label>
                 <input type="time" value={time} onChange={e => setTime(e.target.value)}
                   className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer scheme-dark"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Horário de Fim (Opcional)</label>
+                <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                  Horário de Fim
+                  <InfoTooltip>Horário de conclusão previsto. Aparece como tag na tarefa — ex: "08:00 - 09:00". Apenas informativo.</InfoTooltip>
+                </label>
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
                   className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer scheme-dark"
                 />

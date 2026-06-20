@@ -119,19 +119,22 @@ export const useStore = create<StoreState>((set, get) => ({
 
     set(state => ({ routines: [...state.routines, newRoutine] }));
 
-    await supabase.from('routines').insert({
+    const insertPayload: Record<string, unknown> = {
       id: newId,
       user_id: userId,
       title: routine.title,
-      description: routine.description,
+      description: routine.description ?? null,
       category_id: routine.categoryId,
       recurrence: routine.recurrence,
-      custom_days: routine.customDays,
-      date: routine.date,
-      time: routine.time,
-      end_time: routine.endTime,
-      times: routine.times ?? null
-    });
+      custom_days: routine.customDays ?? null,
+      date: routine.date ?? null,
+      time: routine.time ?? null,
+    };
+    if (routine.endTime !== undefined) insertPayload.end_time = routine.endTime;
+    if (routine.times !== undefined) insertPayload.times = routine.times;
+
+    const { error: insertError } = await supabase.from('routines').insert(insertPayload);
+    if (insertError) console.error('[addRoutine] insert error:', insertError.message);
   },
 
   updateRoutine: async (id, updates) => {

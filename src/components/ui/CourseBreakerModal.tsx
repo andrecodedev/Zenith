@@ -1,8 +1,18 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { X, Sparkles, Loader2, Plus, Minus } from 'lucide-react';
+import { InfoTooltip, CopyButton } from './InfoTooltip';
 import { parseCourseWithGemini, smartScheduleCourseWithGemini } from '../../utils/ai';
 import { addDays, format, parseISO } from 'date-fns';
+
+const SYLLABUS_PROMPT = `Tenho a ementa de um curso. Reformate-a seguindo EXATAMENTE este padrão, sem adicionar nada além disso:
+
+MÓDULO: [nome do módulo]
+AULA: [nome da aula]
+AULA: [nome da aula]
+
+Cada módulo começa com "MÓDULO:" e cada aula com "AULA:". Aqui está a ementa:
+[COLE SUA EMENTA AQUI]`;
 
 interface CourseBreakerModalProps {
   isOpen: boolean;
@@ -253,7 +263,10 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className={envKey ? "col-span-1" : "col-span-1"}>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Nome do Curso</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                Nome do Curso
+                <InfoTooltip>Nome completo do curso. Será usado como prefixo em todas as aulas agendadas (ex: <strong>[React Avançado] Aula 1</strong>).</InfoTooltip>
+              </label>
               <input 
                 type="text" 
                 value={courseName}
@@ -264,7 +277,10 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
               />
             </div>
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-text-secondary mb-2">Instituição / Escola</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                Instituição / Escola
+                <InfoTooltip>Plataforma ou escola do curso (ex: Udemy, Rocketseat). Opcional — aparece junto com o nome: <strong>[Udemy - React Avançado]</strong>.</InfoTooltip>
+              </label>
               <input 
                 type="text" 
                 value={schoolName}
@@ -290,7 +306,14 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Ementa do Curso (Cole tudo aqui)</label>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+              Ementa do Curso (Cole tudo aqui)
+              <InfoTooltip>
+                <p className="mb-2">Cole a ementa completa do curso. Para melhores resultados, use uma IA (ChatGPT, Gemini) para formatar antes de colar. Padrão esperado:</p>
+                <code className="block bg-bg-secondary rounded p-2 text-text-primary text-[11px] leading-5 whitespace-pre">MÓDULO: Nome do módulo{'\n'}AULA: Nome da aula{'\n'}AULA: Nome da aula</code>
+                <CopyButton text={SYLLABUS_PROMPT} />
+              </InfoTooltip>
+            </label>
             <textarea 
               value={syllabus}
               onChange={e => setSyllabus(e.target.value)}
@@ -303,11 +326,12 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
 
           {/* AI Auto-Schedule Placeholder */}
           <div className="bg-bg-primary border border-border-base rounded-lg p-4 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-50 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-r from-white/5 to-white/10 opacity-50 pointer-events-none" />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
               <div>
                 <h4 className="text-sm font-bold text-text-primary flex items-center gap-2 mb-1">
                   <Sparkles size={16} className="text-text-primary" /> Auto-Agendamento Inteligente
+                  <InfoTooltip>Quando ativado, a IA analisa suas tarefas existentes e distribui as aulas nos melhores horários livres, evitando sobreposição e garantindo tempo de descanso. Ignora "Dias de Estudo" e "Aulas por dia" — a IA decide.</InfoTooltip>
                 </h4>
                 <p className="text-xs text-text-tertiary max-w-[400px]">
                   A IA analisa suas tarefas atuais e sugere os melhores horários para as aulas, garantindo tempo de descanso.
@@ -328,7 +352,10 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
           <div className={`transition-all duration-300 overflow-hidden ${isSmartSchedule ? 'opacity-30 pointer-events-none h-0' : 'opacity-100 h-auto'}`}>
             <div className="flex flex-col sm:flex-row justify-between gap-6">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-text-secondary mb-2">Dias de Estudo</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                Dias de Estudo
+                <InfoTooltip>Dias da semana em que você vai estudar. A IA distribuirá as aulas nesses dias, respeitando a quantidade de aulas por dia.</InfoTooltip>
+              </label>
               <div className="flex flex-nowrap gap-2">
                 {daysOfWeek.map((day, idx) => (
                   <button
@@ -348,7 +375,10 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Aulas por dia</label>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+                Aulas por dia
+                <InfoTooltip>Quantas aulas serão agendadas por dia de estudo. Ex: 2 aulas/dia = curso termina mais rápido.</InfoTooltip>
+              </label>
               <div className="flex items-center justify-between bg-bg-primary border border-border-base rounded-lg p-1 w-[120px]">
                 <button
                   type="button"

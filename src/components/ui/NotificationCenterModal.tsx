@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Trash2, Eye, EyeOff, CheckSquare, Square, AlertTriangle } from 'lucide-react';
+import { InfoTooltip } from './InfoTooltip';
 import { useStore } from '../../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -166,7 +167,10 @@ export function NotificationCenterModal({
 
         {/* Settings Toggle */}
         <div className="p-4 bg-bg-primary/50 border-b border-border-base flex items-center justify-between shrink-0">
-          <span className="text-sm font-bold text-text-primary">Receber Alertas do Navegador</span>
+          <span className="flex items-center gap-1.5 text-sm font-bold text-text-primary">
+            Receber Alertas do Navegador
+            <InfoTooltip>Exibe notificações nativas do browser nos horários das suas tarefas. Funciona mesmo com a aba minimizada. O navegador vai pedir permissão na primeira vez.</InfoTooltip>
+          </span>
           <button
             onClick={() => {
               const newValue = !notificationsEnabled;
