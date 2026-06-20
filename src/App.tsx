@@ -39,7 +39,10 @@ function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session && currentView === 'hero') setCurrentView('dashboard');
+      if (session) {
+        useStore.getState().fetchData();
+        if (currentView === 'hero') setCurrentView('dashboard');
+      }
     });
 
     const {
@@ -47,8 +50,10 @@ function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
+        useStore.getState().fetchData();
         if (currentView === 'hero') setCurrentView('dashboard');
       } else {
+        useStore.setState({ categories: [], routines: [], taskInstances: [] });
         setCurrentView('hero');
       }
     });
