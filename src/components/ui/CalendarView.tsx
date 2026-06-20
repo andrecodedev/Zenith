@@ -42,10 +42,10 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
             {format(parseISO(selectedDate), "MMMM 'de' yyyy", { locale: ptBR })}
           </span>
           <div className="flex bg-bg-secondary rounded-md border border-border-base p-1 gap-1 shrink-0">
-            <button onClick={() => onNavigate(-7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-white hover:bg-elements-hover transition-colors">
+            <button onClick={() => onNavigate(-7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-elements-hover transition-colors">
               <ChevronLeft size={20} />
             </button>
-            <button onClick={() => onNavigate(7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-white hover:bg-elements-hover transition-colors">
+            <button onClick={() => onNavigate(7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-text-primary hover:bg-elements-hover transition-colors">
               <ChevronRight size={20} />
             </button>
           </div>
@@ -61,7 +61,7 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
             <div key={dateStr} id={`cal-day-${dateStr}`} className="flex-shrink-0 w-[280px] md:w-auto md:flex-1 flex flex-col h-full bg-bg-secondary/30 rounded-xl border border-border-base/50 overflow-hidden snap-center">
               <div className={`p-4 text-center border-b border-border-base/50 shrink-0 ${isTodayStr ? 'bg-elements/50' : ''}`}>
                 <div className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">{dayName}</div>
-                <div className={`text-2xl font-bold font-title ${isTodayStr ? 'text-white' : 'text-white'}`}>{dayNumber}</div>
+                <div className={`text-2xl font-bold font-title ${isTodayStr ? 'text-text-primary' : 'text-text-primary'}`}>{dayNumber}</div>
               </div>
               
               <div className="p-3 flex-1 overflow-y-auto space-y-2 pr-2">

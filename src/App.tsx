@@ -78,7 +78,7 @@ function App() {
           onClick={() => setCurrentView('hero')}
         >
           <div className="w-12 h-12 flex items-center justify-center">
-            <img src="/logo.png" alt="Zenith Logo" className="w-full h-full object-contain" />
+            <img src="/logo.png" alt="Zenith Logo" className="w-full h-full object-contain transition-all duration-300 [html.light_&]:invert" />
           </div>
         </div>
 
@@ -86,13 +86,13 @@ function App() {
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setIsLightMode(!isLightMode)}
-              className="cursor-pointer text-text-secondary hover:text-white transition-colors"
+              className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
             >
               {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
             </button>
             <button 
               onClick={() => setIsAuthModalOpen(true)}
-              className="cursor-pointer text-white hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
+              className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
             >
               Login
             </button>
@@ -105,28 +105,28 @@ function App() {
                   setSelectedDate(today);
                   setCurrentView('dashboard');
                 }}
-                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
               >
                 <LayoutDashboard size={16} />
                 Meu Dia
               </button>
               <button 
                 onClick={() => setCurrentView('calendar')}
-                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
               >
                 <Calendar size={16} />
                 Calendário
               </button>
               <button 
                 onClick={() => setIsCourseModalOpen(true)}
-                className="cursor-pointer text-text-tertiary hover:text-white transition-colors flex items-center gap-2"
+                className="cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center gap-2"
               >
                 <Sparkles size={16} />
                 Importar Curso
               </button>
               <button 
                 onClick={() => setIsLightMode(!isLightMode)}
-                className="cursor-pointer text-text-tertiary hover:text-white transition-colors flex items-center"
+                className="cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
               >
                 {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
               </button>
@@ -134,7 +134,7 @@ function App() {
             
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="hidden md:flex cursor-pointer bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="hidden md:flex cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-5 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               <Plus size={16} /> Nova Tarefa
             </button>
@@ -143,13 +143,13 @@ function App() {
             <div className="md:hidden flex items-center gap-4">
               <button 
                 onClick={() => setIsLightMode(!isLightMode)}
-                className="cursor-pointer text-text-secondary hover:text-white transition-colors"
+                className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
               >
                 {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
               </button>
               <button 
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="text-text-secondary hover:text-white transition-colors cursor-pointer"
+                className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
               >
                 <Menu size={24} />
               </button>
@@ -164,7 +164,7 @@ function App() {
           <div className="flex justify-end mb-8">
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-text-secondary hover:text-white transition-colors cursor-pointer p-2"
+              className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer p-2"
             >
               <X size={28} />
             </button>
@@ -176,7 +176,7 @@ function App() {
                 setCurrentView('dashboard');
                 setIsMobileMenuOpen(false);
               }}
-              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-white' : 'text-text-tertiary active:bg-btn-bg active:text-white'}`}
+              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
             >
               <LayoutDashboard size={24} />
               Meu Dia
@@ -186,7 +186,7 @@ function App() {
                 setCurrentView('calendar');
                 setIsMobileMenuOpen(false);
               }}
-              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'calendar' ? 'bg-btn-bg text-white' : 'text-text-tertiary active:bg-btn-bg active:text-white'}`}
+              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'calendar' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
             >
               <Calendar size={24} />
               Calendário
@@ -196,7 +196,7 @@ function App() {
                 setIsCourseModalOpen(true);
                 setIsMobileMenuOpen(false);
               }}
-              className="cursor-pointer text-text-tertiary hover:text-white active:bg-btn-bg p-4 rounded-xl transition-colors flex items-center gap-4"
+              className="cursor-pointer text-text-tertiary hover:text-text-primary active:bg-btn-bg p-4 rounded-xl transition-colors flex items-center gap-4"
             >
               <Sparkles size={24} />
               Importar Curso
@@ -207,7 +207,7 @@ function App() {
                 setIsModalOpen(true);
                 setIsMobileMenuOpen(false);
               }}
-              className="mt-8 cursor-pointer bg-white text-black px-6 py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 w-full"
+              className="mt-8 cursor-pointer bg-text-primary text-bg-primary px-6 py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 w-full"
             >
               <Plus size={20} /> Nova Tarefa
             </button>
@@ -235,7 +235,7 @@ function App() {
               <div className="flex items-stretch gap-2 mb-4 w-full max-w-full">
                 <button 
                   onClick={() => handleNavigateDays(-1)}
-                  className="flex-shrink-0 px-3 md:px-4 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
+                  className="flex-shrink-0 px-3 md:px-4 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-text-primary rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -250,9 +250,9 @@ function App() {
                         onClick={() => setSelectedDate(dateStr)}
                         className={`relative snap-center flex-shrink-0 cursor-pointer flex flex-col items-center justify-center min-w-[4.5rem] md:min-w-[5rem] md:flex-1 px-2 py-2 rounded-lg transition-all ${
                           isSelected
-                            ? 'bg-elements-hover text-white shadow-md border border-border-gray'
+                            ? 'bg-elements-hover text-text-primary shadow-md border border-border-gray'
                             : isTodayStr
-                            ? 'bg-elements text-white border border-border-gray'
+                            ? 'bg-elements text-text-primary border border-border-gray'
                             : 'bg-bg-secondary text-text-secondary hover:bg-elements'
                         }`}
                       >
@@ -269,7 +269,7 @@ function App() {
                 </div>
                 <button 
                   onClick={() => handleNavigateDays(1)}
-                  className="flex-shrink-0 px-3 md:px-4 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
+                  className="flex-shrink-0 px-3 md:px-4 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-text-primary rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
                 >
                   <ChevronRight size={20} />
                 </button>

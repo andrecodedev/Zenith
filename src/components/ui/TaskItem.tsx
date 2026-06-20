@@ -58,7 +58,7 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
         </button>
         
         <div className="flex-1 min-w-0">
-          <h3 className={`font-medium truncate ${isCompleted ? 'line-through text-text-tertiary' : 'text-white'}`}>
+          <h3 className={`font-medium truncate ${isCompleted ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
             {routine.title}
           </h3>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -68,6 +68,16 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
             {routine.time && (
               <span className="text-xs px-2 py-1 rounded-sm inline-block bg-elements text-text-secondary border border-border-gray">
                 {routine.time}
+              </span>
+            )}
+            {status === 'completed' && (
+              <span className="text-xs px-2 py-1 rounded-sm inline-block bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                Concluído
+              </span>
+            )}
+            {status === 'pending' && (
+              <span className="text-xs px-2 py-1 rounded-sm inline-block bg-elements text-text-secondary border border-border-gray">
+                Pendente
               </span>
             )}
             {status === 'in_progress' && (
@@ -89,7 +99,7 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
               e.stopPropagation();
               setIsEditing(true);
             }}
-            className="p-1.5 bg-elements/50 hover:bg-elements rounded-sm text-text-secondary hover:text-white transition-all cursor-pointer"
+            className="p-1.5 bg-elements/50 hover:bg-elements rounded-sm text-text-secondary hover:text-text-primary transition-all cursor-pointer"
           >
             <Edit2 size={16} />
           </button>
@@ -100,7 +110,7 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
-              className="p-1.5 bg-elements/50 hover:bg-elements rounded-sm text-text-secondary hover:text-white transition-all cursor-pointer"
+              className="p-1.5 bg-elements/50 hover:bg-elements rounded-sm text-text-secondary hover:text-text-primary transition-all cursor-pointer"
             >
               <ChevronDown size={16} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
             </button>

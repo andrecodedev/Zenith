@@ -58,8 +58,8 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
     >
       <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-sm shadow-2xl relative flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-5 border-b border-border-base flex justify-between items-center bg-bg-secondary/50">
-          <h2 className="text-lg font-bold text-white">Status da Tarefa</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-white transition-colors cursor-pointer">
+          <h2 className="text-lg font-bold text-text-primary">Status da Tarefa</h2>
+          <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
@@ -67,7 +67,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
         <div className="p-5 space-y-5">
           <div>
             <div className="text-sm text-text-secondary mb-1">Tarefa</div>
-            <div className="font-medium text-white truncate">{routine.title}</div>
+            <div className="font-medium text-text-primary truncate">{routine.title}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -83,7 +83,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
                   }`}
                 >
                   <Icon size={24} className={`mb-2 ${isSelected ? s.color : 'text-text-tertiary'}`} />
-                  <span className={`text-xs font-medium ${isSelected ? 'text-white' : 'text-text-secondary'}`}>
+                  <span className={`text-xs font-medium ${isSelected ? 'text-text-primary' : 'text-text-secondary'}`}>
                     {s.label}
                   </span>
                 </button>
@@ -99,7 +99,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Descreva o andamento, motivos do atraso, links úteis..."
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all resize-none"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary text-sm focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all resize-none"
               rows={3}
             />
           </div>
@@ -108,7 +108,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
         <div className="p-5 border-t border-border-base bg-bg-secondary/50">
           <button 
             onClick={handleSave}
-            className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-white rounded-lg py-3 font-bold transition-all cursor-pointer"
+            className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-primary rounded-lg py-3 font-bold transition-all cursor-pointer"
           >
             Salvar Alterações
           </button>

@@ -134,21 +134,21 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
           <div className="absolute inset-0 bg-bg-secondary/95 backdrop-blur-md z-50 flex items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
             <div className="max-w-sm w-full space-y-6">
               <div>
-                <h3 className="text-xl font-bold font-title text-white mb-2">Alterações não salvas</h3>
+                <h3 className="text-xl font-bold font-title text-text-primary mb-2">Alterações não salvas</h3>
                 <p className="text-sm text-text-secondary">Você tem um curso sendo planejado. O que deseja fazer antes de fechar?</p>
               </div>
               
               <div className="space-y-3">
                 <button 
                   onClick={() => setShowConfirmClose(false)}
-                  className="w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                  className="w-full bg-elements hover:bg-elements-hover text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer"
                 >
                   Voltar e continuar editando
                 </button>
                 <button 
                   onClick={handleSaveFromConfirm}
                   disabled={!apiKey || !syllabus.trim() || !courseName.trim() || studyDays.length === 0}
-                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-white rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer"
                 >
                   Quebrar e Agendar
                 </button>
@@ -170,10 +170,10 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
         )}
 
         <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 shrink-0 z-10">
-          <h2 className="text-xl font-bold font-title flex items-center gap-2 text-white">
+          <h2 className="text-xl font-bold font-title flex items-center gap-2 text-text-primary">
             <Sparkles size={20} /> Quebrador de Cursos (IA)
           </h2>
-          <button onClick={handleCloseRequest} className="text-text-secondary hover:text-white transition-colors cursor-pointer">
+          <button onClick={handleCloseRequest} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
@@ -183,9 +183,9 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-4">
               <Sparkles size={32} />
             </div>
-            <h3 className="text-2xl font-bold font-title text-white">Pronto! Curso Quebrado.</h3>
+            <h3 className="text-2xl font-bold font-title text-text-primary">Pronto! Curso Quebrado.</h3>
             <p className="text-text-secondary max-w-md">
-              A Inteligência Artificial triturou sua ementa e agendou <strong className="text-white">{successData.totalLessons} aulas</strong> de forma inteligente nos seus dias de estudo.
+              A Inteligência Artificial triturou sua ementa e agendou <strong className="text-text-primary">{successData.totalLessons} aulas</strong> de forma inteligente nos seus dias de estudo.
             </p>
             
             <div className="bg-bg-primary border border-border-base rounded-lg p-4 w-full mt-4 text-sm text-left">
@@ -208,7 +208,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 onClose();
                 setTimeout(() => setSuccessData(null), 300);
               }}
-              className="mt-6 w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-4 font-bold transition-all cursor-pointer"
+              className="mt-6 w-full bg-elements hover:bg-elements-hover text-text-primary rounded-lg py-4 font-bold transition-all cursor-pointer"
             >
               Concluir e Voltar ao Calendário
             </button>
@@ -229,7 +229,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 value={courseName}
                 onChange={e => setCourseName(e.target.value)}
                 placeholder="Ex: React Avançado"
-                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray transition-all"
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all"
                 required
               />
             </div>
@@ -241,7 +241,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
-                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray transition-all"
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all"
                 required
               />
               <p className="text-xs text-text-tertiary mt-1">Fica salva só no seu navegador.</p>
@@ -256,7 +256,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
               onChange={e => setSyllabus(e.target.value)}
               placeholder="Módulo 1&#10;Aula 1 - Intro&#10;Aula 2 - Setup..."
               rows={6}
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray transition-all resize-none"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all resize-none"
               required
             />
           </div>
@@ -272,7 +272,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                     onClick={() => toggleDay(idx)}
                     className={`flex-1 min-w-[36px] h-10 rounded-md text-sm font-medium transition-all ${
                       studyDays.includes(idx)
-                        ? 'bg-btn-bg text-white'
+                        ? 'bg-btn-bg text-text-primary'
                         : 'bg-bg-primary text-text-tertiary hover:bg-elements border border-border-base'
                     }`}
                   >
@@ -288,17 +288,17 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 <button
                   type="button"
                   onClick={() => setLessonsPerDay(Math.max(1, lessonsPerDay - 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:text-white hover:bg-elements transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:text-text-primary hover:bg-elements transition-colors"
                 >
                   <Minus size={18} />
                 </button>
-                <div className="text-center text-lg font-bold text-white flex-1">
+                <div className="text-center text-lg font-bold text-text-primary flex-1">
                   {lessonsPerDay}
                 </div>
                 <button
                   type="button"
                   onClick={() => setLessonsPerDay(Math.min(10, lessonsPerDay + 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:text-white hover:bg-elements transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:text-text-primary hover:bg-elements transition-colors"
                 >
                   <Plus size={18} />
                 </button>
@@ -310,7 +310,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             <button 
               type="submit"
               disabled={isLoading || !courseName || !syllabus || !apiKey || studyDays.length === 0}
-              className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-4 font-bold transition-all flex items-center justify-center gap-2"
+              className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-text-primary rounded-lg py-4 font-bold transition-all flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <><Loader2 className="animate-spin" size={20} /> Processando com IA...</>

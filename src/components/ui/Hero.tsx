@@ -9,7 +9,7 @@ interface HeroProps {
 export function Hero({ onStart }: HeroProps) {
   return (
     <>
-      <div className="fixed inset-0 z-0 bg-black">
+      <div className="fixed inset-0 z-0 bg-black transition-all duration-700 [html.light_&]:invert">
         <Ferrofluid
           colors={["#ffffff", "#aaaaaa", "#555555"]}
           speed={0.1}
@@ -34,7 +34,7 @@ export function Hero({ onStart }: HeroProps) {
           Apresentando Zenith
         </span>
         
-        <h1 className="text-5xl md:text-7xl font-bold font-title tracking-widest uppercase text-white mb-6 drop-shadow-2xl">
+        <h1 className="text-5xl md:text-7xl font-bold font-title tracking-widest uppercase text-text-primary mb-6 drop-shadow-2xl">
           Domine o tempo
         </h1>
         
@@ -44,7 +44,7 @@ export function Hero({ onStart }: HeroProps) {
         
         <button 
           onClick={onStart}
-          className="group pointer-events-auto cursor-pointer bg-white hover:bg-neutral-200 text-black px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95"
+          className="group pointer-events-auto cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95"
         >
           Acessar Plataforma <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
         </button>

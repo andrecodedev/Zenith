@@ -17,7 +17,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <h2 className="text-xl font-bold font-title uppercase tracking-wider">
             Bem-vindo de volta
           </h2>
-          <button onClick={onClose} className="cursor-pointer text-text-secondary hover:text-white transition-colors">
+          <button onClick={onClose} className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -29,7 +29,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
               <input 
                 type="email" 
-                className="w-full bg-bg-secondary border border-border-base rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-border-gray transition-colors"
+                className="w-full bg-bg-secondary border border-border-base rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:border-border-gray transition-colors"
                 placeholder="seu@email.com"
               />
             </div>
@@ -41,7 +41,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
               <input 
                 type="password" 
-                className="w-full bg-bg-secondary border border-border-base rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-border-gray transition-colors"
+                className="w-full bg-bg-secondary border border-border-base rounded-lg py-2 pl-10 pr-4 text-text-primary focus:outline-none focus:border-border-gray transition-colors"
                 placeholder="••••••••"
               />
             </div>
@@ -53,7 +53,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               onSuccess();
               onClose();
             }}
-            className="w-full mt-4 bg-white hover:bg-neutral-200 text-black py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
+            className="w-full mt-4 bg-text-primary hover:opacity-80 text-bg-primary py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
           >
             Entrar
           </button>

@@ -207,21 +207,21 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           <div className="absolute inset-0 bg-bg-secondary/95 backdrop-blur-md z-50 flex items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
             <div className="max-w-sm w-full space-y-6">
               <div>
-                <h3 className="text-xl font-bold font-title text-white mb-2">Alterações não salvas</h3>
+                <h3 className="text-xl font-bold font-title text-text-primary mb-2">Alterações não salvas</h3>
                 <p className="text-sm text-text-secondary">Você tem informações preenchidas. O que deseja fazer antes de fechar?</p>
               </div>
               
               <div className="space-y-3">
                 <button 
                   onClick={() => setShowConfirmClose(false)}
-                  className="w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                  className="w-full bg-elements hover:bg-elements-hover text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer"
                 >
                   Voltar e continuar editando
                 </button>
                 <button 
                   onClick={handleSaveFromConfirm}
                   disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0)}
-                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-white rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer"
                 >
                   Salvar Tarefa
                 </button>
@@ -244,7 +244,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
 
         <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 rounded-t-2xl shrink-0">
           <h2 className="text-xl font-bold font-title">{initialData ? 'Editar Tarefa / Curso' : 'Nova Tarefa / Curso'}</h2>
-          <button onClick={handleCloseRequest} className="text-text-secondary hover:text-white transition-colors cursor-pointer">
+          <button onClick={handleCloseRequest} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
@@ -257,7 +257,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Ex: Aula 01 - React Hooks"
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all"
               autoFocus
             />
           </div>
@@ -273,8 +273,8 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                   !title.trim() 
                     ? 'text-neutral-600 bg-bg-secondary border-border-base cursor-not-allowed'
                     : isGenerating
-                      ? 'text-white bg-elements border-border-base'
-                      : 'text-white bg-elements border-border-base hover:bg-elements-hover hover:border-border-gray cursor-pointer'
+                      ? 'text-text-primary bg-elements border-border-base'
+                      : 'text-text-primary bg-elements border-border-base hover:bg-elements-hover hover:border-border-gray cursor-pointer'
                 }`}
               >
                 {isGenerating ? (
@@ -290,7 +290,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               onChange={e => setDescription(e.target.value)}
               placeholder="Detalhes, links ou anotações sobre a tarefa..."
               rows={3}
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all resize-none"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all resize-none"
             />
           </div>
 
@@ -319,7 +319,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`w-full bg-bg-primary border rounded-lg px-4 py-3 text-white transition-all flex justify-between items-center cursor-pointer ${isDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}
+              className={`w-full bg-bg-primary border rounded-lg px-4 py-3 text-text-primary transition-all flex justify-between items-center cursor-pointer ${isDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}
             >
               <span>{recurrenceOptions.find(o => o.value === recurrenceMenu)?.label}</span>
               <ChevronDown size={18} className={`text-text-tertiary transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -342,8 +342,8 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                       }}
                       className={`w-full text-left px-4 py-3 text-sm transition-colors cursor-pointer ${
                         recurrenceMenu === option.value 
-                          ? 'text-white bg-elements font-medium' 
-                          : 'text-text-secondary hover:bg-elements hover:text-white'
+                          ? 'text-text-primary bg-elements font-medium' 
+                          : 'text-text-secondary hover:bg-elements hover:text-text-primary'
                       }`}
                     >
                       {option.label}
@@ -361,7 +361,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                 type="date"
                 value={specificDate}
                 onChange={(e) => setSpecificDate(e.target.value)}
-                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all [color-scheme:dark]"
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all [color-scheme:dark]"
               />
             </div>
           )}
@@ -377,7 +377,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                     onClick={() => toggleDay(idx)}
                     className={`w-10 h-10 rounded-md text-sm font-medium transition-all ${
                       customDays.includes(idx)
-                        ? 'bg-btn-bg text-white'
+                        ? 'bg-btn-bg text-text-primary'
                         : 'bg-bg-primary text-text-tertiary hover:bg-elements'
                     }`}
                   >
@@ -394,7 +394,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               type="time" 
               value={time}
               onChange={e => setTime(e.target.value)}
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer [color-scheme:dark]"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer [color-scheme:dark]"
             />
           </div>
 
@@ -402,7 +402,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             <button 
               type="submit"
               disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0)}
-              className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-3 font-bold transition-all"
+              className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-text-primary rounded-lg py-3 font-bold transition-all"
             >
               Salvar Tarefa
             </button>

@@ -51,7 +51,7 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
                 {status === 'late' && <AlertCircle size={28} className="text-red-500" />}
                 {status === 'pending' && <Circle size={28} className="text-text-tertiary" />}
               </button>
-              <h2 className="text-xl font-bold font-title text-white leading-tight">{routine.title}</h2>
+              <h2 className="text-xl font-bold font-title text-text-primary leading-tight">{routine.title}</h2>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-xs px-2 py-1 rounded-sm inline-block ${getCategoryStyles(category?.color)}`}>
@@ -78,10 +78,10 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => setIsEditing(true)} className="text-text-secondary hover:text-white transition-colors p-2 rounded-sm hover:bg-elements cursor-pointer">
+            <button onClick={() => setIsEditing(true)} className="text-text-secondary hover:text-text-primary transition-colors p-2 rounded-sm hover:bg-elements cursor-pointer">
               <Edit2 size={20} />
             </button>
-            <button onClick={onClose} className="text-text-secondary hover:text-white transition-colors p-2 rounded-sm hover:bg-elements cursor-pointer">
+            <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors p-2 rounded-sm hover:bg-elements cursor-pointer">
               <X size={20} />
             </button>
           </div>
