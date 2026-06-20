@@ -61,6 +61,7 @@ function App() {
       if (session) {
         useStore.getState().fetchData();
         if (currentView === 'hero') setCurrentView('dashboard');
+        if (notificationsEnabled) subscribeToPush();
       } else {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
         setCurrentView('hero');
