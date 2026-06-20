@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
@@ -63,6 +63,36 @@ function App() {
     return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const notifiedTasks = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentTime = format(now, 'HH:mm');
+      const currentDateStr = getTodayStr();
+      
+      routines.forEach(routine => {
+        if (isTaskDueToday(routine, currentDateStr) && routine.time === currentTime) {
+          const instanceId = `${routine.id}_${currentDateStr}`;
+          const instance = taskInstances.find(t => t.id === instanceId);
+          
+          if (notifiedTasks.current.has(instanceId)) return;
+          if (instance && instance.completed) return;
+          
+          sendTaskNotification(
+            `Hora da Tarefa: ${routine.title}`,
+            routine.description || "Não esqueça de marcar como concluída!",
+            routine.id,
+            currentDateStr
+          );
+          notifiedTasks.current.add(instanceId);
+        }
+      });
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [routines, taskInstances]);
+
   useEffect(() => {
     registerServiceWorker();
 
@@ -108,6 +138,7 @@ function App() {
     dateStr: null
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (currentView === 'dashboard') {
@@ -142,7 +173,7 @@ function App() {
             </button>
             {session ? (
               <button 
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
               >
                 Sair
@@ -426,6 +457,32 @@ function App() {
         onClose={() => setIsAuthModalOpen(false)} 
         onSuccess={() => setCurrentView('dashboard')} 
       />
+      
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-sm shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold font-title text-text-primary mb-2">Sair da Conta</h3>
+            <p className="text-sm text-text-secondary mb-6">Tem certeza que deseja sair do Zenith?</p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => {
+                  supabase.auth.signOut();
+                  setShowLogoutConfirm(false);
+                }}
+                className="w-full cursor-pointer bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                Sim, Sair
+              </button>
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="w-full cursor-pointer bg-transparent border border-border-gray hover:bg-elements text-text-primary font-bold py-3 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
