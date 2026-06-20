@@ -27,7 +27,7 @@ export function Hero({ onStart }: HeroProps) {
         />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center h-full w-full text-center max-w-2xl mx-auto px-6 pointer-events-none">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen w-full text-center max-w-2xl mx-auto px-6 pointer-events-none">
 
         {/* Eyebrow */}
         <div className="flex items-center gap-3 mb-8">
