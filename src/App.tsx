@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
-import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2 } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
 import { TaskItem } from './components/ui/TaskItem';
 import { FilterBar } from './components/ui/FilterBar';
 import { CalendarView } from './components/ui/CalendarView';
+import { StatsView } from './components/ui/StatsView';
 import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
 import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
@@ -22,7 +23,7 @@ function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar'>('hero');
+  const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar' | 'stats'>('hero');
   const [session, setSession] = useState<Session | null>(null);
   const weekDays = generateWeek(selectedDate);
 
@@ -237,14 +238,21 @@ function App() {
                 <LayoutDashboard size={16} />
                 Meu Dia
               </button>
-              <button 
+              <button
                 onClick={() => setCurrentView('calendar')}
                 className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
               >
                 <Calendar size={16} />
                 Calendário
               </button>
-              <button 
+              <button
+                onClick={() => setCurrentView('stats')}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'stats' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+              >
+                <BarChart2 size={16} />
+                Estatísticas
+              </button>
+              <button
                 onClick={() => {
                   setIsNotificationCenterOpen(true);
                 }}
@@ -319,7 +327,7 @@ function App() {
               <LayoutDashboard size={24} />
               Meu Dia
             </button>
-            <button 
+            <button
               onClick={() => {
                 setCurrentView('calendar');
                 setIsMobileMenuOpen(false);
@@ -329,12 +337,22 @@ function App() {
               <Calendar size={24} />
               Calendário
             </button>
+            <button
+              onClick={() => {
+                setCurrentView('stats');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'stats' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+            >
+              <BarChart2 size={24} />
+              Estatísticas
+            </button>
           </nav>
         </div>
       )}
 
       {/* Main Content */}
-      <main className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'pt-28 px-6'}`}>
+      <main className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'pt-28 px-6 overflow-y-auto'}`}>
         <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
           
           {currentView === 'hero' ? (
@@ -477,11 +495,13 @@ function App() {
                 )}
               </div>
             </div>
+          ) : currentView === 'stats' ? (
+            <StatsView />
           ) : (
-            <CalendarView 
-              selectedDate={selectedDate} 
-              onNavigate={handleNavigateDays} 
-              onSelectDate={setSelectedDate} 
+            <CalendarView
+              selectedDate={selectedDate}
+              onNavigate={handleNavigateDays}
+              onSelectDate={setSelectedDate}
             />
           )}
         </div>
