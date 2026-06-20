@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, CheckCircle2, Circle, Clock, AlertCircle, Edit2 } from 'lucide-react';
 import { getCategoryStyles } from '../../utils/colors';
 import { computeTaskStatus } from '../../utils/status';
-import { useStore } from '../../store/useStore';
 import type { Routine, Category, TaskInstance } from '../../types';
 import { TaskModal } from './TaskModal';
 

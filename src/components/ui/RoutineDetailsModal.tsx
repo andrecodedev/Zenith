@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
 import { X, CheckCircle2, Circle, Clock, AlertCircle, Edit2 } from 'lucide-react';
-import type { Routine, Category } from '../../types';
+import type { Routine } from '../../types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getCategoryStyles } from '../../utils/colors';
@@ -17,7 +17,7 @@ interface RoutineDetailsModalProps {
 }
 
 export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: RoutineDetailsModalProps) {
-  const { categories, taskInstances, updateTaskNote } = useStore();
+  const { categories, taskInstances } = useStore();
   const [isEditing, setIsEditing] = React.useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false);
 
@@ -27,9 +27,6 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
   const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
   
   const status = computeTaskStatus(routine, dateStr, instance);
-  
-  
-  const hasNote = !!instance?.statusNote;
 
   return (
     <div 

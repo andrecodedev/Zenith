@@ -1,4 +1,4 @@
-import { parseISO, isPast, addDays, startOfToday } from 'date-fns';
+import { parseISO, isPast, startOfToday } from 'date-fns';
 import type { Routine, TaskInstance, TaskStatus } from '../types';
 
 export function computeTaskStatus(routine: Routine, dateStr: string, instance?: TaskInstance): TaskStatus | 'late' {

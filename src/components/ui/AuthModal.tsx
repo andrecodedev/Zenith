@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Mail, Lock } from 'lucide-react';
 
 interface AuthModalProps {
