@@ -47,10 +47,10 @@ function App() {
       <header className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl bg-glass border border-border-base rounded-2xl px-6 py-4 flex items-center justify-between shadow-2xl z-50 backdrop-blur-md">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-text-tertiary text-bg-primary flex items-center justify-center">
-            <Calendar size={18} />
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img src="/logo.png" alt="Rotina Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold font-title tracking-wide text-white">Rotina.dev</h1>
+          <h1 className="text-xl font-bold font-title tracking-widest text-white uppercase">Zenith</h1>
         </div>
 
         {/* Navigation & Actions */}
