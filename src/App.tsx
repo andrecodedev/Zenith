@@ -1,27 +1,24 @@
 import React, { useState } from 'react';
 import { useStore } from './store/useStore';
-import { getTodayStr, isTaskDueToday } from './utils/date';
-import { CheckCircle2, Circle, Plus, Calendar } from 'lucide-react';
+import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
+import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TaskModal } from './components/ui/TaskModal';
 
 function App() {
-  const { routines, categories, taskInstances, toggleTask, addRoutine } = useStore();
+  const { routines, categories, taskInstances, toggleTask } = useStore();
   const [today] = useState(getTodayStr());
+  const [selectedDate, setSelectedDate] = useState(today);
+  const weekDays = generateWeek(selectedDate);
 
-  const todayRoutines = routines.filter(r => isTaskDueToday(r, today));
+  const selectedRoutines = routines.filter(r => isTaskDueToday(r, selectedDate));
   
-  const completedCount = todayRoutines.filter(r => 
-    taskInstances.find(t => t.routineId === r.id && t.date === today)?.completed
+  const completedCount = selectedRoutines.filter(r => 
+    taskInstances.find(t => t.routineId === r.id && t.date === selectedDate)?.completed
   ).length;
 
-  const progress = todayRoutines.length === 0 ? 0 : Math.round((completedCount / todayRoutines.length) * 100);
+  const progress = selectedRoutines.length === 0 ? 0 : Math.round((completedCount / selectedRoutines.length) * 100);
 
-  const handleCreateTestRoutine = () => {
-    addRoutine({
-      title: 'Beber 2L de Água',
-      categoryId: categories[1].id, // Pessoal
-      recurrence: 'daily'
-    });
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex">
@@ -52,16 +49,53 @@ function App() {
           <header className="mb-8 flex justify-between items-end">
             <div>
               <h2 className="text-3xl font-bold mb-2">Meu Dia</h2>
-              <p className="text-neutral-400">Você tem {todayRoutines.length} tarefas hoje.</p>
+              <p className="text-neutral-400">Você tem {selectedRoutines.length} tarefas neste dia.</p>
             </div>
             
             <button 
-              onClick={handleCreateTestRoutine}
+              onClick={() => setIsModalOpen(true)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
             >
               <Plus size={18} /> Nova Tarefa
             </button>
           </header>
+
+          {/* Weekly Calendar Slider */}
+          <div className="flex items-center justify-between mb-8">
+            <button className="text-neutral-500 hover:text-white transition-colors">
+              <ChevronLeft size={24} />
+            </button>
+            <div className="flex gap-2 overflow-x-auto px-4 hide-scrollbar">
+              {weekDays.map(({ dateStr, dayName, dayNumber }) => {
+                const isSelected = dateStr === selectedDate;
+                const isTodayStr = dateStr === today;
+                return (
+                  <button
+                    key={dateStr}
+                    onClick={() => setSelectedDate(dateStr)}
+                    className={`flex flex-col items-center justify-center min-w-[4rem] py-3 rounded-xl transition-all ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                        : isTodayStr
+                        ? 'bg-neutral-800 text-white border border-neutral-700'
+                        : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
+                    }`}
+                  >
+                    <span className="text-xs uppercase font-medium tracking-wider mb-1">
+                      {dayName}
+                    </span>
+                    <span className="text-lg font-bold">{dayNumber}</span>
+                    {isTodayStr && !isSelected && (
+                      <div className="w-1 h-1 bg-indigo-500 rounded-full mt-1 absolute bottom-2" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <button className="text-neutral-500 hover:text-white transition-colors">
+              <ChevronRight size={24} />
+            </button>
+          </div>
 
           {/* Progress Bar */}
           <div className="bg-neutral-900 rounded-xl p-6 mb-8 border border-neutral-800">
@@ -79,19 +113,19 @@ function App() {
 
           {/* Task List */}
           <div className="space-y-3">
-            {todayRoutines.length === 0 ? (
+            {selectedRoutines.length === 0 ? (
               <div className="text-center py-12 text-neutral-500 bg-neutral-900/50 rounded-xl border border-neutral-800 border-dashed">
-                Nenhuma tarefa para hoje. Crie uma para começar!
+                Nenhuma tarefa para este dia. Crie uma para começar!
               </div>
             ) : (
-              todayRoutines.map(routine => {
+              selectedRoutines.map(routine => {
                 const category = categories.find(c => c.id === routine.categoryId);
-                const isCompleted = taskInstances.find(t => t.routineId === routine.id && t.date === today)?.completed;
+                const isCompleted = taskInstances.find(t => t.routineId === routine.id && t.date === selectedDate)?.completed;
 
                 return (
                   <div 
                     key={routine.id}
-                    onClick={() => toggleTask(routine.id, today)}
+                    onClick={() => toggleTask(routine.id, selectedDate)}
                     className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
                       isCompleted 
                         ? 'bg-neutral-900/50 border-neutral-800 opacity-60' 
@@ -117,6 +151,8 @@ function App() {
           </div>
         </div>
       </main>
+
+      <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

@@ -1,7 +1,23 @@
-import { format, isWeekend, getDay, parseISO } from 'date-fns';
+import { format, isWeekend, getDay, parseISO, addDays, subDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import type { Routine } from '../types';
 
 export const getTodayStr = () => format(new Date(), 'yyyy-MM-dd');
+
+export const generateWeek = (baseDateStr: string) => {
+  const baseDate = parseISO(baseDateStr);
+  const week = [];
+  // Gera 3 dias antes, o dia atual, e 3 dias depois
+  for (let i = -3; i <= 3; i++) {
+    const d = addDays(baseDate, i);
+    week.push({
+      dateStr: format(d, 'yyyy-MM-dd'),
+      dayName: format(d, 'eee', { locale: ptBR }),
+      dayNumber: format(d, 'dd'),
+    });
+  }
+  return week;
+};
 
 export const isTaskDueToday = (routine: Routine, dateStr: string) => {
   const date = parseISO(dateStr);
