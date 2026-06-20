@@ -60,6 +60,8 @@ export const isTaskDueToday = (routine: Routine, dateStr: string) => {
       return routine.customDays?.includes(dayOfWeek) ?? false;
     case 'once':
       return routine.date === dateStr;
+    case 'multiple_times':
+      return true;
     default:
       return false;
   }

@@ -1,4 +1,4 @@
-export type RecurrenceType = 'daily' | 'weekdays' | 'weekends' | 'custom' | 'once';
+export type RecurrenceType = 'daily' | 'weekdays' | 'weekends' | 'custom' | 'once' | 'multiple_times';
 
 export interface Routine {
   id: string;
@@ -10,6 +10,7 @@ export interface Routine {
   date?: string; // YYYY-MM-DD for 'once'
   time?: string; // HH:mm (optional time)
   endTime?: string; // HH:mm (optional end time)
+  times?: string[]; // HH:mm[] for multiple_times recurrence
   excludedDates?: string[]; // YYYY-MM-DD dates where this routine should not appear
   statusOverride?: TaskStatus; // Global status override for all instances
   notesOverride?: string; // Global notes override

@@ -13,6 +13,7 @@ interface StoreState {
   updateRoutine: (id: string, updates: Partial<Routine>) => Promise<void>;
   deleteRoutine: (id: string) => Promise<void>;
   toggleTask: (routineId: string, date: string) => Promise<void>;
+  toggleTimeSlot: (routineId: string, date: string, time: string) => Promise<void>;
   cycleTaskStatus: (routineId: string, date: string) => Promise<void>;
   setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string) => Promise<void>;
   setTaskStatusForAll: (routineId: string, status: TaskStatus | undefined, note?: string) => Promise<void>;
@@ -51,15 +52,20 @@ export const useStore = create<StoreState>((set, get) => ({
     ]);
 
     let fetchedCategories = catRes.data || [];
-    
-    if (fetchedCategories.length === 0) {
+
+    if (catRes.error) {
+      console.error('[fetchData] categories error:', catRes.error.message);
+    }
+
+    if (fetchedCategories.length === 0 && !catRes.error) {
       const defaultCategories = [
         { id: crypto.randomUUID(), user_id: user.id, name: 'Trabalho', color: 'bg-blue-500', icon: 'briefcase' },
         { id: crypto.randomUUID(), user_id: user.id, name: 'Pessoal', color: 'bg-fuchsia-500', icon: 'user' },
         { id: crypto.randomUUID(), user_id: user.id, name: 'Cursos', color: 'bg-purple-500', icon: 'book' },
       ];
-      await supabase.from('categories').insert(defaultCategories);
-      fetchedCategories = defaultCategories;
+      const { error: insertError } = await supabase.from('categories').insert(defaultCategories);
+      if (!insertError) fetchedCategories = defaultCategories;
+      else console.error('[fetchData] insert default categories error:', insertError.message);
     }
 
     set({
@@ -74,6 +80,7 @@ export const useStore = create<StoreState>((set, get) => ({
         date: r.date,
         time: r.time,
         endTime: r.end_time,
+        times: r.times || undefined,
         createdAt: new Date(r.created_at).getTime()
       })),
       taskInstances: (taskRes.data || []).map(t => ({
@@ -122,7 +129,8 @@ export const useStore = create<StoreState>((set, get) => ({
       custom_days: routine.customDays,
       date: routine.date,
       time: routine.time,
-      end_time: routine.endTime
+      end_time: routine.endTime,
+      times: routine.times ?? null
     });
   },
 
@@ -140,6 +148,7 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updates.date !== undefined) dbUpdates.date = updates.date;
     if (updates.time !== undefined) dbUpdates.time = updates.time;
     if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime;
+    if (updates.times !== undefined) dbUpdates.times = updates.times ?? null;
 
     await supabase.from('routines').update(dbUpdates).eq('id', id);
   },
@@ -172,6 +181,40 @@ export const useStore = create<StoreState>((set, get) => ({
       const newInstances = [...state.taskInstances];
       newInstances[existingIndex] = newTaskInstance;
       set({ taskInstances: newInstances });
+    } else {
+      newTaskInstance = {
+        id: instanceId,
+        routineId,
+        date,
+        completed: true,
+        status: 'completed',
+        completedAt: Date.now(),
+      };
+      set({ taskInstances: [...state.taskInstances, newTaskInstance] });
+    }
+
+    await syncTaskInstance(newTaskInstance, userId);
+  },
+
+  toggleTimeSlot: async (routineId, date, time) => {
+    const userId = await getUserId();
+    const instanceId = `${routineId}_${date}_${time.replace(':', '')}`;
+    const state = get();
+    const existingIndex = state.taskInstances.findIndex(t => t.id === instanceId);
+
+    let newTaskInstance: TaskInstance;
+
+    if (existingIndex >= 0) {
+      const isCompleted = !state.taskInstances[existingIndex].completed;
+      newTaskInstance = {
+        ...state.taskInstances[existingIndex],
+        completed: isCompleted,
+        status: isCompleted ? 'completed' : 'pending',
+        completedAt: isCompleted ? Date.now() : undefined,
+      };
+      const updated = [...state.taskInstances];
+      updated[existingIndex] = newTaskInstance;
+      set({ taskInstances: updated });
     } else {
       newTaskInstance = {
         id: instanceId,
