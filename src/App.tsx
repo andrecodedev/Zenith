@@ -20,7 +20,6 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar'>('hero');
   const [session, setSession] = useState<Session | null>(null);
-  const [authInitialized, setAuthInitialized] = useState(false);
   const weekDays = generateWeek(selectedDate);
 
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -41,7 +40,6 @@ function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session && currentView === 'hero') setCurrentView('dashboard');
-      setAuthInitialized(true);
     });
 
     const {
