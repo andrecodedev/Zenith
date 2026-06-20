@@ -1,4 +1,4 @@
-import { format, isWeekend, getDay, parseISO, addDays, subDays } from 'date-fns';
+import { format, isWeekend, getDay, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Routine } from '../types';
 
@@ -32,6 +32,8 @@ export const isTaskDueToday = (routine: Routine, dateStr: string) => {
       return isWeekend(date);
     case 'custom':
       return routine.customDays?.includes(dayOfWeek) ?? false;
+    case 'once':
+      return routine.date === dateStr;
     default:
       return false;
   }

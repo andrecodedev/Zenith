@@ -1,4 +1,4 @@
-export type RecurrenceType = 'daily' | 'weekdays' | 'weekends' | 'custom';
+export type RecurrenceType = 'daily' | 'weekdays' | 'weekends' | 'custom' | 'once';
 
 export interface Routine {
   id: string;
@@ -6,6 +6,7 @@ export interface Routine {
   categoryId: string;
   recurrence: RecurrenceType;
   customDays?: number[]; // 0 = Sunday, 1 = Monday, etc.
+  date?: string; // YYYY-MM-DD for 'once'
   createdAt: number;
 }
 

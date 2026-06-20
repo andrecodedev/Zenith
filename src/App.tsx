@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
-import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
+import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 
 function App() {
   const { routines, categories, taskInstances, toggleTask } = useStore();
@@ -19,6 +20,7 @@ function App() {
   const progress = selectedRoutines.length === 0 ? 0 : Math.round((completedCount / selectedRoutines.length) * 100);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex">
@@ -52,12 +54,20 @@ function App() {
               <p className="text-neutral-400">Você tem {selectedRoutines.length} tarefas neste dia.</p>
             </div>
             
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-            >
-              <Plus size={18} /> Nova Tarefa
-            </button>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsCourseModalOpen(true)}
+                className="bg-neutral-800 hover:bg-neutral-700 text-indigo-400 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors border border-neutral-700"
+              >
+                <Sparkles size={18} /> Importar Curso
+              </button>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              >
+                <Plus size={18} /> Nova Tarefa
+              </button>
+            </div>
           </header>
 
           {/* Weekly Calendar Slider */}
@@ -153,6 +163,7 @@ function App() {
       </main>
 
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <CourseBreakerModal isOpen={isCourseModalOpen} onClose={() => setIsCourseModalOpen(false)} />
     </div>
   );
 }
