@@ -1,4 +1,4 @@
-import { format, isWeekend, getDay, parseISO, addDays } from 'date-fns';
+import { format, isWeekend, getDay, parseISO, addDays, startOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Routine } from '../types';
 
@@ -10,6 +10,21 @@ export const generateWeek = (baseDateStr: string) => {
   // Gera 3 dias antes, o dia atual, e 3 dias depois
   for (let i = -3; i <= 3; i++) {
     const d = addDays(baseDate, i);
+    week.push({
+      dateStr: format(d, 'yyyy-MM-dd'),
+      dayName: format(d, 'eee', { locale: ptBR }),
+      dayNumber: format(d, 'dd'),
+    });
+  }
+  return week;
+};
+
+export const generateCalendarWeek = (baseDateStr: string) => {
+  const baseDate = parseISO(baseDateStr);
+  const startDay = startOfWeek(baseDate, { weekStartsOn: 0 }); // 0 = Domingo
+  const week = [];
+  for (let i = 0; i <= 6; i++) {
+    const d = addDays(startDay, i);
     week.push({
       dateStr: format(d, 'yyyy-MM-dd'),
       dayName: format(d, 'eee', { locale: ptBR }),
