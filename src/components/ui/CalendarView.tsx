@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { generateCalendarWeek, isTaskDueToday } from '../../utils/date';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight, AlertCircle, Clock } from 'lucide-react';
@@ -22,18 +22,26 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
 
   const weekDays = generateCalendarWeek(selectedDate);
 
+  useEffect(() => {
+    setTimeout(() => {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const el = document.getElementById(`cal-day-${todayStr}`) || document.getElementById(`cal-day-${selectedDate}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, 100);
+  }, [selectedDate]);
+
   return (
     <div className="flex flex-col h-full min-h-0">
-      <header className="mb-8 flex items-center justify-between">
+      <header className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold font-title mb-2">Visão Geral</h2>
+          <h2 className="text-3xl font-bold font-title mb-1 md:mb-2">Visão Geral</h2>
           <p className="text-text-secondary">Suas tarefas da semana</p>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-lg font-medium">
+        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto bg-bg-secondary/30 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none">
+          <span className="text-lg font-medium capitalize">
             {format(parseISO(selectedDate), "MMMM 'de' yyyy", { locale: ptBR })}
           </span>
-          <div className="flex bg-bg-secondary rounded-md border border-border-base p-1 gap-1">
+          <div className="flex bg-bg-secondary rounded-md border border-border-base p-1 gap-1 shrink-0">
             <button onClick={() => onNavigate(-7)} className="cursor-pointer p-2 rounded-md text-text-secondary hover:text-white hover:bg-elements-hover transition-colors">
               <ChevronLeft size={20} />
             </button>
@@ -44,14 +52,14 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
         </div>
       </header>
 
-      <div className="flex-1 grid grid-cols-7 gap-4 min-h-0">
+      <div className="flex-1 flex overflow-x-auto gap-4 min-h-0 snap-x snap-mandatory pb-4 hide-scrollbar">
         {weekDays.map(({ dateStr, dayName, dayNumber }) => {
           const isTodayStr = dateStr === format(new Date(), 'yyyy-MM-dd');
           const dayRoutines = routines.filter(r => isTaskDueToday(r, dateStr));
           
           return (
-            <div key={dateStr} className="flex flex-col h-full bg-bg-secondary/30 rounded-xl border border-border-base/50 overflow-hidden">
-              <div className={`p-4 text-center border-b border-border-base/50 ${isTodayStr ? 'bg-elements/50' : ''}`}>
+            <div key={dateStr} id={`cal-day-${dateStr}`} className="flex-shrink-0 w-[280px] md:w-auto md:flex-1 flex flex-col h-full bg-bg-secondary/30 rounded-xl border border-border-base/50 overflow-hidden snap-center">
+              <div className={`p-4 text-center border-b border-border-base/50 shrink-0 ${isTodayStr ? 'bg-elements/50' : ''}`}>
                 <div className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">{dayName}</div>
                 <div className={`text-2xl font-bold font-title ${isTodayStr ? 'text-white' : 'text-white'}`}>{dayNumber}</div>
               </div>

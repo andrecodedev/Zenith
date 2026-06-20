@@ -57,11 +57,11 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
           {status === 'pending' && <Circle size={24} className="text-text-tertiary" />}
         </button>
         
-        <div className="flex-1">
-          <h3 className={`font-medium ${isCompleted ? 'line-through text-text-tertiary' : 'text-white'}`}>
+        <div className="flex-1 min-w-0">
+          <h3 className={`font-medium truncate ${isCompleted ? 'line-through text-text-tertiary' : 'text-white'}`}>
             {routine.title}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className={`text-xs px-2 py-1 rounded-sm inline-block ${getCategoryStyles(category?.color)}`}>
               {category?.name}
             </span>

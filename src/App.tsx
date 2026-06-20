@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
-import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -43,6 +43,16 @@ function App() {
     routine: null,
     dateStr: null
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (currentView === 'dashboard') {
+      setTimeout(() => {
+        const el = document.getElementById(`dash-day-${selectedDate}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }, 100);
+    }
+  }, [selectedDate, currentView]);
 
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden">
@@ -66,7 +76,7 @@ function App() {
             Login
           </button>
         ) : (
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               <button 
                 onClick={() => {
@@ -96,16 +106,81 @@ function App() {
             
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="cursor-pointer bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="hidden md:flex cursor-pointer bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               <Plus size={16} /> Nova Tarefa
+            </button>
+            
+            {/* Mobile menu button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden text-text-secondary hover:text-white transition-colors cursor-pointer"
+            >
+              <Menu size={24} />
             </button>
           </div>
         )}
       </header>
 
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col p-6 md:hidden">
+          <div className="flex justify-end mb-8">
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-text-secondary hover:text-white transition-colors cursor-pointer p-2"
+            >
+              <X size={28} />
+            </button>
+          </div>
+          <nav className="flex flex-col gap-6 text-lg font-medium">
+            <button 
+              onClick={() => {
+                setSelectedDate(today);
+                setCurrentView('dashboard');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-white' : 'text-text-tertiary active:bg-btn-bg active:text-white'}`}
+            >
+              <LayoutDashboard size={24} />
+              Meu Dia
+            </button>
+            <button 
+              onClick={() => {
+                setCurrentView('calendar');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'calendar' ? 'bg-btn-bg text-white' : 'text-text-tertiary active:bg-btn-bg active:text-white'}`}
+            >
+              <Calendar size={24} />
+              Calendário
+            </button>
+            <button 
+              onClick={() => {
+                setIsCourseModalOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+              className="cursor-pointer text-text-tertiary hover:text-white active:bg-btn-bg p-4 rounded-xl transition-colors flex items-center gap-4"
+            >
+              <Sparkles size={24} />
+              Importar Curso
+            </button>
+            
+            <button 
+              onClick={() => {
+                setIsModalOpen(true);
+                setIsMobileMenuOpen(false);
+              }}
+              className="mt-8 cursor-pointer bg-white text-black px-6 py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 w-full"
+            >
+              <Plus size={20} /> Nova Tarefa
+            </button>
+          </nav>
+        </div>
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 min-h-0 w-full pt-32 pb-12 px-6 flex flex-col">
+      <main className="flex-1 min-h-0 w-full pt-28 px-6 flex flex-col">
         <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-3xl' : currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
           
           {currentView === 'hero' ? (
@@ -113,7 +188,7 @@ function App() {
           ) : currentView === 'dashboard' ? (
             <div className="w-full h-full flex flex-col min-h-0">
 
-              <div className="mb-8 flex justify-between items-end">
+              <div className="mb-4 flex justify-between items-end">
                 <div>
                   <h2 className="text-3xl font-bold font-title mb-2">Meu Dia</h2>
                   <p className="text-text-secondary">Você tem {selectedRoutines.length} tarefas neste dia.</p>
@@ -121,22 +196,23 @@ function App() {
               </div>
 
               {/* Weekly Calendar Slider */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-stretch gap-2 mb-4 w-full max-w-full">
                 <button 
                   onClick={() => handleNavigateDays(-1)}
-                  className="p-3 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
+                  className="flex-shrink-0 px-3 md:px-4 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <div className="flex gap-2 overflow-x-auto px-4 hide-scrollbar">
+                <div className="flex-1 flex gap-2 overflow-x-auto snap-x snap-mandatory hide-scrollbar py-1">
                   {weekDays.map(({ dateStr, dayName, dayNumber }) => {
                     const isSelected = dateStr === selectedDate;
                     const isTodayStr = dateStr === today;
                     return (
                       <button
                         key={dateStr}
+                        id={`dash-day-${dateStr}`}
                         onClick={() => setSelectedDate(dateStr)}
-                        className={`cursor-pointer flex flex-col items-center justify-center min-w-[5rem] px-3 py-3 rounded-lg transition-all ${
+                        className={`relative snap-center flex-shrink-0 cursor-pointer flex flex-col items-center justify-center min-w-[4.5rem] md:min-w-[5rem] px-2 py-2 rounded-lg transition-all ${
                           isSelected
                             ? 'bg-elements-hover text-white shadow-md border border-border-gray'
                             : isTodayStr
@@ -149,7 +225,7 @@ function App() {
                         </span>
                         <span className="text-lg font-bold">{dayNumber}</span>
                         {isTodayStr && !isSelected && (
-                          <div className="w-1 h-1 bg-text-tertiary rounded-full mt-1 absolute bottom-2" />
+                          <div className="w-1 h-1 bg-text-tertiary rounded-full absolute bottom-1" />
                         )}
                       </button>
                     );
@@ -157,14 +233,14 @@ function App() {
                 </div>
                 <button 
                   onClick={() => handleNavigateDays(1)}
-                  className="p-3 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
+                  className="flex-shrink-0 px-3 md:px-4 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
                 >
                   <ChevronRight size={20} />
                 </button>
               </div>
 
               {/* Progress Bar */}
-              <div className="bg-bg-secondary rounded-lg p-6 mb-8 border border-border-base">
+              <div className="bg-bg-secondary rounded-lg p-4 mb-6 border border-border-base">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-text-secondary">Progresso diário</span>
                   <span className="font-bold">{progress}%</span>

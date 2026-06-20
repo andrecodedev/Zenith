@@ -22,7 +22,6 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
   const [successData, setSuccessData] = useState<{
     totalLessons: number;
     startDate: string;
-    startDate: string;
     endDate: string;
   } | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
@@ -128,7 +127,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
         if (e.target === e.currentTarget) handleCloseRequest();
       }}
     >
-      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden">
+      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden">
         
         {/* Modal de Confirmação de Saída */}
         {showConfirmClose && (
@@ -170,7 +169,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
           </div>
         )}
 
-        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 sticky top-0 z-10">
+        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 shrink-0 z-10">
           <h2 className="text-xl font-bold font-title flex items-center gap-2 text-white">
             <Sparkles size={20} /> Quebrador de Cursos (IA)
           </h2>
@@ -180,7 +179,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
         </div>
 
         {successData ? (
-          <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
+          <div className="p-8 flex flex-col items-center justify-center text-center space-y-4 overflow-y-auto">
             <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-4">
               <Sparkles size={32} />
             </div>
@@ -209,13 +208,13 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 onClose();
                 setTimeout(() => setSuccessData(null), 300);
               }}
-              className="mt-6 w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-4 font-bold transition-all"
+              className="mt-6 w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-4 font-bold transition-all cursor-pointer"
             >
               Concluir e Voltar ao Calendário
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
               {error}

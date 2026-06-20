@@ -200,7 +200,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         if (e.target === e.currentTarget) handleCloseRequest();
       }}
     >
-      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-md shadow-2xl relative flex flex-col overflow-hidden">
+      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-md max-h-[90vh] shadow-2xl relative flex flex-col overflow-hidden">
         
         {/* Modal de Confirmação de Saída */}
         {showConfirmClose && (
@@ -242,14 +242,14 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           </div>
         )}
 
-        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 rounded-t-2xl">
+        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 rounded-t-2xl shrink-0">
           <h2 className="text-xl font-bold font-title">{initialData ? 'Editar Tarefa / Curso' : 'Nova Tarefa / Curso'}</h2>
           <button onClick={handleCloseRequest} className="text-text-secondary hover:text-white transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">Título da Tarefa</label>
             <input 
