@@ -13,6 +13,8 @@ import { AuthModal } from './components/ui/AuthModal';
 import type { Routine } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { registerServiceWorker, requestNotificationPermission, sendTaskNotification } from './utils/notifications';
+import { Bell } from 'lucide-react';
 
 function App() {
   const { routines, categories, taskInstances } = useStore();
@@ -60,6 +62,26 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    registerServiceWorker();
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
+        const { action, payload } = event.data;
+        const { routineId, dateStr } = payload;
+        
+        if (action === 'completed') {
+          useStore.getState().setTaskStatus(routineId, dateStr, 'completed', 'Concluído via Notificação');
+        } else if (action === 'late') {
+          useStore.getState().setTaskStatus(routineId, dateStr, 'late', 'Adiado via Notificação');
+        }
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', handleMessage);
+  }, []);
 
   const handleNavigateDays = (amount: number) => {
     setSelectedDate(prev => {
@@ -160,6 +182,18 @@ function App() {
               >
                 <Sparkles size={16} />
                 Importar Curso
+              </button>
+              <button 
+                onClick={async () => {
+                  const permitted = await requestNotificationPermission();
+                  if (permitted) {
+                    sendTaskNotification("Teste de Notificação", "Aperte concluir para testar!", routines[0]?.id || 'test', today);
+                  }
+                }}
+                className="cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
+                title="Testar Notificações"
+              >
+                <Bell size={18} />
               </button>
               <button 
                 onClick={() => setIsLightMode(!isLightMode)}
