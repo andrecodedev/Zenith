@@ -74,7 +74,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       <div className="bg-bg-primary w-full max-w-md rounded-2xl border border-border-base shadow-2xl overflow-hidden flex flex-col relative">
         <div className="p-6 border-b border-border-base flex items-center justify-between">
           <h2 className="text-xl font-bold font-title uppercase tracking-wider text-text-primary">
-            {isLogin ? 'Bem-vindo de volta' : 'Criar nova conta'}
+            {isLogin ? 'Bem-vindo(a) de volta' : 'Criar nova conta'}
           </h2>
           <button onClick={onClose} className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors">
             <X size={20} />
