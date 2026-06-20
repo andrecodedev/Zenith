@@ -15,11 +15,13 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 serve(async () => {
   const now = new Date();
-  const hh = String(now.getUTCHours()).padStart(2, '0');
-  const mm = String(now.getUTCMinutes()).padStart(2, '0');
-  const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+  // Convert UTC to America/Sao_Paulo to match times stored in local time by the frontend
+  const local = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  const nowMin = local.getHours() * 60 + local.getMinutes();
+  const hh = String(local.getHours()).padStart(2, '0');
+  const mm = String(local.getMinutes()).padStart(2, '0');
 
-  console.log(`[push] Running at ${hh}:${mm} UTC`);
+  console.log(`[push] Running at ${hh}:${mm} BRT (UTC-3)`);
 
   const { data: routines } = await supabase
     .from('routines')
