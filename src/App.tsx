@@ -9,6 +9,7 @@ import { TaskStatusModal } from './components/ui/TaskStatusModal';
 import { TaskItem } from './components/ui/TaskItem';
 import { CalendarView } from './components/ui/CalendarView';
 import { Hero } from './components/ui/Hero';
+import { AuthModal } from './components/ui/AuthModal';
 import type { Routine } from './types';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [statusModalData, setStatusModalData] = useState<{isOpen: boolean, routine: Routine | null, dateStr: string | null}>({
     isOpen: false,
     routine: null,
@@ -56,42 +58,50 @@ function App() {
           </div>
         </div>
 
-        {/* Navigation & Actions */}
-        <div className="flex items-center gap-8">
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            <button 
-              onClick={() => {
-                setSelectedDate(today);
-                setCurrentView('dashboard');
-              }}
-              className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
-            >
-              <LayoutDashboard size={16} />
-              Meu Dia
-            </button>
-            <button 
-              onClick={() => setCurrentView('calendar')}
-              className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
-            >
-              <Calendar size={16} />
-              Calendário
-            </button>
-            <button 
-              onClick={() => setIsCourseModalOpen(true)}
-              className="cursor-pointer text-text-tertiary hover:text-white transition-colors flex items-center gap-2"
-            >
-              <Sparkles size={16} />
-              Importar Curso
-            </button>
-          </nav>
-          
+        {currentView === 'hero' ? (
           <button 
-            onClick={() => setIsModalOpen(true)}
-            className="cursor-pointer bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
+            onClick={() => setIsAuthModalOpen(true)}
+            className="cursor-pointer text-white hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
           >
-            <Plus size={16} /> Nova Tarefa
+            Login
           </button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+              <button 
+                onClick={() => {
+                  setSelectedDate(today);
+                  setCurrentView('dashboard');
+                }}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+              >
+                <LayoutDashboard size={16} />
+                Meu Dia
+              </button>
+              <button 
+                onClick={() => setCurrentView('calendar')}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+              >
+                <Calendar size={16} />
+                Calendário
+              </button>
+              <button 
+                onClick={() => setIsCourseModalOpen(true)}
+                className="cursor-pointer text-text-tertiary hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Sparkles size={16} />
+                Importar Curso
+              </button>
+            </nav>
+            
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="cursor-pointer bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
+            >
+              <Plus size={16} /> Nova Tarefa
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -99,7 +109,7 @@ function App() {
         <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-3xl' : currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
           
           {currentView === 'hero' ? (
-            <Hero onStart={() => setCurrentView('dashboard')} />
+            <Hero onStart={() => setIsAuthModalOpen(true)} />
           ) : currentView === 'dashboard' ? (
             <div className="w-full h-full flex flex-col min-h-0">
 
@@ -209,6 +219,11 @@ function App() {
         routine={statusModalData.routine}
         dateStr={statusModalData.dateStr}
         onClose={() => setStatusModalData({ isOpen: false, routine: null, dateStr: null })}
+      />
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onSuccess={() => setCurrentView('dashboard')} 
       />
     </div>
   );
