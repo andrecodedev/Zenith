@@ -26,26 +26,51 @@ export function Hero({ onStart }: HeroProps) {
           mouseRadius={0.35}
         />
       </div>
-      
+
       <div className="relative z-10 flex flex-col items-center justify-center h-full w-full text-center max-w-2xl mx-auto px-6 pointer-events-none">
-        
-        <span className="text-text-tertiary uppercase tracking-[0.3em] text-xs font-bold mb-4 drop-shadow-md">
-          Apresentando Zenith
-        </span>
-        
-        <h1 className="text-5xl md:text-7xl font-bold font-title tracking-widest uppercase text-text-primary mb-6 drop-shadow-2xl">
-          Domine o tempo
+
+        {/* Eyebrow */}
+        <div className="flex items-center gap-3 mb-8">
+          <span className="w-10 h-px bg-text-tertiary/60" />
+          <span className="text-text-tertiary uppercase tracking-[0.35em] text-[10px] font-bold drop-shadow-md">
+            Apresentando Zenith
+          </span>
+          <span className="w-10 h-px bg-text-tertiary/60" />
+        </div>
+
+        {/* Headline */}
+        <h1 className="font-bold font-title uppercase text-text-primary drop-shadow-2xl mb-6 leading-none">
+          <span className="block text-5xl md:text-7xl tracking-widest mb-1">Domine</span>
+          <span className="block text-6xl md:text-8xl tracking-[0.2em] text-transparent bg-clip-text bg-linear-to-r from-white via-neutral-300 to-neutral-500">
+            O Tempo
+          </span>
         </h1>
-        
-        <p className="text-lg text-text-secondary mb-12 drop-shadow-md font-light leading-relaxed">
-          Uma plataforma de produtividade premium desenhada para alinhar suas tarefas com o ritmo da sua vida. Planeje, execute e alcance seu potencial máximo.
+
+        {/* Subtitle */}
+        <p className="text-sm md:text-base text-text-secondary mb-10 drop-shadow-md font-light leading-loose tracking-wide max-w-sm">
+          Planeje com precisão. Execute com foco.<br />
+          Alcance o seu potencial máximo.
         </p>
-        
-        <button 
+
+        {/* CTA */}
+        <button
           onClick={onStart}
-          className="group pointer-events-auto cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95">
-          Acessar Plataforma <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
+          className="group pointer-events-auto cursor-pointer border border-white/30 hover:border-white/80 hover:bg-white hover:text-black text-white px-7 py-2.5 text-xs font-bold uppercase tracking-[0.25em] flex items-center gap-3 transition-all duration-500 active:scale-95"
+        >
+          Acessar Plataforma
+          <ArrowRight size={14} className="transition-transform duration-500 group-hover:translate-x-1.5" />
         </button>
+
+        {/* Trust */}
+        <div className="flex items-center gap-5 mt-8 pointer-events-none select-none">
+          {['Organize', 'Execute', 'Evolua'].map((label, i) => (
+            <span key={label} className="flex items-center gap-5">
+              <span className="text-[10px] text-text-tertiary uppercase tracking-widest">{label}</span>
+              {i < 2 && <span className="w-px h-3 bg-text-tertiary/30" />}
+            </span>
+          ))}
+        </div>
+
       </div>
     </>
   );
