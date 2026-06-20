@@ -67,7 +67,8 @@ serve(async () => {
               title: `Hora: ${routine.title}`,
               body: routine.description || 'Não esqueça de marcar como concluída!',
               payload: { routineId: routine.id, dateStr: todayStr },
-            })
+            }),
+            { TTL: 120 }
           );
         } catch (err: any) {
           console.error(`[push] failed for ${sub.endpoint}:`, err.message);
