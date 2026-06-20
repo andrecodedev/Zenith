@@ -20,7 +20,11 @@ interface StoreState {
   appNotifications: import('../types').AppNotification[];
   addNotification: (title: string, message: string, routineId?: string, dateStr?: string) => void;
   markNotificationsAsRead: () => void;
+  toggleNotificationRead: (id: string) => void;
+  setNotificationsRead: (ids: string[], read: boolean) => void;
+  markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
+  deleteNotificationsByIds: (ids: string[]) => void;
 }
 
 const getUserId = async () => {
@@ -384,9 +388,47 @@ export const useStore = create<StoreState>((set, get) => ({
     });
   },
 
+  toggleNotificationRead: (id) => {
+    set(state => {
+      const updated = state.appNotifications.map(n =>
+        n.id === id ? { ...n, read: !n.read } : n
+      );
+      localStorage.setItem('app_notifications', JSON.stringify(updated));
+      return { appNotifications: updated };
+    });
+  },
+
   clearNotifications: () => {
     localStorage.setItem('app_notifications', '[]');
     set({ appNotifications: [] });
+  },
+
+  deleteNotificationsByIds: (ids) => {
+    set(state => {
+      const updated = state.appNotifications.filter(n => !ids.includes(n.id));
+      localStorage.setItem('app_notifications', JSON.stringify(updated));
+      return { appNotifications: updated };
+    });
+  },
+
+  setNotificationsRead: (ids, read) => {
+    set(state => {
+      const updated = state.appNotifications.map(n =>
+        ids.includes(n.id) ? { ...n, read } : n
+      );
+      localStorage.setItem('app_notifications', JSON.stringify(updated));
+      return { appNotifications: updated };
+    });
+  },
+
+  markNotificationRead: (id) => {
+    set(state => {
+      const updated = state.appNotifications.map(n =>
+        n.id === id ? { ...n, read: true } : n
+      );
+      localStorage.setItem('app_notifications', JSON.stringify(updated));
+      return { appNotifications: updated };
+    });
   },
 
 }));

@@ -103,7 +103,9 @@ function App() {
           
           useStore.getState().addNotification(
             `Lembrete: ${routine.title}`,
-            routine.description || "Chegou a hora de executar esta tarefa!"
+            routine.description || "Chegou a hora de executar esta tarefa!",
+            routine.id,
+            currentDateStr
           );
           
           notifiedTasks.current.add(instanceId);
@@ -166,7 +168,7 @@ function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
 
-  const unreadCount = useStore(state => state.appNotifications.length);
+  const unreadCount = useStore(state => state.appNotifications.filter(n => !n.read).length);
 
   useEffect(() => {
     if (currentView === 'dashboard') {
@@ -509,6 +511,15 @@ function App() {
         onClose={() => setIsNotificationCenterOpen(false)}
         notificationsEnabled={notificationsEnabled}
         setNotificationsEnabled={setNotificationsEnabled}
+        onTaskClick={(routineId, dateStr) => {
+          setIsNotificationCenterOpen(false);
+          setCurrentView('dashboard');
+          setSelectedDate(dateStr);
+          const routine = useStore.getState().routines.find(r => r.id === routineId);
+          if (routine) {
+            setStatusModalData({ isOpen: true, routine, dateStr });
+          }
+        }}
       />
       
       {showLogoutConfirm && (
