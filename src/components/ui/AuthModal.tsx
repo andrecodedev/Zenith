@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, Loader2 } from 'lucide-react';
+import { X, Mail, Lock, Loader2, FlaskConical } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -13,9 +16,29 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleDemo = async () => {
+    if (!DEMO_EMAIL || !DEMO_PASSWORD) return;
+    setDemoLoading(true);
+    setError(null);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+      if (signInError) throw signInError;
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError('Modo demo indisponível no momento.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,14 +129,39 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <div className="text-center mt-4">
             <span className="text-sm text-text-tertiary">
               Não tem uma conta?{' '}
-              <a 
-                href="mailto:contato.andrecodedev@gmail.com?subject=Solicitação de Acesso - Zenith" 
+              <a
+                href="mailto:contato.andrecodedev@gmail.com?subject=Solicitação de Acesso - Zenith"
                 className="text-text-primary hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
               >
                 Solicite acesso
               </a>
             </span>
           </div>
+
+          {DEMO_EMAIL && DEMO_PASSWORD && (
+            <>
+              <div className="flex items-center gap-3 my-1">
+                <span className="flex-1 h-px bg-border-base" />
+                <span className="text-xs text-text-tertiary">ou</span>
+                <span className="flex-1 h-px bg-border-base" />
+              </div>
+              <button
+                type="button"
+                onClick={handleDemo}
+                disabled={demoLoading}
+                className="w-full flex items-center justify-center gap-2 border border-border-gray hover:border-border-gray/80 hover:bg-elements text-text-secondary hover:text-text-primary py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
+              >
+                {demoLoading
+                  ? <Loader2 size={16} className="animate-spin" />
+                  : <FlaskConical size={16} />
+                }
+                Explorar sem conta
+              </button>
+              <p className="text-center text-[11px] text-text-tertiary leading-snug -mt-1">
+                Ambiente de demonstração — dados resetados periodicamente
+              </p>
+            </>
+          )}
         </form>
       </div>
     </div>
