@@ -40,8 +40,10 @@ export async function sendTaskNotification(title: string, body: string, routineI
         dateStr
       },
       actions: [
-        { action: 'completed', title: '✅ Concluir' },
-        { action: 'late', title: '⏰ Adiar' }
+        { action: 'completed', title: 'Concluir' },
+        { action: 'in_progress', title: 'Em Andamento' },
+        { action: 'late', title: 'Atrasado' },
+        { action: 'canceled', title: 'Cancelar' }
       ]
     } as any);
   }

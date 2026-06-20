@@ -16,6 +16,11 @@ interface StoreState {
   setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string) => Promise<void>;
   setTaskStatusForAll: (routineId: string, status: TaskStatus | undefined, note?: string) => Promise<void>;
   updateTaskNote: (routineId: string, date: string, status: import('../types').TaskStatus, note: string) => Promise<void>;
+  
+  appNotifications: import('../types').AppNotification[];
+  addNotification: (title: string, message: string, routineId?: string, dateStr?: string) => void;
+  markNotificationsAsRead: () => void;
+  clearNotifications: () => void;
 }
 
 const getUserId = async () => {
@@ -28,6 +33,7 @@ export const useStore = create<StoreState>((set, get) => ({
   categories: [],
   routines: [],
   taskInstances: [],
+  appNotifications: JSON.parse(localStorage.getItem('app_notifications') || '[]'),
 
   fetchData: async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -257,6 +263,23 @@ export const useStore = create<StoreState>((set, get) => ({
     }
 
     await syncTaskInstance(newTaskInstance, userId);
+    
+    const statusLabels: Record<string, string> = {
+      'pending': 'Pendente',
+      'in_progress': 'Em Progresso',
+      'completed': 'Concluída',
+      'late': 'Atrasada',
+      'canceled': 'Cancelada'
+    };
+    
+    const label = status ? statusLabels[status] || status : 'Automático';
+    
+    get().addNotification(
+      'Status Alterado', 
+      `A tarefa mudou para o status: ${label}.`,
+      routineId,
+      date
+    );
   },
 
   setTaskStatusForAll: async (routineId, status, note) => {
@@ -335,6 +358,36 @@ export const useStore = create<StoreState>((set, get) => ({
     }
 
     await syncTaskInstance(newTaskInstance, userId);
+  },
+
+  addNotification: (title, message, routineId, dateStr) => {
+    set(state => {
+      const newNotif = {
+        id: crypto.randomUUID(),
+        title,
+        message,
+        read: false,
+        timestamp: Date.now(),
+        routineId,
+        dateStr
+      };
+      const updated = [newNotif, ...state.appNotifications].slice(0, 50); // Keep last 50
+      localStorage.setItem('app_notifications', JSON.stringify(updated));
+      return { appNotifications: updated };
+    });
+  },
+
+  markNotificationsAsRead: () => {
+    set(state => {
+      const updated = state.appNotifications.map(n => ({ ...n, read: true }));
+      localStorage.setItem('app_notifications', JSON.stringify(updated));
+      return { appNotifications: updated };
+    });
+  },
+
+  clearNotifications: () => {
+    localStorage.setItem('app_notifications', '[]');
+    set({ appNotifications: [] });
   },
 
 }));

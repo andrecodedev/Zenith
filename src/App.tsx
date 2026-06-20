@@ -10,6 +10,7 @@ import { TaskItem } from './components/ui/TaskItem';
 import { CalendarView } from './components/ui/CalendarView';
 import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
+import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
 import type { Routine } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -26,6 +27,10 @@ function App() {
 
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('theme') === 'light';
+  });
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('notifications_enabled') !== 'false';
   });
 
   useEffect(() => {
@@ -67,12 +72,22 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      if (!notificationsEnabled) return;
+
       const now = new Date();
-      const currentTime = format(now, 'HH:mm');
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
       const currentDateStr = getTodayStr();
       
       routines.forEach(routine => {
-        if (isTaskDueToday(routine, currentDateStr) && routine.time === currentTime) {
+        if (!routine.time) return;
+        
+        const [hours, minutes] = routine.time.split(':').map(Number);
+        const taskMinutes = hours * 60 + minutes;
+        
+        // Verifica se a hora atual passou da hora da tarefa (margem de 5 minutos)
+        const isTimeMatch = currentMinutes >= taskMinutes && currentMinutes <= taskMinutes + 5;
+
+        if (isTaskDueToday(routine, currentDateStr) && isTimeMatch) {
           const instanceId = `${routine.id}_${currentDateStr}`;
           const instance = taskInstances.find(t => t.id === instanceId);
           
@@ -85,13 +100,19 @@ function App() {
             routine.id,
             currentDateStr
           );
+          
+          useStore.getState().addNotification(
+            `Lembrete: ${routine.title}`,
+            routine.description || "Chegou a hora de executar esta tarefa!"
+          );
+          
           notifiedTasks.current.add(instanceId);
         }
       });
-    }, 10000); // Check every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
-  }, [routines, taskInstances]);
+  }, [routines, taskInstances, notificationsEnabled]);
 
   useEffect(() => {
     registerServiceWorker();
@@ -103,8 +124,12 @@ function App() {
         
         if (action === 'completed') {
           useStore.getState().setTaskStatus(routineId, dateStr, 'completed', 'Concluído via Notificação');
+        } else if (action === 'in_progress') {
+          useStore.getState().setTaskStatus(routineId, dateStr, 'in_progress', 'Em andamento via Notificação');
         } else if (action === 'late') {
-          useStore.getState().setTaskStatus(routineId, dateStr, 'late', 'Adiado via Notificação');
+          useStore.getState().setTaskStatus(routineId, dateStr, 'late', 'Atrasado via Notificação');
+        } else if (action === 'canceled') {
+          useStore.getState().setTaskStatus(routineId, dateStr, 'canceled', 'Cancelado via Notificação');
         }
       }
     };
@@ -139,6 +164,9 @@ function App() {
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+
+  const unreadCount = useStore(state => state.appNotifications.filter(n => !n.read).length);
 
   useEffect(() => {
     if (currentView === 'dashboard') {
@@ -215,16 +243,17 @@ function App() {
                 Importar Curso
               </button>
               <button 
-                onClick={async () => {
-                  const permitted = await requestNotificationPermission();
-                  if (permitted) {
-                    sendTaskNotification("Teste de Notificação", "Aperte concluir para testar!", routines[0]?.id || 'test', today);
-                  }
+                onClick={() => {
+                  useStore.getState().markNotificationsAsRead();
+                  setIsNotificationCenterOpen(true);
                 }}
-                className="cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
-                title="Testar Notificações"
+                className="relative cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
+                title="Central de Notificações"
               >
-                <Bell size={18} />
+                <Bell size={18} className={unreadCount > 0 ? "animate-bell-ring" : ""} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-bg-primary"></span>
+                )}
               </button>
               <button 
                 onClick={() => setIsLightMode(!isLightMode)}
@@ -235,7 +264,10 @@ function App() {
             </nav>
             
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={async () => {
+                await requestNotificationPermission();
+                setIsModalOpen(true);
+              }}
               className="hidden md:flex cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-5 py-2 rounded-xl text-sm font-bold items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               <Plus size={16} /> Nova Tarefa
@@ -243,6 +275,19 @@ function App() {
             
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-4">
+              <button 
+                onClick={() => {
+                  useStore.getState().markNotificationsAsRead();
+                  setIsNotificationCenterOpen(true);
+                }}
+                className="relative cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
+                title="Central de Notificações"
+              >
+                <Bell size={20} className={unreadCount > 0 ? "animate-bell-ring" : ""} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-bg-primary"></span>
+                )}
+              </button>
               <button 
                 onClick={() => setIsLightMode(!isLightMode)}
                 className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
@@ -304,8 +349,11 @@ function App() {
               Importar Curso
             </button>
             
+
+            
             <button 
-              onClick={() => {
+              onClick={async () => {
+                await requestNotificationPermission();
                 setIsModalOpen(true);
                 setIsMobileMenuOpen(false);
               }}
@@ -456,6 +504,13 @@ function App() {
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
         onSuccess={() => setCurrentView('dashboard')} 
+      />
+
+      <NotificationCenterModal
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        notificationsEnabled={notificationsEnabled}
+        setNotificationsEnabled={setNotificationsEnabled}
       />
       
       {showLogoutConfirm && (

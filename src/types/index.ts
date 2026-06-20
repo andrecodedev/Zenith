@@ -35,3 +35,13 @@ export interface TaskInstance {
   notes?: Partial<Record<TaskStatus, string>>;
   completedAt?: number;
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  timestamp: number;
+  routineId?: string;
+  dateStr?: string;
+}
