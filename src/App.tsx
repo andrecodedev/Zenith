@@ -1,14 +1,17 @@
-import React, { useState, useRef } from 'react';
+import { useState } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
+import { TaskStatusModal } from './components/ui/TaskStatusModal';
+import { TaskItem } from './components/ui/TaskItem';
 import { CalendarView } from './components/ui/CalendarView';
+import type { Routine } from './types';
 
 function App() {
-  const { routines, categories, taskInstances, toggleTask } = useStore();
+  const { routines, categories, taskInstances, cycleTaskStatus } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentView, setCurrentView] = useState<'dashboard' | 'calendar'>('dashboard');
@@ -32,75 +35,73 @@ function App() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [statusModalData, setStatusModalData] = useState<{isOpen: boolean, routine: Routine | null, dateStr: string | null}>({
+    isOpen: false,
+    routine: null,
+    dateStr: null
+  });
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex">
-      {/* Sidebar Simples */}
-      <aside className="w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+    <div className="h-screen w-full flex flex-col relative overflow-hidden">
+      {/* Floating Header */}
+      <header className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl bg-glass border border-border-base rounded-2xl px-6 py-4 flex items-center justify-between shadow-2xl z-50 backdrop-blur-md">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-text-tertiary text-bg-primary flex items-center justify-center">
             <Calendar size={18} />
           </div>
-          <h1 className="text-xl font-bold">Rotina.dev</h1>
+          <h1 className="text-xl font-bold font-title tracking-wide text-white">Rotina.dev</h1>
         </div>
-        
-        <nav className="flex-1 space-y-2">
-          <button 
-            onClick={() => {
-              setSelectedDate(today);
-              setCurrentView('dashboard');
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              currentView === 'dashboard' 
-                ? 'bg-neutral-800 text-white' 
-                : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
-            }`}
-          >
-            <LayoutDashboard size={18} className={currentView === 'dashboard' ? "text-indigo-400" : ""} />
-            Meu Dia
-          </button>
+
+        {/* Navigation & Actions */}
+        <div className="flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+            <button 
+              onClick={() => {
+                setSelectedDate(today);
+                setCurrentView('dashboard');
+              }}
+              className={`transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+            >
+              <LayoutDashboard size={16} />
+              Meu Dia
+            </button>
+            <button 
+              onClick={() => setCurrentView('calendar')}
+              className={`transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-white' : 'text-text-tertiary hover:text-white'}`}
+            >
+              <Calendar size={16} />
+              Calendário
+            </button>
+            <button 
+              onClick={() => setIsCourseModalOpen(true)}
+              className="text-text-tertiary hover:text-white transition-colors flex items-center gap-2"
+            >
+              <Sparkles size={16} />
+              Importar Curso
+            </button>
+          </nav>
           
           <button 
-            onClick={() => setCurrentView('calendar')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              currentView === 'calendar' 
-                ? 'bg-neutral-800 text-white' 
-                : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
-            }`}
+            onClick={() => setIsModalOpen(true)}
+            className="bg-white hover:bg-neutral-200 text-black px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-xl active:scale-95"
           >
-            <Calendar size={18} className={currentView === 'calendar' ? "text-indigo-400" : ""} />
-            Calendário Semanal
+            <Plus size={16} /> Nova Tarefa
           </button>
-        </nav>
-      </aside>
+        </div>
+      </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-hidden flex flex-col h-screen">
-        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-4xl' : 'max-w-full'}`}>
+      <main className="flex-1 w-full max-w-4xl mx-auto pt-32 pb-12 px-6 flex flex-col">
+        <div className={`w-full flex-1 flex flex-col min-h-0 ${currentView === 'dashboard' ? 'max-w-3xl mx-auto' : 'max-w-full'}`}>
           
           {currentView === 'dashboard' ? (
-            <div className="max-w-3xl mx-auto w-full pb-12 overflow-y-auto hide-scrollbar">
-              <header className="mb-8 flex justify-end">
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => setIsCourseModalOpen(true)}
-                    className="bg-neutral-800 hover:bg-neutral-700 text-indigo-400 px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors border border-neutral-700"
-                  >
-                    <Sparkles size={18} /> Importar Curso
-                  </button>
-                  <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                  >
-                    <Plus size={18} /> Nova Tarefa
-                  </button>
-                </div>
-              </header>
+            <div className="w-full h-full flex flex-col min-h-0">
 
               <div className="mb-8 flex justify-between items-end">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">Meu Dia</h2>
-                  <p className="text-neutral-400">Você tem {selectedRoutines.length} tarefas neste dia.</p>
+                  <h2 className="text-3xl font-bold font-title mb-2">Meu Dia</h2>
+                  <p className="text-text-secondary">Você tem {selectedRoutines.length} tarefas neste dia.</p>
                 </div>
               </div>
 
@@ -108,9 +109,9 @@ function App() {
               <div className="flex items-center justify-between mb-8">
                 <button 
                   onClick={() => handleNavigateDays(-1)}
-                  className="text-neutral-500 hover:text-white transition-colors p-2"
+                  className="p-3 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={20} />
                 </button>
                 <div className="flex gap-2 overflow-x-auto px-4 hide-scrollbar">
                   {weekDays.map(({ dateStr, dayName, dayNumber }) => {
@@ -120,12 +121,12 @@ function App() {
                       <button
                         key={dateStr}
                         onClick={() => setSelectedDate(dateStr)}
-                        className={`flex flex-col items-center justify-center min-w-[4rem] py-3 rounded-xl transition-all ${
+                        className={`flex flex-col items-center justify-center min-w-[5rem] px-3 py-3 rounded-lg transition-all ${
                           isSelected
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                            ? 'bg-elements-hover text-white shadow-md border border-border-gray'
                             : isTodayStr
-                            ? 'bg-neutral-800 text-white border border-neutral-700'
-                            : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
+                            ? 'bg-elements text-white border border-border-gray'
+                            : 'bg-bg-secondary text-text-secondary hover:bg-elements'
                         }`}
                       >
                         <span className="text-xs uppercase font-medium tracking-wider mb-1">
@@ -133,7 +134,7 @@ function App() {
                         </span>
                         <span className="text-lg font-bold">{dayNumber}</span>
                         {isTodayStr && !isSelected && (
-                          <div className="w-1 h-1 bg-indigo-500 rounded-full mt-1 absolute bottom-2" />
+                          <div className="w-1 h-1 bg-text-tertiary rounded-full mt-1 absolute bottom-2" />
                         )}
                       </button>
                     );
@@ -141,60 +142,46 @@ function App() {
                 </div>
                 <button 
                   onClick={() => handleNavigateDays(1)}
-                  className="text-neutral-500 hover:text-white transition-colors p-2"
+                  className="p-3 bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-secondary hover:text-white rounded-lg transition-colors cursor-pointer border border-border-base flex items-center justify-center"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={20} />
                 </button>
               </div>
 
               {/* Progress Bar */}
-              <div className="bg-neutral-900 rounded-xl p-6 mb-8 border border-neutral-800">
+              <div className="bg-bg-secondary rounded-lg p-6 mb-8 border border-border-base">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-neutral-400">Progresso diário</span>
+                  <span className="text-text-secondary">Progresso diário</span>
                   <span className="font-bold">{progress}%</span>
                 </div>
-                <div className="h-3 bg-neutral-950 rounded-full overflow-hidden">
+                <div className="h-3 bg-bg-primary rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-indigo-500 transition-all duration-500 ease-out"
+                    className="h-full bg-text-tertiary transition-all duration-500 ease-out"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
               </div>
 
               {/* Task List */}
-              <div className="space-y-3">
+              <div className="space-y-3 flex-1 overflow-y-auto pb-12">
                 {selectedRoutines.length === 0 ? (
-                  <div className="text-center py-12 text-neutral-500 bg-neutral-900/50 rounded-xl border border-neutral-800 border-dashed">
+                  <div className="text-center py-12 text-text-tertiary bg-bg-secondary/50 rounded-lg border border-border-base border-dashed">
                     Nenhuma tarefa para este dia. Crie uma para começar!
                   </div>
                 ) : (
                   selectedRoutines.map(routine => {
                     const category = categories.find(c => c.id === routine.categoryId);
-                    const isCompleted = taskInstances.find(t => t.routineId === routine.id && t.date === selectedDate)?.completed;
+                    const instance = taskInstances.find(t => t.routineId === routine.id && t.date === selectedDate);
 
                     return (
-                      <div 
+                      <TaskItem 
                         key={routine.id}
-                        onClick={() => toggleTask(routine.id, selectedDate)}
-                        className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
-                          isCompleted 
-                            ? 'bg-neutral-900/50 border-neutral-800 opacity-60' 
-                            : 'bg-neutral-900 border-neutral-700 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10'
-                        }`}
-                      >
-                        <button className={`flex-shrink-0 transition-colors ${isCompleted ? 'text-indigo-500' : 'text-neutral-500'}`}>
-                          {isCompleted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                        </button>
-                        
-                        <div className="flex-1">
-                          <h3 className={`font-medium ${isCompleted ? 'line-through text-neutral-500' : 'text-white'}`}>
-                            {routine.title}
-                          </h3>
-                          <span className={`text-xs px-2 py-1 rounded-md mt-1 inline-block ${category?.color} bg-opacity-20 text-white/80`}>
-                            {category?.name}
-                          </span>
-                        </div>
-                      </div>
+                        routine={routine}
+                        category={category}
+                        dateStr={selectedDate}
+                        taskInstance={instance}
+                        onToggle={() => setStatusModalData({ isOpen: true, routine, dateStr: selectedDate })}
+                      />
                     );
                   })
                 )}
@@ -212,6 +199,12 @@ function App() {
 
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <CourseBreakerModal isOpen={isCourseModalOpen} onClose={() => setIsCourseModalOpen(false)} />
+      <TaskStatusModal 
+        isOpen={statusModalData.isOpen} 
+        routine={statusModalData.routine}
+        dateStr={statusModalData.dateStr}
+        onClose={() => setStatusModalData({ isOpen: false, routine: null, dateStr: null })}
+      />
     </div>
   );
 }

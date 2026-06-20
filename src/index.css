@@ -1,1 +1,162 @@
 @import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #1f1f1f;
+  --color-bg-tertiary: #ffffff;
+  --color-elements: #333333;
+  --color-elements-hover: #555555;
+  --color-glass: #1f1f1f97;
+  --color-menu: #121212;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e0e0e0;
+  --color-text-tertiary: #a0a0a0;
+
+  --color-btn-bg: #ffffff1a;
+  --color-btn-hover: #363636;
+  --color-btn-active: #1d1d1d;
+
+  --color-border-base: #282828a0;
+  --color-border-gray: #636363;
+  --color-grid-bg: #ffffff1a;
+
+  --color-feedback-error: #ff4d4d;
+  --color-feedback-error-hover: #ff3333;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-title: "Barlow Condensed", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  :root {
+    --bg-primary: #121212;
+    --bg-secondary: #1f1f1f;
+    --bg-terceiro: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-terceiro: #a0a0a0;
+  }
+  
+  .light-theme {
+    --bg-primary: #f5f5f5;
+    --bg-secondary: #ffffff;
+    --bg-terceiro: #e0e0e0;
+    --text-primary: #333333;
+    --text-secondary: #555555;
+    --text-terceiro: #535353;
+  }
+  
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6, .section-title {
+    font-family: var(--font-title);
+    line-height: 1.2;
+    padding-bottom: 0.15em;
+  }
+}
+
+@layer utilities {
+  .bg-glass {
+    background-color: var(--color-glass);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .light-theme .bg-glass {
+    background-color: #ffffff9d;
+  }
+
+  .grid-bg {
+    background-size: 24px 24px;
+    background-image: linear-gradient(to right, var(--color-grid-bg) 1px, transparent 1px),
+                      linear-gradient(to bottom, var(--color-grid-bg) 1px, transparent 1px);
+    animation: moveGrid 10s linear infinite;
+  }
+
+  @keyframes moveGrid {
+    0% { background-position: 0 0; }
+    100% { background-position: 24px 24px; }
+  }
+
+  .active-premium {
+    position: relative;
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.1);
+  }
+  
+  .active-premium::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.5), transparent);
+    animation: rotate-glow 6s linear infinite;
+    z-index: -1;
+    border-radius: inherit;
+  }
+  
+  @keyframes rotate-glow {
+    100% { transform: rotate(360deg); }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .blink {
+    animation: blink 1s step-end infinite;
+  }
+  
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+}
+
+/* Custom Scrollbar Global */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626; /* neutral-800 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #404040; /* neutral-700 */
+}
+
+/* Utilitário para esconder quando necessário */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Remover setinhas do input type number */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}

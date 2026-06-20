@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Loader2, Plus, Minus } from 'lucide-react';
 import { parseCourseWithGemini } from '../../utils/ai';
 import { addDays, format } from 'date-fns';
 
@@ -11,13 +11,21 @@ interface CourseBreakerModalProps {
 
 export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps) {
   const { categories, addRoutine } = useStore();
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const [apiKey, setApiKey] = useState(() => envKey || localStorage.getItem('gemini_api_key') || '');
   const [syllabus, setSyllabus] = useState('');
   const [courseName, setCourseName] = useState('');
   const [studyDays, setStudyDays] = useState<number[]>([1, 2, 3, 4, 5]); // Seg a Sex
   const [lessonsPerDay, setLessonsPerDay] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successData, setSuccessData] = useState<{
+    totalLessons: number;
+    startDate: string;
+    startDate: string;
+    endDate: string;
+  } | null>(null);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
 
   if (!isOpen) return null;
 
@@ -61,7 +69,11 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
         lessonsScheduledToday++;
       }
 
-      onClose();
+      setSuccessData({
+        totalLessons: lessons.length,
+        startDate: format(new Date(), 'dd/MM/yyyy'),
+        endDate: format(currentDate, 'dd/MM/yyyy')
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -81,76 +93,188 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
 
   const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+  const handleCloseRequest = () => {
+    // Se não gerou sucesso e tem algo digitado
+    if (!successData && (courseName.trim() || syllabus.trim())) {
+      setShowConfirmClose(true);
+    } else {
+      handleDiscardAndClose();
+    }
+  };
+
+  const handleDiscardAndClose = () => {
+    setCourseName('');
+    setSyllabus('');
+    setShowConfirmClose(false);
+    onClose();
+    setTimeout(() => setSuccessData(null), 300);
+  };
+
+  const handleKeepCacheAndClose = () => {
+    setShowConfirmClose(false);
+    onClose();
+  };
+
+  const handleSaveFromConfirm = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowConfirmClose(false);
+    handleSubmit(e as unknown as React.FormEvent);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl hide-scrollbar">
-        <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/50 sticky top-0 z-10">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-indigo-400">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) handleCloseRequest();
+      }}
+    >
+      <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative overflow-hidden">
+        
+        {/* Modal de Confirmação de Saída */}
+        {showConfirmClose && (
+          <div className="absolute inset-0 bg-bg-secondary/95 backdrop-blur-md z-50 flex items-center justify-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="max-w-sm w-full space-y-6">
+              <div>
+                <h3 className="text-xl font-bold font-title text-white mb-2">Alterações não salvas</h3>
+                <p className="text-sm text-text-secondary">Você tem um curso sendo planejado. O que deseja fazer antes de fechar?</p>
+              </div>
+              
+              <div className="space-y-3">
+                <button 
+                  onClick={() => setShowConfirmClose(false)}
+                  className="w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                >
+                  Voltar e continuar editando
+                </button>
+                <button 
+                  onClick={handleSaveFromConfirm}
+                  disabled={!apiKey || !syllabus.trim() || !courseName.trim() || studyDays.length === 0}
+                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-white rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                >
+                  Quebrar e Agendar
+                </button>
+                <button 
+                  onClick={handleKeepCacheAndClose}
+                  className="w-full bg-bg-secondary border border-border-gray hover:border-neutral-500 text-text-secondary rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                >
+                  Deixar em cache (Rascunho)
+                </button>
+                <button 
+                  onClick={handleDiscardAndClose}
+                  className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg py-3 font-medium transition-colors cursor-pointer"
+                >
+                  Descartar tudo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 sticky top-0 z-10">
+          <h2 className="text-xl font-bold font-title flex items-center gap-2 text-white">
             <Sparkles size={20} /> Quebrador de Cursos (IA)
           </h2>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors">
+          <button onClick={handleCloseRequest} className="text-text-secondary hover:text-white transition-colors cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {successData ? (
+          <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-4">
+              <Sparkles size={32} />
+            </div>
+            <h3 className="text-2xl font-bold font-title text-white">Pronto! Curso Quebrado.</h3>
+            <p className="text-text-secondary max-w-md">
+              A Inteligência Artificial triturou sua ementa e agendou <strong className="text-white">{successData.totalLessons} aulas</strong> de forma inteligente nos seus dias de estudo.
+            </p>
+            
+            <div className="bg-bg-primary border border-border-base rounded-lg p-4 w-full mt-4 text-sm text-left">
+              <div className="flex justify-between border-b border-border-base pb-2 mb-2">
+                <span className="text-text-tertiary">Curso:</span>
+                <span className="font-medium text-text-primary">{courseName}</span>
+              </div>
+              <div className="flex justify-between border-b border-border-base pb-2 mb-2">
+                <span className="text-text-tertiary">Início:</span>
+                <span className="font-medium text-text-primary">{successData.startDate}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-tertiary">Término previsto:</span>
+                <span className="font-medium text-text-primary">{successData.endDate}</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                onClose();
+                setTimeout(() => setSuccessData(null), 300);
+              }}
+              className="mt-6 w-full bg-elements hover:bg-elements-hover text-white rounded-lg py-4 font-bold transition-all"
+            >
+              Concluir e Voltar ao Calendário
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Nome do Curso</label>
+            <div className={envKey ? "col-span-2" : ""}>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Nome do Curso</label>
               <input 
                 type="text" 
                 value={courseName}
                 onChange={e => setCourseName(e.target.value)}
                 placeholder="Ex: React Avançado"
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all"
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray transition-all"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Chave da API Gemini</label>
+            {!envKey && (
+              <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Chave da API Gemini</label>
               <input 
                 type="password" 
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all"
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray transition-all"
                 required
               />
-              <p className="text-xs text-neutral-500 mt-1">Fica salva só no seu navegador.</p>
+              <p className="text-xs text-text-tertiary mt-1">Fica salva só no seu navegador.</p>
             </div>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-2">Ementa do Curso (Cole tudo aqui)</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Ementa do Curso (Cole tudo aqui)</label>
             <textarea 
               value={syllabus}
               onChange={e => setSyllabus(e.target.value)}
               placeholder="Módulo 1&#10;Aula 1 - Intro&#10;Aula 2 - Setup..."
               rows={6}
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all resize-none"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-white focus:outline-none focus:border-border-gray transition-all resize-none"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Dias de Estudo</label>
-              <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row justify-between gap-6">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-text-secondary mb-2">Dias de Estudo</label>
+              <div className="flex flex-nowrap gap-2">
                 {daysOfWeek.map((day, idx) => (
                   <button
                     key={day}
                     type="button"
                     onClick={() => toggleDay(idx)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 min-w-[36px] h-10 rounded-md text-sm font-medium transition-all ${
                       studyDays.includes(idx)
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-neutral-950 text-neutral-500 hover:bg-neutral-800 border border-neutral-800'
+                        ? 'bg-btn-bg text-white'
+                        : 'bg-bg-primary text-text-tertiary hover:bg-elements border border-border-base'
                     }`}
                   >
                     {day}
@@ -160,16 +284,26 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Aulas por dia</label>
-              <input 
-                type="number" 
-                min="1"
-                max="10"
-                value={lessonsPerDay}
-                onChange={e => setLessonsPerDay(Number(e.target.value))}
-                className="w-24 bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all"
-                required
-              />
+              <label className="block text-sm font-medium text-text-secondary mb-2">Aulas por dia</label>
+              <div className="flex items-center justify-between bg-bg-primary border border-border-base rounded-lg p-1 w-[120px]">
+                <button
+                  type="button"
+                  onClick={() => setLessonsPerDay(Math.max(1, lessonsPerDay - 1))}
+                  className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:text-white hover:bg-elements transition-colors"
+                >
+                  <Minus size={18} />
+                </button>
+                <div className="text-center text-lg font-bold text-white flex-1">
+                  {lessonsPerDay}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLessonsPerDay(Math.min(10, lessonsPerDay + 1))}
+                  className="w-10 h-10 flex items-center justify-center rounded-md text-text-secondary hover:text-white hover:bg-elements transition-colors"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -177,7 +311,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             <button 
               type="submit"
               disabled={isLoading || !courseName || !syllabus || !apiKey || studyDays.length === 0}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl py-4 font-bold transition-all flex items-center justify-center gap-2"
+              className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-4 font-bold transition-all flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <><Loader2 className="animate-spin" size={20} /> Processando com IA...</>
@@ -187,6 +321,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

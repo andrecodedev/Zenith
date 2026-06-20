@@ -11,7 +11,7 @@ ${syllabus}
   `;
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: {
@@ -27,7 +27,9 @@ ${syllabus}
   );
 
   if (!response.ok) {
-    throw new Error('Falha ao comunicar com a API do Gemini. Verifique sua chave.');
+    const errorBody = await response.text();
+    console.error("Gemini API Error:", response.status, errorBody);
+    throw new Error(`Falha na API (Status ${response.status}). Verifique sua chave ou olhe o Console (F12).`);
   }
 
   const data = await response.json();
