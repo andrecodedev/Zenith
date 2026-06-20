@@ -88,38 +88,34 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
         <div>
           <h2 className="text-3xl font-bold font-title mb-1">{getTitle()}</h2>
           <div className="relative inline-block mt-1">
-            {onSelectDate && (
-              <input 
-                type="month"
-                value={selectedDate.slice(0, 7)}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    onSelectDate(`${e.target.value}-01`);
-                  }
-                }}
-                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10 [color-scheme:dark] [html.light_&]:[color-scheme:light]"
-              />
-            )}
+            <input 
+              type="month"
+              value={selectedDate.slice(0, 7)}
+              onChange={(e) => {
+                if (e.target.value) {
+                  onSelectDate(`${e.target.value}-01`);
+                }
+              }}
+              className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10 [color-scheme:dark] [html.light_&]:[color-scheme:light]"
+            />
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-elements text-text-secondary hover:text-text-primary hover:bg-elements-hover transition-all cursor-pointer border border-border-gray">
               <Calendar size={16} />
               <span className="capitalize text-sm font-medium">
                 {format(parseISO(selectedDate), "MMMM 'de' yyyy", { locale: ptBR })}
               </span>
-              {onSelectDate && <ChevronDown size={14} className="opacity-70 ml-1" />}
+              <ChevronDown size={14} className="opacity-70 ml-1" />
             </div>
           </div>
         </div>
         <div className="flex items-center bg-bg-secondary rounded-md border border-border-base p-1 gap-1 shrink-0 h-[42px]">
-          {onSelectDate && (
-            <div className="relative border-r border-border-base/50 mr-1 pr-1 h-full flex items-center">
-              <button 
-                onClick={() => onSelectDate(format(new Date(), 'yyyy-MM-dd'))}
-                className="bg-transparent hover:bg-elements text-text-primary px-3 py-1.5 rounded-md text-sm font-bold transition-all cursor-pointer h-full flex items-center"
-              >
-                Hoje
-              </button>
-            </div>
-          )}
+          <div className="relative border-r border-border-base/50 mr-1 pr-1 h-full flex items-center">
+            <button 
+              onClick={() => onSelectDate(format(new Date(), 'yyyy-MM-dd'))}
+              className="bg-transparent hover:bg-elements text-text-primary px-3 py-1.5 rounded-md text-sm font-bold transition-all cursor-pointer h-full flex items-center"
+            >
+              Hoje
+            </button>
+          </div>
           <div className="relative border-r border-border-base/50 mr-1 pr-1 h-full flex items-center">
             <button 
               onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}

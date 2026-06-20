@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { X, CheckCircle2, Clock, AlertCircle, Circle, RefreshCcw, XCircle, Loader2 } from 'lucide-react';
 import type { Routine, TaskStatus } from '../../types';
-import { computeTaskStatus } from '../../utils/status';
+
 
 interface TaskStatusModalProps {
   routine: Routine | null;

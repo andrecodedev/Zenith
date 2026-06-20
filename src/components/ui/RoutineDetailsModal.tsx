@@ -104,7 +104,8 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
                 pending: { label: 'Observações (Pendente)', color: 'text-text-tertiary', focusColor: 'focus:border-neutral-500 focus:ring-neutral-500 border-border-base' },
                 in_progress: { label: 'Observações (Andamento)', color: 'text-yellow-500', focusColor: 'focus:border-yellow-500 focus:ring-yellow-500 border-yellow-500/30' },
                 completed: { label: 'Observações (Concluído)', color: 'text-emerald-500', focusColor: 'focus:border-emerald-500 focus:ring-emerald-500 border-emerald-500/30' },
-                late: { label: 'Justificativa (Atraso)', color: 'text-red-500', focusColor: 'focus:border-red-500 focus:ring-red-500 border-red-500/30' }
+                late: { label: 'Justificativa (Atraso)', color: 'text-red-500', focusColor: 'focus:border-red-500 focus:ring-red-500 border-red-500/30' },
+                canceled: { label: 'Motivo (Cancelado)', color: 'text-purple-500', focusColor: 'focus:border-purple-500 focus:ring-purple-500 border-purple-500/30' }
               };
 
               const activeStatuses = [status];
