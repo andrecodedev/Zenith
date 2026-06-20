@@ -21,8 +21,7 @@ interface CourseBreakerModalProps {
 
 export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps) {
   const { categories, addRoutine, routines } = useStore();
-  const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const [apiKey, setApiKey] = useState(() => envKey || localStorage.getItem('gemini_api_key') || '');
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY as string;
   const [syllabus, setSyllabus] = useState('');
   const [courseName, setCourseName] = useState('');
   const [schoolName, setSchoolName] = useState('');
@@ -262,7 +261,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className={envKey ? "col-span-1" : "col-span-1"}>
+            <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
                 Nome do Curso
                 <InfoTooltip>Nome completo do curso. Será usado como prefixo em todas as aulas agendadas (ex: <strong>[React Avançado] Aula 1</strong>).</InfoTooltip>
@@ -289,20 +288,6 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all"
               />
             </div>
-            {!envKey && (
-              <div className="col-span-2">
-              <label className="block text-sm font-medium text-text-secondary mb-2">Chave da API Gemini</label>
-              <input 
-                type="password" 
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all"
-                required
-              />
-              <p className="text-xs text-text-tertiary mt-1">Fica salva só no seu navegador.</p>
-            </div>
-            )}
           </div>
 
           <div>
