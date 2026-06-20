@@ -261,10 +261,28 @@ function App() {
           ) : currentView === 'dashboard' ? (
             <div className="w-full h-full flex flex-col min-h-0">
 
-              <div className="mb-4 flex justify-between items-end">
+              <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                   <h2 className="text-3xl font-bold font-title mb-2">Meu Dia</h2>
                   <p className="text-text-secondary">Você tem {selectedRoutines.length} tarefas neste dia.</p>
+                </div>
+                <div className="flex gap-2 items-center w-full md:w-auto">
+                  <button 
+                    onClick={() => setSelectedDate(today)} 
+                    className="text-sm font-bold bg-btn-bg hover:bg-elements text-text-primary px-4 py-2 rounded-lg cursor-pointer transition-colors border border-border-base"
+                  >
+                    Hoje
+                  </button>
+                  <input 
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedDate(e.target.value);
+                      }
+                    }}
+                    className="flex-1 md:flex-none bg-bg-secondary border border-border-base rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:border-neutral-500 cursor-pointer [color-scheme:dark] [html.light_&]:[color-scheme:light]"
+                  />
                 </div>
               </div>
 

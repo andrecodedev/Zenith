@@ -43,8 +43,7 @@ export function Hero({ onStart }: HeroProps) {
         
         <button 
           onClick={onStart}
-          className="group pointer-events-auto cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95"
-        >
+          className="group pointer-events-auto cursor-pointer bg-text-primary hover:opacity-80 text-bg-primary px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-wider flex items-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95">
           Acessar Plataforma <ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
         </button>
       </div>

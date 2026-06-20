@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, CheckCircle2, Circle, Clock, AlertCircle, Edit2 } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Circle, Clock, AlertCircle, Edit2, RefreshCcw, XCircle } from 'lucide-react';
 import { getCategoryStyles } from '../../utils/colors';
 import { computeTaskStatus } from '../../utils/status';
 import type { Routine, Category, TaskInstance } from '../../types';
@@ -18,12 +18,13 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
   const [isEditing, setIsEditing] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
   
-
   const status = computeTaskStatus(routine, dateStr, taskInstance);
   const isCompleted = status === 'completed';
   const isLate = status === 'late';
   const hasNote = !!taskInstance?.statusNote;
   const hasDetails = routine.description || isLate || hasNote;
+  
+  const isAutomatic = !taskInstance?.status && !routine.statusOverride && !taskInstance?.completed;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,29 +45,36 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
   return (
     <>
       <div ref={itemRef} className={`rounded-lg border transition-all overflow-hidden ${
-        status === 'completed' 
+        status === 'completed' || status === 'canceled'
         ? 'bg-bg-secondary/50 border-border-base/50 opacity-50' 
         : 'bg-bg-secondary border-border-gray hover:border-neutral-500'
     }`}>
       <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={onToggle}>
-        <button className="flex-shrink-0 transition-colors">
+        <button className="flex-shrink-0 transition-colors cursor-pointer">
           {status === 'completed' && <CheckCircle2 size={24} className="text-emerald-500" />}
           {status === 'in_progress' && <Clock size={24} className="text-yellow-500" />}
           {status === 'late' && <AlertCircle size={24} className="text-red-500" />}
           {status === 'pending' && <Circle size={24} className="text-text-tertiary" />}
+          {status === 'canceled' && <XCircle size={24} className="text-purple-500" />}
         </button>
         
         <div className="flex-1 min-w-0">
-          <h3 className={`font-medium truncate ${isCompleted ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
+          <h3 className={`font-medium truncate ${(isCompleted || status === 'canceled') ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
             {routine.title}
           </h3>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {isAutomatic && (
+               <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-sm bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                 <RefreshCcw size={12} />
+                 Automático
+               </span>
+            )}
             <span className={`text-xs px-2 py-1 rounded-sm inline-block ${getCategoryStyles(category?.color)}`}>
               {category?.name}
             </span>
             {routine.time && (
               <span className="text-xs px-2 py-1 rounded-sm inline-block bg-elements text-text-secondary border border-border-gray">
-                {routine.time}
+                {routine.time.slice(0, 5)}{routine.endTime ? ` - ${routine.endTime.slice(0, 5)}` : ''}
               </span>
             )}
             {status === 'completed' && (
@@ -86,7 +94,12 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
             )}
             {status === 'late' && (
               <span className="text-xs px-2 py-1 rounded-sm inline-block bg-red-500/10 text-red-500 border border-red-500/20">
-                Em atraso
+                Atrasado
+              </span>
+            )}
+            {status === 'canceled' && (
+              <span className="text-xs px-2 py-1 rounded-sm inline-block bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                Cancelado
               </span>
             )}
           </div>
@@ -135,7 +148,8 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
               pending: { label: 'Observações (Pendente)', color: 'text-text-tertiary', focusColor: 'focus:border-neutral-500 focus:ring-neutral-500 border-border-base' },
               in_progress: { label: 'Observações (Andamento)', color: 'text-yellow-500', focusColor: 'focus:border-yellow-500 focus:ring-yellow-500 border-yellow-500/30' },
               completed: { label: 'Observações (Concluído)', color: 'text-emerald-500', focusColor: 'focus:border-emerald-500 focus:ring-emerald-500 border-emerald-500/30' },
-              late: { label: 'Justificativa (Atraso)', color: 'text-red-500', focusColor: 'focus:border-red-500 focus:ring-red-500 border-red-500/30' }
+              late: { label: 'Justificativa (Atraso)', color: 'text-red-500', focusColor: 'focus:border-red-500 focus:ring-red-500 border-red-500/30' },
+              canceled: { label: 'Motivo (Cancelado)', color: 'text-purple-500', focusColor: 'focus:border-purple-500 focus:ring-purple-500 border-purple-500/30' }
             };
 
             const activeStatuses = [status];

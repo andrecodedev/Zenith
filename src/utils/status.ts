@@ -2,7 +2,7 @@ import { parseISO, isPast, startOfToday } from 'date-fns';
 import type { Routine, TaskInstance, TaskStatus } from '../types';
 
 export function computeTaskStatus(routine: Routine, dateStr: string, instance?: TaskInstance): TaskStatus | 'late' {
-  const explicitStatus = instance?.status || (instance?.completed ? 'completed' : 'pending');
+  const explicitStatus = instance?.status || routine.statusOverride || (instance?.completed ? 'completed' : 'pending');
   
   if (explicitStatus === 'completed') {
     return 'completed';

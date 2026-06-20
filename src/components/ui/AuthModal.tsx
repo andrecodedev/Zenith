@@ -9,7 +9,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -99,19 +99,20 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-text-primary hover:opacity-80 text-bg-primary py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-          >
+            className="w-full mt-4 bg-text-primary hover:opacity-80 text-bg-primary py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2">
             {loading ? <Loader2 size={18} className="animate-spin" /> : (isLogin ? 'Entrar' : 'Cadastrar')}
           </button>
           
           <div className="text-center mt-4">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
-            >
-              {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entre'}
-            </button>
+            <span className="text-sm text-text-tertiary">
+              Não tem uma conta?{' '}
+              <a 
+                href="mailto:contato.andrecodedev@gmail.com?subject=Solicitação de Acesso - Zenith" 
+                className="text-text-primary hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
+              >
+                Solicite acesso
+              </a>
+            </span>
           </div>
         </form>
       </div>

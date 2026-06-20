@@ -243,10 +243,11 @@ const Ferrofluid = ({
     const container = containerRef.current;
     if (!container) return;
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const renderer = new Renderer({
-      dpr: dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1),
+      dpr: dpr ?? (typeof window !== 'undefined' ? (isMobile ? 0.75 : Math.min(window.devicePixelRatio || 1, 1.5)) : 1),
       alpha: true,
-      antialias: true
+      antialias: !isMobile
     });
     rendererRef.current = renderer;
     const gl = renderer.gl;

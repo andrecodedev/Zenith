@@ -9,6 +9,10 @@ export interface Routine {
   customDays?: number[]; // 0 = Sunday, 1 = Monday, etc.
   date?: string; // YYYY-MM-DD for 'once'
   time?: string; // HH:mm (optional time)
+  endTime?: string; // HH:mm (optional end time)
+  excludedDates?: string[]; // YYYY-MM-DD dates where this routine should not appear
+  statusOverride?: TaskStatus; // Global status override for all instances
+  notesOverride?: string; // Global notes override
   createdAt: number;
 }
 
@@ -19,7 +23,7 @@ export interface Category {
   icon: string;
 }
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'late';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'late' | 'canceled';
 
 export interface TaskInstance {
   id: string; // usually routineId_date

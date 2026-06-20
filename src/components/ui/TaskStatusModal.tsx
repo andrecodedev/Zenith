@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, CheckCircle2, Clock, AlertCircle, Circle } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, Circle, RefreshCcw, XCircle, Loader2 } from 'lucide-react';
 import type { Routine, TaskStatus } from '../../types';
 import { computeTaskStatus } from '../../utils/status';
 
@@ -12,41 +12,81 @@ interface TaskStatusModalProps {
 }
 
 export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatusModalProps) {
-  const { taskInstances, setTaskStatus } = useStore();
-  const [selectedStatus, setSelectedStatus] = useState<TaskStatus>('pending');
+  const { taskInstances, setTaskStatus, updateRoutine, setTaskStatusForAll } = useStore();
+  const [selectedStatus, setSelectedStatus] = useState<TaskStatus | 'auto'>('pending');
   const [note, setNote] = useState('');
+  const [applyToAll, setApplyToAll] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Track instance to get notes
   const instance = isOpen && routine && dateStr ? taskInstances.find(t => t.routineId === routine.id && t.date === dateStr) : undefined;
 
   useEffect(() => {
     if (isOpen && routine && dateStr) {
-      const computed = computeTaskStatus(routine, dateStr, instance);
-      const initialStatus = instance?.status || (computed === 'late' ? 'late' : computed);
-      setSelectedStatus(initialStatus);
-      // Try notes[initialStatus] first, fallback to legacy statusNote if matching status
-      setNote(instance?.notes?.[initialStatus] || (instance?.status === initialStatus ? instance?.statusNote : '') || '');
+      if (instance?.status) {
+        setSelectedStatus(instance.status);
+        setNote(instance.notes?.[instance.status] || instance.statusNote || '');
+      } else if (routine.statusOverride) {
+        setSelectedStatus(routine.statusOverride);
+        setNote(routine.notesOverride || '');
+      } else {
+        // Se não tem status na instância nem global, está no modo Automático!
+        setSelectedStatus('auto');
+        setNote('');
+      }
+      setApplyToAll(false);
+      setShowSuccess(false);
     }
   }, [isOpen, routine, dateStr]);
 
-  // When changing status tab, load the existing note for that status
-  const handleStatusChange = (newStatus: TaskStatus) => {
+  const handleStatusChange = (newStatus: TaskStatus | 'auto') => {
     setSelectedStatus(newStatus);
-    setNote(instance?.notes?.[newStatus] || (instance?.status === newStatus ? instance?.statusNote : '') || '');
+    if (newStatus !== 'auto') {
+      setNote(instance?.notes?.[newStatus] || (instance?.status === newStatus ? instance?.statusNote : '') || '');
+    } else {
+      setNote('');
+    }
   };
 
   if (!isOpen || !routine || !dateStr) return null;
 
-  const handleSave = () => {
-    setTaskStatus(routine.id, dateStr, selectedStatus, note);
-    onClose();
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (applyToAll) {
+        await updateRoutine(routine.id, {
+          statusOverride: selectedStatus === 'auto' ? undefined : selectedStatus,
+          notesOverride: note || undefined
+        });
+        // Clear/Update all existing instances so the db is in sync
+        await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note);
+      } else {
+        if (selectedStatus === 'auto') {
+          // Clear instance status to let the system compute it
+          await setTaskStatus(routine.id, dateStr, undefined as any, '');
+        } else {
+          await setTaskStatus(routine.id, dateStr, selectedStatus, note);
+        }
+      }
+      
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 1500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const statuses: { value: TaskStatus; label: string; icon: React.ElementType; color: string; bg: string }[] = [
+  const statuses: { value: TaskStatus | 'auto'; label: string; icon: React.ElementType; color: string; bg: string }[] = [
     { value: 'completed', label: 'Concluído', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30' },
     { value: 'in_progress', label: 'Em Andamento', icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10 border-yellow-500/30' },
     { value: 'late', label: 'Em Atraso', icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/30' },
-    { value: 'pending', label: 'Pendente', icon: Circle, color: 'text-text-tertiary', bg: 'bg-elements border-border-gray' }
+    { value: 'canceled', label: 'Cancelado', icon: XCircle, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/30' },
+    { value: 'pending', label: 'Pendente', icon: Circle, color: 'text-text-tertiary', bg: 'bg-elements border-border-gray' },
+    { value: 'auto', label: 'Automático', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/30' }
   ];
 
   return (
@@ -91,26 +131,59 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
             })}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Observações (opcional)
-            </label>
-            <textarea 
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Descreva o andamento, motivos do atraso, links úteis..."
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary text-sm focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all resize-none"
-              rows={3}
-            />
-          </div>
+          {selectedStatus !== 'auto' && (
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Observações (opcional)
+              </label>
+              <textarea 
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Descreva o andamento, motivos do atraso, links úteis..."
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary text-sm focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all resize-none"
+                rows={3}
+              />
+            </div>
+          )}
+
+          {routine.recurrence !== 'once' && (
+            <div className="flex items-center gap-3 p-3 bg-bg-primary border border-border-base rounded-lg">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={applyToAll}
+                  onChange={(e) => setApplyToAll(e.target.checked)}
+                />
+                <div className="w-9 h-5 bg-elements peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-primary after:border-border-gray after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
+              </label>
+              <span className="text-sm font-medium text-text-primary">Aplicar a todas as datas</span>
+            </div>
+          )}
         </div>
 
         <div className="p-5 border-t border-border-base bg-bg-secondary/50">
           <button 
             onClick={handleSave}
-            className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-primary rounded-lg py-3 font-bold transition-all cursor-pointer"
-          >
-            Salvar Alterações
+            disabled={showSuccess || isSaving}
+            className={`w-full rounded-lg py-3 font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              showSuccess 
+                ? 'bg-emerald-500/20 text-emerald-500 cursor-default' 
+                : 'bg-btn-bg hover:bg-btn-hover active:bg-btn-active text-text-primary disabled:opacity-50 disabled:cursor-not-allowed'
+            }`}>
+            {isSaving ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Salvando...
+              </>
+            ) : showSuccess ? (
+              <>
+                <CheckCircle2 size={20} />
+                Salvo com sucesso!
+              </>
+            ) : (
+              'Salvar Alterações'
+            )}
           </button>
         </div>
       </div>

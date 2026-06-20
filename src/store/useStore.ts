@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Category, Routine, TaskInstance } from '../types';
+import type { Category, Routine, TaskInstance, TaskStatus } from '../types';
 
 interface StoreState {
   categories: Category[];
@@ -13,7 +13,8 @@ interface StoreState {
   updateRoutine: (id: string, updates: Partial<Routine>) => Promise<void>;
   toggleTask: (routineId: string, date: string) => Promise<void>;
   cycleTaskStatus: (routineId: string, date: string) => Promise<void>;
-  setTaskStatus: (routineId: string, date: string, status: import('../types').TaskStatus, note?: string) => Promise<void>;
+  setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string) => Promise<void>;
+  setTaskStatusForAll: (routineId: string, status: TaskStatus | undefined, note?: string) => Promise<void>;
   updateTaskNote: (routineId: string, date: string, status: import('../types').TaskStatus, note: string) => Promise<void>;
 }
 
@@ -61,6 +62,7 @@ export const useStore = create<StoreState>((set, get) => ({
         customDays: r.custom_days,
         date: r.date,
         time: r.time,
+        endTime: r.end_time,
         createdAt: new Date(r.created_at).getTime()
       })),
       taskInstances: (taskRes.data || []).map(t => ({
@@ -108,7 +110,8 @@ export const useStore = create<StoreState>((set, get) => ({
       recurrence: routine.recurrence,
       custom_days: routine.customDays,
       date: routine.date,
-      time: routine.time
+      time: routine.time,
+      end_time: routine.endTime
     });
   },
 
@@ -125,6 +128,7 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updates.customDays !== undefined) dbUpdates.custom_days = updates.customDays;
     if (updates.date !== undefined) dbUpdates.date = updates.date;
     if (updates.time !== undefined) dbUpdates.time = updates.time;
+    if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime;
 
     await supabase.from('routines').update(dbUpdates).eq('id', id);
   },
@@ -253,6 +257,49 @@ export const useStore = create<StoreState>((set, get) => ({
     }
 
     await syncTaskInstance(newTaskInstance, userId);
+  },
+
+  setTaskStatusForAll: async (routineId, status, note) => {
+    const userId = await getUserId();
+    const state = get();
+    
+    // Find all existing instances for this routine
+    const existingInstances = state.taskInstances.filter(t => t.routineId === routineId);
+    if (existingInstances.length === 0) return;
+
+    const updatedInstances = existingInstances.map(current => {
+      const currentNotes = current.notes || {};
+      if (current.statusNote) {
+        currentNotes[current.status || 'pending'] = current.statusNote;
+      }
+      
+      const newStatus = status; // undefined if auto
+      
+      return {
+        ...current,
+        status: newStatus as TaskStatus,
+        completed: newStatus === 'completed',
+        completedAt: newStatus === 'completed' ? Date.now() : undefined,
+        statusNote: undefined,
+        notes: {
+          ...currentNotes,
+          ...(newStatus && { [newStatus]: note !== undefined ? note : currentNotes[newStatus] })
+        }
+      };
+    });
+
+    // Update local state for all of them
+    const newInstancesState = [...state.taskInstances];
+    updatedInstances.forEach(updated => {
+      const idx = newInstancesState.findIndex(t => t.id === updated.id);
+      if (idx >= 0) newInstancesState[idx] = updated;
+    });
+    set({ taskInstances: newInstancesState });
+
+    // Sync all of them to Supabase
+    for (const inst of updatedInstances) {
+      await syncTaskInstance(inst, userId);
+    }
   },
 
   updateTaskNote: async (routineId, date, status, note) => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, ChevronDown, Sparkles, Loader2 } from 'lucide-react';
+import { X, ChevronDown, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { getCategoryStyles } from '../../utils/colors';
 import type { RecurrenceType, Routine } from '../../types';
@@ -16,6 +16,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
   const [recurrenceMenu, setRecurrenceMenu] = useState<string>('daily');
   const [customDays, setCustomDays] = useState<number[]>([]);
@@ -23,6 +24,8 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [feedbackState, setFeedbackState] = useState<{type: 'success' | 'error' | null, message: string}>({ type: null, message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -30,6 +33,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         setTitle(initialData.title);
         setDescription(initialData.description || '');
         setTime(initialData.time || '');
+        setEndTime(initialData.endTime || '');
         setCategoryId(initialData.categoryId || categories[0]?.id || '');
         
         if (initialData.recurrence === 'once') {
@@ -49,6 +53,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         setTitle('');
         setDescription('');
         setTime('');
+        setEndTime('');
         setCategoryId(categories[0]?.id || '');
         setRecurrenceMenu('daily');
         setCustomDays([]);
@@ -69,9 +74,12 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setFeedbackState({ type: null, message: '' });
 
     let finalRecurrence: RecurrenceType = 'daily';
     let finalDate: string | undefined = undefined;
@@ -89,34 +97,51 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
       finalRecurrence = recurrenceMenu as RecurrenceType;
     }
 
-    if (initialData) {
-      updateRoutine(initialData.id, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        categoryId,
-        recurrence: finalRecurrence,
-        customDays: finalRecurrence === 'custom' ? customDays : undefined,
-        date: finalDate,
-        time: time || undefined,
-      });
-    } else {
-      addRoutine({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        categoryId,
-        recurrence: finalRecurrence,
-        customDays: finalRecurrence === 'custom' ? customDays : undefined,
-        date: finalDate,
-        time: time || undefined,
-      });
-    }
+    try {
+      if (initialData) {
+        await updateRoutine(initialData.id, {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          categoryId,
+          recurrence: finalRecurrence,
+          customDays: finalRecurrence === 'custom' ? customDays : undefined,
+          date: finalDate,
+          time: time || undefined,
+          endTime: endTime || undefined,
+        });
+      } else {
+        await addRoutine({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          categoryId,
+          recurrence: finalRecurrence,
+          customDays: finalRecurrence === 'custom' ? customDays : undefined,
+          date: finalDate,
+          time: time || undefined,
+          endTime: endTime || undefined,
+        });
+      }
 
-    setTitle('');
-    setDescription('');
-    setRecurrenceMenu('daily');
-    setCustomDays([]);
-    setShowConfirmClose(false);
-    onClose();
+      setIsSubmitting(false);
+      setFeedbackState({ type: 'success', message: 'Tarefa salva com sucesso!' });
+      
+      setTimeout(() => {
+        setTitle('');
+        setDescription('');
+        setTime('');
+        setEndTime('');
+        setRecurrenceMenu('daily');
+        setCustomDays([]);
+        setShowConfirmClose(false);
+        setFeedbackState({ type: null, message: '' });
+        onClose();
+      }, 1000);
+
+    } catch (error) {
+      console.error(error);
+      setFeedbackState({ type: 'error', message: 'Erro ao salvar a tarefa. Tente novamente.' });
+      setIsSubmitting(false);
+    }
   };
 
   const handleCloseRequest = () => {
@@ -131,6 +156,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     setTitle('');
     setDescription('');
     setTime('');
+    setEndTime('');
     setRecurrenceMenu('daily');
     setCustomDays([]);
     setShowConfirmClose(false);
@@ -221,20 +247,17 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                 <button 
                   onClick={handleSaveFromConfirm}
                   disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0)}
-                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer"
-                >
+                  className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 text-text-primary rounded-lg py-3 font-medium transition-colors cursor-pointer">
                   Salvar Tarefa
                 </button>
                 <button 
                   onClick={handleKeepCacheAndClose}
-                  className="w-full bg-bg-secondary border border-border-gray hover:border-neutral-500 text-text-secondary rounded-lg py-3 font-medium transition-colors cursor-pointer"
-                >
+                  className="w-full bg-bg-secondary border border-border-gray hover:border-neutral-500 text-text-secondary rounded-lg py-3 font-medium transition-colors cursor-pointer">
                   Deixar em cache (Rascunho)
                 </button>
                 <button 
                   onClick={handleDiscardAndClose}
-                  className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg py-3 font-medium transition-colors cursor-pointer"
-                >
+                  className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg py-3 font-medium transition-colors cursor-pointer">
                   Descartar tudo
                 </button>
               </div>
@@ -242,8 +265,13 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           </div>
         )}
 
-        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 rounded-t-2xl shrink-0">
-          <h2 className="text-xl font-bold font-title">{initialData ? 'Editar Tarefa / Curso' : 'Nova Tarefa / Curso'}</h2>
+        <div className="p-6 border-b border-border-base flex justify-between items-center bg-bg-secondary/50 rounded-t-2xl shrink-0 relative overflow-hidden">
+          {feedbackState.type === 'error' && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center font-bold text-sm animate-in fade-in slide-in-from-top-4 duration-300 bg-red-500/90 text-white">
+              {feedbackState.message}
+            </div>
+          )}
+          <h2 className="text-xl font-bold font-title">{initialData ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
           <button onClick={handleCloseRequest} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
             <X size={20} />
           </button>
@@ -256,7 +284,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               type="text" 
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Ex: Aula 01 - React Hooks"
+              placeholder="Ex: Estudar para a prova de Cálculo I"
               className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all"
               autoFocus
             />
@@ -275,8 +303,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                     : isGenerating
                       ? 'text-text-primary bg-elements border-border-base'
                       : 'text-text-primary bg-elements border-border-base hover:bg-elements-hover hover:border-border-gray cursor-pointer'
-                }`}
-              >
+                }`}>
                 {isGenerating ? (
                   <Loader2 size={12} className="animate-spin" />
                 ) : (
@@ -360,7 +387,11 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               <input 
                 type="date"
                 value={specificDate}
-                onChange={(e) => setSpecificDate(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSpecificDate(e.target.value);
+                  }
+                }}
                 className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all [color-scheme:dark]"
               />
             </div>
@@ -388,23 +419,49 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Horário (Opcional)</label>
-            <input 
-              type="time" 
-              value={time}
-              onChange={e => setTime(e.target.value)}
-              className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer [color-scheme:dark]"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Horário de Início (Opcional)</label>
+              <input 
+                type="time" 
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer [color-scheme:dark]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Horário de Fim (Opcional)</label>
+              <input 
+                type="time" 
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer [color-scheme:dark]"
+              />
+            </div>
           </div>
 
           <div className="pt-4">
             <button 
               type="submit"
-              disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0)}
-              className="w-full bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-text-primary rounded-lg py-3 font-bold transition-all"
-            >
-              Salvar Tarefa
+              disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0) || isSubmitting || feedbackState.type === 'success'}
+              className={`relative w-full rounded-lg py-3 font-bold transition-all cursor-pointer flex items-center justify-center gap-2 overflow-hidden ${
+                feedbackState.type === 'success'
+                  ? 'bg-emerald-500/20 text-emerald-500 cursor-default'
+                  : 'bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-text-primary'
+              }`}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Salvando...
+                </>
+              ) : feedbackState.type === 'success' ? (
+                <>
+                  <CheckCircle2 size={20} />
+                  Salvo com sucesso!
+                </>
+              ) : (
+                'Salvar Tarefa'
+              )}
             </button>
           </div>
         </form>
