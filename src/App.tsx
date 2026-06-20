@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
-import { CheckCircle2, Circle, Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -13,7 +13,7 @@ import { AuthModal } from './components/ui/AuthModal';
 import type { Routine } from './types';
 
 function App() {
-  const { routines, categories, taskInstances, cycleTaskStatus } = useStore();
+  const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar'>('hero');

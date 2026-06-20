@@ -27,8 +27,8 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
   const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
   
   const status = computeTaskStatus(routine, dateStr, instance);
-  const isCompleted = status === 'completed';
-  const isLate = status === 'late';
+  
+  
   const hasNote = !!instance?.statusNote;
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, CheckCircle2, Circle, Clock, AlertCircle, Edit2 } from 'lucide-react';
 import { getCategoryStyles } from '../../utils/colors';
 import { computeTaskStatus } from '../../utils/status';
@@ -18,7 +18,7 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
-  const { updateTaskNote } = useStore();
+  
 
   const status = computeTaskStatus(routine, dateStr, taskInstance);
   const isCompleted = status === 'completed';

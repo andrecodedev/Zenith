@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { generateCalendarWeek, isTaskDueToday } from '../../utils/date';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight, AlertCircle, Clock } from 'lucide-react';
@@ -16,7 +16,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
-  const { routines, categories, taskInstances, toggleTask } = useStore();
+  const { routines, categories, taskInstances } = useStore();
   
   const [selectedRoutine, setSelectedRoutine] = useState<{ routine: Routine, dateStr: string } | null>(null);
 
@@ -70,7 +70,7 @@ export function CalendarView({ selectedDate, onNavigate }: CalendarViewProps) {
                   const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
                   const status = computeTaskStatus(routine, dateStr, instance);
                   const isCompleted = status === 'completed';
-                  const isLate = status === 'late';
+                  
 
                   return (
                     <div 

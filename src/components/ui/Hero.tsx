@@ -1,4 +1,3 @@
-import React from 'react';
 import Ferrofluid from './Ferrofluid';
 import { ArrowRight } from 'lucide-react';
 
