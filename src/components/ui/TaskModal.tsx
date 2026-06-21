@@ -290,20 +290,63 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const handleGenerateDescription = async () => {
     if (!title.trim() || isGenerating) return;
     setIsGenerating(true);
-    setTimeout(() => {
-      const mockDescriptions: Record<string, string> = {
-        'react': 'Estudar os fundamentos do React, incluindo componentes, hooks (useState, useEffect) e gerenciamento de estado.',
-        'node': 'Revisar a arquitetura do Node.js, Event Loop, criação de APIs REST e middlewares.',
-        'treino': 'Focar na execução correta. 4 séries de 12 repetições. Lembrar de alongar antes e depois.',
-        'leitura': 'Ler um capítulo do livro, fazer anotações dos pontos chaves e grifar termos importantes.',
-        'projeto': 'Desenvolver as features planejadas para a sprint, criar testes e revisar os pull requests.',
-        'reunião': 'Discutir o progresso atual, identificar bloqueios e alinhar os próximos passos com a equipe.',
-      };
-      const foundKey = Object.keys(mockDescriptions).find(key => title.toLowerCase().includes(key));
-      const base = foundKey ? mockDescriptions[foundKey] : `Executar a tarefa "${title.trim()}" seguindo os requisitos estabelecidos.`;
-      setDescription(`${base} Validar os resultados e revisar possíveis gargalos antes da conclusão.`);
+
+    try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        // Fallback mais robusto caso não tenha a chave configurada
+        const mockDescriptions: Record<string, string> = {
+          'react': 'Estudar os fundamentos do React, focando em componentes e hooks.',
+          'node': 'Revisar a arquitetura do Node.js, Event Loop e APIs REST.',
+          'treino': 'Focar na execução correta. 4 séries de 12 repetições. Lembrar de alongar.',
+          'leitura': 'Ler um capítulo do livro e fazer anotações dos pontos chaves.',
+          'projeto': 'Desenvolver as features da sprint, criar testes e revisar os PRs.',
+          'reunião': 'Discutir o progresso, identificar bloqueios e alinhar próximos passos.',
+          'almoço': 'Pausa para recarregar as energias e se alimentar de forma saudável.',
+          'daily': 'Atualizar a equipe sobre o status das tarefas e bloqueios do dia.',
+        };
+        const foundKey = Object.keys(mockDescriptions).find(key => title.toLowerCase().includes(key));
+        
+        // Simular o delay de uma API
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (foundKey) {
+          setDescription(mockDescriptions[foundKey]);
+        } else {
+          setDescription(`Planejar e executar os passos necessários para concluir a tarefa: "${title.trim()}".`);
+        }
+        return;
+      }
+
+      // Chamada real para a API do Gemini
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `Gere uma descrição curta, prática e motivadora (máximo de 2 frases) para uma tarefa chamada: "${title.trim()}". Não use aspas, não use markdown, seja direto.` }]
+          }]
+        })
+      });
+
+      if (!response.ok) throw new Error('Falha na API da IA');
+      
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (generatedText) {
+        setDescription(generatedText.trim());
+      } else {
+        throw new Error('Resposta vazia da IA');
+      }
+
+    } catch (error) {
+      console.error('Erro ao gerar descrição com IA:', error);
+      setDescription(`Planejar e executar os passos necessários para concluir a tarefa: "${title.trim()}".`);
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
