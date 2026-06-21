@@ -59,11 +59,13 @@ export const useStore = create<StoreState>((set, get) => ({
 
     if (fetchedCategories.length === 0 && !catRes.error) {
       const defaultCategories = [
-        { id: crypto.randomUUID(), user_id: user.id, name: 'Trabalho', color: 'bg-blue-500', icon: 'briefcase' },
+        { id: crypto.randomUUID(), user_id: user.id, name: 'Trabalho', color: 'bg-orange-500', icon: 'briefcase' },
         { id: crypto.randomUUID(), user_id: user.id, name: 'Pessoal', color: 'bg-fuchsia-500', icon: 'user' },
-        { id: crypto.randomUUID(), user_id: user.id, name: 'Cursos', color: 'bg-purple-500', icon: 'book' },
+        { id: crypto.randomUUID(), user_id: user.id, name: 'Cursos', color: 'bg-teal-500', icon: 'book' },
       ];
-      const { error: insertError } = await supabase.from('categories').insert(defaultCategories);
+      const { error: insertError } = await supabase
+        .from('categories')
+        .upsert(defaultCategories, { onConflict: 'user_id,name', ignoreDuplicates: true });
       if (!insertError) fetchedCategories = defaultCategories;
       else console.error('[fetchData] insert default categories error:', insertError.message);
     }
@@ -81,6 +83,9 @@ export const useStore = create<StoreState>((set, get) => ({
         time: r.time,
         endTime: r.end_time,
         times: r.times || undefined,
+        excludedDates: r.excluded_dates || undefined,
+        statusOverride: r.status_override || undefined,
+        notesOverride: r.notes_override || undefined,
         createdAt: new Date(r.created_at).getTime()
       })),
       taskInstances: (taskRes.data || []).map(t => ({
