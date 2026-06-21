@@ -39,12 +39,16 @@ serve(async () => {
 
   const { data: alreadySent } = await supabase
     .from('push_sent_log')
-    .select('routine_id')
+    .select('routine_id, routine_time')
     .eq('sent_date', todayStr)
     .in('routine_id', matching.map(r => r.id));
 
-  const sentIds = new Set(alreadySent?.map((r: any) => r.routine_id) ?? []);
-  const toSend = matching.filter(r => !sentIds.has(r.id));
+  const sentMap = new Map(alreadySent?.map((r: any) => [r.routine_id, r.routine_time]) ?? []);
+  const toSend = matching.filter(r => {
+    const sentTime = sentMap.get(r.id);
+    if (!sentTime) return true;       // nunca notificou hoje
+    return sentTime !== r.time;       // horário mudou → notifica de novo
+  });
 
   if (!toSend.length) return new Response('already notified today', { status: 200 });
 
@@ -82,7 +86,7 @@ serve(async () => {
   await Promise.all(sends);
 
   await supabase.from('push_sent_log').upsert(
-    toSend.map(r => ({ routine_id: r.id, sent_date: todayStr })),
+    toSend.map(r => ({ routine_id: r.id, sent_date: todayStr, routine_time: r.time })),
     { onConflict: 'routine_id,sent_date' }
   );
 
