@@ -17,7 +17,7 @@ interface StoreState {
   toggleTask: (routineId: string, date: string) => Promise<void>;
   toggleTimeSlot: (routineId: string, date: string, time: string) => Promise<void>;
   cycleTaskStatus: (routineId: string, date: string) => Promise<void>;
-  setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string) => Promise<void>;
+  setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string, timeStr?: string) => Promise<void>;
   setTaskStatusForAll: (routineId: string, status: TaskStatus | undefined, note?: string, scope?: 'all' | 'future' | 'past', referenceDate?: string) => Promise<void>;
   updateTaskNote: (routineId: string, date: string, status: import('../types').TaskStatus, note: string) => Promise<void>;
   
@@ -302,9 +302,10 @@ export const useStore = create<StoreState>((set, get) => ({
     await syncTaskInstance(newTaskInstance, userId);
   },
 
-  setTaskStatus: async (routineId, date, status, note) => {
+  setTaskStatus: async (routineId, date, status, note, timeStr) => {
     const userId = await getUserId();
-    const instanceId = `${routineId}_${date}`;
+    const suffix = timeStr ? `_${timeStr.replace(':', '')}` : '';
+    const instanceId = `${routineId}_${date}${suffix}`;
     const state = get();
     const existingIndex = state.taskInstances.findIndex((t) => t.id === instanceId);
     

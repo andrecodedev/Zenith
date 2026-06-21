@@ -178,10 +178,11 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [statusModalData, setStatusModalData] = useState<{isOpen: boolean, routine: Routine | null, dateStr: string | null}>({
-    isOpen: false,
-    routine: null,
-    dateStr: null
+  const [statusModalData, setStatusModalData] = useState<{isOpen: boolean, routine: Routine | null, dateStr: string | null, timeStr?: string}>({
+    isOpen: false, 
+    routine: null, 
+    dateStr: null,
+    timeStr: undefined
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
@@ -575,6 +576,7 @@ function App() {
                         dateStr={selectedDate}
                         taskInstance={instance}
                         onToggle={() => setStatusModalData({ isOpen: true, routine, dateStr: selectedDate })}
+                        onSlotToggle={(timeStr) => setStatusModalData({ isOpen: true, routine, dateStr: selectedDate, timeStr })}
                         onDragStart={() => { dragIdRef.current = routine.id; }}
                         onDragOver={(e) => { e.preventDefault(); setDragOverId(routine.id); }}
                         onDrop={() => handleDrop(routine.id)}
@@ -604,7 +606,8 @@ function App() {
         isOpen={statusModalData.isOpen} 
         routine={statusModalData.routine}
         dateStr={statusModalData.dateStr}
-        onClose={() => setStatusModalData({ isOpen: false, routine: null, dateStr: null })}
+        timeStr={statusModalData.timeStr}
+        onClose={() => setStatusModalData(prev => ({ ...prev, isOpen: false, routine: null, dateStr: null, timeStr: undefined }))}
       />
       <AuthModal 
         isOpen={isAuthModalOpen} 

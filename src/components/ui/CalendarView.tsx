@@ -53,7 +53,7 @@ function assignColumns<T extends { key: string; startMinutes: number; endMinutes
 
 export function CalendarView({ selectedDate, onNavigate, onSelectDate }: CalendarViewProps) {
   const { routines, categories, taskInstances } = useStore();
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const [selectedRoutineId, setSelectedRoutineId] = useState<{ id: string, dateStr: string } | null>(null);
   

@@ -10,9 +10,10 @@ interface TaskStatusModalProps {
   dateStr: string | null;
   isOpen: boolean;
   onClose: () => void;
+  timeStr?: string;
 }
 
-export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatusModalProps) {
+export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: TaskStatusModalProps) {
   const { taskInstances, setTaskStatus, updateRoutine, setTaskStatusForAll } = useStore();
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | 'auto'>('pending');
   const [note, setNote] = useState('');
@@ -24,7 +25,9 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
   const scopeDropdownBtnRef = useRef<HTMLButtonElement>(null);
   
   // Track instance to get notes
-  const instance = isOpen && routine && dateStr ? taskInstances.find(t => t.routineId === routine.id && t.date === dateStr) : undefined;
+  const instance = isOpen && routine && dateStr 
+    ? taskInstances.find(t => t.routineId === routine.id && t.date === dateStr && (!timeStr || t.id.endsWith(`_${timeStr.replace(':', '')}`))) 
+    : undefined;
 
   useEffect(() => {
     if (isOpen && routine && dateStr) {
@@ -66,9 +69,9 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
         await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note, 'all', dateStr);
       } else if (applyScope === 'current') {
         if (selectedStatus === 'auto') {
-          await setTaskStatus(routine.id, dateStr, undefined as any, '');
+          await setTaskStatus(routine.id, dateStr, undefined as any, '', timeStr);
         } else {
-          await setTaskStatus(routine.id, dateStr, selectedStatus, note);
+          await setTaskStatus(routine.id, dateStr, selectedStatus, note, timeStr);
         }
       } else {
         // past or future
@@ -112,7 +115,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
 
         <div className="p-5 space-y-5 overflow-y-auto flex-1">
           <div>
-            <div className="text-sm text-text-secondary mb-1">Tarefa</div>
+            <div className="text-sm text-text-secondary mb-1">Tarefa {timeStr ? `(Horário: ${timeStr})` : ''}</div>
             <div className="font-medium text-text-primary truncate">{routine.title}</div>
           </div>
 
@@ -165,7 +168,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
             </div>
           )}
 
-          {routine.recurrence !== 'once' && (
+          {routine.recurrence !== 'once' && !timeStr && (
             <div className="flex flex-col gap-2 p-4 bg-bg-primary border border-border-base rounded-lg">
               <label className="text-sm font-medium text-text-primary flex items-center gap-1.5">
                 Escopo da Alteração

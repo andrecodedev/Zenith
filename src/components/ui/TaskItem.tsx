@@ -12,6 +12,7 @@ interface TaskItemProps {
   dateStr: string;
   taskInstance?: TaskInstance;
   onToggle: () => void;
+  onSlotToggle?: (timeStr: string) => void;
   onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
@@ -19,7 +20,7 @@ interface TaskItemProps {
   isDragOver?: boolean;
 }
 
-export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, onDragStart, onDragOver, onDrop, onDragEnd, isDragOver }: TaskItemProps) {
+export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, onSlotToggle, onDragStart, onDragOver, onDrop, onDragEnd, isDragOver }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
@@ -212,30 +213,55 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
                 <h4 className="text-xs font-semibold text-text-tertiary mb-2 uppercase tracking-wider">Horários</h4>
                 <div className="space-y-2">
                   {times.map((t, idx) => {
-                    const slotDone = slotInstances[idx]?.completed ?? false;
+                    const slotInstance = slotInstances[idx] || undefined;
+                    const slotStatus = computeTaskStatus(routine, dateStr, slotInstance, t);
+                    const slotDone = slotStatus === 'completed';
+                    const isSlotAutomatic = !slotInstance?.status && !routine.statusOverride && !slotDone;
+                    
+                    const statusLabel = 
+                      slotStatus === 'late' ? 'Atrasado' :
+                      slotStatus === 'in_progress' ? 'Em Andamento' :
+                      slotStatus === 'canceled' ? 'Cancelado' :
+                      slotStatus === 'vacation' ? 'Férias' :
+                      slotDone ? 'Feito' : 'Pendente';
+                      
+                    const statusColor = 
+                      slotStatus === 'late' ? 'text-red-500' :
+                      slotStatus === 'in_progress' ? 'text-yellow-500' :
+                      slotStatus === 'canceled' ? 'text-purple-500' :
+                      slotStatus === 'vacation' ? 'text-orange-500' :
+                      slotDone ? 'text-emerald-500' : 'text-text-tertiary';
+
                     return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => toggleTimeSlot(routine.id, dateStr, t)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all cursor-pointer text-left ${
-                          slotDone
-                            ? 'bg-emerald-500/10 border-emerald-500/20 opacity-70'
-                            : 'bg-bg-primary border-border-base hover:border-border-gray hover:bg-elements'
-                        }`}
-                      >
-                        <span className={`shrink-0 transition-colors ${slotDone ? 'text-emerald-500' : 'text-text-tertiary'}`}>
-                          {slotDone
-                            ? <CheckCircle2 size={18} />
-                            : <Circle size={18} />}
-                        </span>
-                        <span className={`text-sm font-medium ${slotDone ? 'text-text-tertiary line-through' : 'text-text-primary'}`}>
-                          {t}
-                        </span>
-                        <span className="ml-auto text-xs text-text-tertiary">
-                          {slotDone ? 'Feito' : 'Pendente'}
-                        </span>
-                      </button>
+                      <div key={t} className="flex gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => toggleTimeSlot(routine.id, dateStr, t)}
+                          className={`flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all cursor-pointer text-left ${
+                            slotDone
+                              ? 'bg-emerald-500/10 border-emerald-500/20 opacity-70'
+                              : 'bg-bg-primary border-border-base hover:border-border-gray hover:bg-elements'
+                          }`}
+                        >
+                          <span className={`shrink-0 transition-colors ${slotDone ? 'text-emerald-500' : 'text-text-tertiary'}`}>
+                            {slotDone
+                              ? <CheckCircle2 size={18} />
+                              : <Circle size={18} />}
+                          </span>
+                          <span className={`text-sm font-medium ${slotDone ? 'text-text-tertiary line-through' : 'text-text-primary'}`}>
+                            {t}
+                          </span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => onSlotToggle && onSlotToggle(t)}
+                          className={`px-3 py-2.5 rounded-lg border border-border-base bg-bg-primary hover:bg-elements transition-colors cursor-pointer text-xs font-semibold ${statusColor} min-w-[100px] text-center flex items-center justify-center gap-1.5`}
+                        >
+                          {isSlotAutomatic && slotStatus !== 'pending' && <RefreshCcw size={10} className="opacity-50" />}
+                          {statusLabel}
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
