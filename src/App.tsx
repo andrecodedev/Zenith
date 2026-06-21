@@ -171,6 +171,13 @@ function App() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
+
+  const [routineOrder, setRoutineOrder] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('routine_order') || '[]'); }
+    catch { return []; }
+  });
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
@@ -178,6 +185,30 @@ function App() {
   const filteredRoutines = selectedRoutines
     .filter(r => !searchQuery || r.title.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter(r => !selectedCategoryFilter || r.categoryId === selectedCategoryFilter);
+
+  const sortedFilteredRoutines = [...filteredRoutines].sort((a, b) => {
+    const ai = routineOrder.indexOf(a.id);
+    const bi = routineOrder.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+
+  const handleDrop = (targetId: string) => {
+    const fromId = dragIdRef.current;
+    if (!fromId || fromId === targetId) return;
+    const fromIdx = sortedFilteredRoutines.findIndex(r => r.id === fromId);
+    const toIdx = sortedFilteredRoutines.findIndex(r => r.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const ids = sortedFilteredRoutines.map(r => r.id);
+    ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, fromId);
+    setRoutineOrder(ids);
+    localStorage.setItem('routine_order', JSON.stringify(ids));
+    dragIdRef.current = null;
+    setDragOverId(null);
+  };
 
   const unreadCount = useStore(state => state.appNotifications.filter(n => !n.read).length);
 
@@ -480,18 +511,23 @@ function App() {
                       : 'Nenhuma tarefa encontrada com esses filtros.'}
                   </div>
                 ) : (
-                  filteredRoutines.map(routine => {
+                  sortedFilteredRoutines.map(routine => {
                     const category = categories.find(c => c.id === routine.categoryId);
                     const instance = taskInstances.find(t => t.routineId === routine.id && t.date === selectedDate);
 
                     return (
-                      <TaskItem 
+                      <TaskItem
                         key={routine.id}
                         routine={routine}
                         category={category}
                         dateStr={selectedDate}
                         taskInstance={instance}
                         onToggle={() => setStatusModalData({ isOpen: true, routine, dateStr: selectedDate })}
+                        onDragStart={() => { dragIdRef.current = routine.id; }}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverId(routine.id); }}
+                        onDrop={() => handleDrop(routine.id)}
+                        onDragEnd={() => { dragIdRef.current = null; setDragOverId(null); }}
+                        isDragOver={dragOverId === routine.id}
                       />
                     );
                   })

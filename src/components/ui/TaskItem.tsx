@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, CheckCircle2, Circle, Clock, AlertCircle, Edit2, RefreshCcw, XCircle } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Circle, Clock, AlertCircle, Edit2, RefreshCcw, XCircle, GripVertical } from 'lucide-react';
 import { getCategoryStyles } from '../../utils/colors';
 import { computeTaskStatus } from '../../utils/status';
 import { useStore } from '../../store/useStore';
@@ -12,9 +12,14 @@ interface TaskItemProps {
   dateStr: string;
   taskInstance?: TaskInstance;
   onToggle: () => void;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: () => void;
+  isDragOver?: boolean;
 }
 
-export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }: TaskItemProps) {
+export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, onDragStart, onDragOver, onDrop, onDragEnd, isDragOver }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
@@ -72,12 +77,30 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle }:
 
   return (
     <>
-      <div ref={itemRef} className={`rounded-lg border transition-all overflow-hidden ${
-        status === 'completed' || status === 'canceled'
-          ? 'bg-bg-secondary/50 border-border-base/50 opacity-50'
-          : 'bg-bg-secondary border-border-gray hover:border-neutral-500'
-      }`}>
+      <div
+        ref={itemRef}
+        draggable={!!onDragStart}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+        className={`rounded-lg border transition-all overflow-hidden ${
+          isDragOver
+            ? 'border-dashed border-neutral-500 opacity-60 scale-[0.99]'
+            : status === 'completed' || status === 'canceled'
+            ? 'bg-bg-secondary/50 border-border-base/50 opacity-50'
+            : 'bg-bg-secondary border-border-gray hover:border-neutral-500'
+        }`}
+      >
         <div className="flex items-center gap-4 p-4 cursor-pointer" onClick={handleRowClick}>
+          {onDragStart && (
+            <div
+              onClick={e => e.stopPropagation()}
+              className="shrink-0 cursor-grab active:cursor-grabbing text-text-tertiary/40 hover:text-text-tertiary transition-colors"
+            >
+              <GripVertical size={16} />
+            </div>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onToggle(); }}
             className="shrink-0 transition-colors cursor-pointer"
