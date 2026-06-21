@@ -24,7 +24,7 @@ export interface Category {
   icon: string;
 }
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'late' | 'canceled';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'late' | 'canceled' | 'vacation';
 
 export interface TaskInstance {
   id: string; // usually routineId_date

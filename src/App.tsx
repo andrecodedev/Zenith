@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
+import { computeTaskStatus } from './utils/status';
 import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2 } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
@@ -13,7 +14,7 @@ import { StatsView } from './components/ui/StatsView';
 import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
 import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
-import type { Routine } from './types';
+import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
@@ -171,6 +172,8 @@ function App() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [sortMode, setSortMode] = useState<'manual' | 'time' | 'status'>('manual');
 
   const [routineOrder, setRoutineOrder] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('routine_order') || '[]'); }
@@ -184,9 +187,41 @@ function App() {
 
   const filteredRoutines = selectedRoutines
     .filter(r => !searchQuery || r.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    .filter(r => !selectedCategoryFilter || r.categoryId === selectedCategoryFilter);
+    .filter(r => !selectedCategoryFilter || r.categoryId === selectedCategoryFilter)
+    .filter(r => {
+      if (statusFilter === 'all') return true;
+      const instance = taskInstances.find(t => t.routineId === r.id && t.date === selectedDate);
+      return computeTaskStatus(r, selectedDate, instance) === statusFilter;
+    });
+
+  const getStatusOrder = (status: TaskStatus) => {
+    switch (status) {
+      case 'late': return 1;
+      case 'in_progress': return 2;
+      case 'pending': return 3;
+      case 'completed': return 4;
+      case 'vacation': return 5;
+      case 'canceled': return 6;
+      default: return 7;
+    }
+  };
 
   const sortedFilteredRoutines = [...filteredRoutines].sort((a, b) => {
+    if (sortMode === 'time') {
+      const timeA = a.time || a.times?.[0] || '23:59';
+      const timeB = b.time || b.times?.[0] || '23:59';
+      return timeA.localeCompare(timeB);
+    }
+    
+    if (sortMode === 'status') {
+      const instA = taskInstances.find(t => t.routineId === a.id && t.date === selectedDate);
+      const instB = taskInstances.find(t => t.routineId === b.id && t.date === selectedDate);
+      const statA = computeTaskStatus(a, selectedDate, instA);
+      const statB = computeTaskStatus(b, selectedDate, instB);
+      const diff = getStatusOrder(statA) - getStatusOrder(statB);
+      if (diff !== 0) return diff;
+    }
+
     const ai = routineOrder.indexOf(a.id);
     const bi = routineOrder.indexOf(b.id);
     if (ai === -1 && bi === -1) return 0;
@@ -392,7 +427,7 @@ function App() {
           {currentView === 'hero' ? (
             <Hero onStart={() => session ? setCurrentView('dashboard') : setIsAuthModalOpen(true)} />
           ) : currentView === 'dashboard' ? (
-            <div className="w-full h-full flex flex-col min-h-0">
+            <div className="w-full flex flex-col pb-24">
 
               <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
@@ -500,10 +535,14 @@ function App() {
                 selectedCategory={selectedCategoryFilter}
                 onCategoryChange={setSelectedCategoryFilter}
                 categories={categories}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                sortMode={sortMode}
+                onSortModeChange={setSortMode}
               />
 
               {/* Task List */}
-              <div className="space-y-3 flex-1 overflow-y-auto pb-12">
+              <div className="space-y-3 flex flex-col">
                 {filteredRoutines.length === 0 ? (
                   <div className="text-center py-12 px-6 text-text-tertiary bg-bg-secondary/50 rounded-lg border border-border-base border-dashed">
                     {selectedRoutines.length === 0

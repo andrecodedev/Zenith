@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, CheckCircle2, Clock, AlertCircle, Circle, RefreshCcw, XCircle, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle, Circle, RefreshCcw, XCircle, Loader2, ChevronDown, Palmtree } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import type { Routine, TaskStatus } from '../../types';
 
@@ -16,9 +16,12 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
   const { taskInstances, setTaskStatus, updateRoutine, setTaskStatusForAll } = useStore();
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | 'auto'>('pending');
   const [note, setNote] = useState('');
-  const [applyToAll, setApplyToAll] = useState(false);
+  const [applyScope, setApplyScope] = useState<'current' | 'past' | 'future' | 'all'>('current');
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isScopeDropdownOpen, setIsScopeDropdownOpen] = useState(false);
+  const [scopeDropdownRect, setScopeDropdownRect] = useState<DOMRect | null>(null);
+  const scopeDropdownBtnRef = useRef<HTMLButtonElement>(null);
   
   // Track instance to get notes
   const instance = isOpen && routine && dateStr ? taskInstances.find(t => t.routineId === routine.id && t.date === dateStr) : undefined;
@@ -36,7 +39,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
         setSelectedStatus('auto');
         setNote('');
       }
-      setApplyToAll(false);
+      setApplyScope('current');
       setShowSuccess(false);
     }
   }, [isOpen, routine, dateStr]);
@@ -55,20 +58,21 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      if (applyToAll) {
+      if (applyScope === 'all') {
         await updateRoutine(routine.id, {
           statusOverride: selectedStatus === 'auto' ? undefined : selectedStatus,
           notesOverride: note || undefined
         });
-        // Clear/Update all existing instances so the db is in sync
-        await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note);
-      } else {
+        await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note, 'all', dateStr);
+      } else if (applyScope === 'current') {
         if (selectedStatus === 'auto') {
-          // Clear instance status to let the system compute it
           await setTaskStatus(routine.id, dateStr, undefined as any, '');
         } else {
           await setTaskStatus(routine.id, dateStr, selectedStatus, note);
         }
+      } else {
+        // past or future
+        await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note, applyScope, dateStr);
       }
       
       setShowSuccess(true);
@@ -86,6 +90,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
     { value: 'in_progress', label: 'Em Andamento', icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10 border-yellow-500/30' },
     { value: 'late', label: 'Em Atraso', icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/30' },
     { value: 'canceled', label: 'Cancelado', icon: XCircle, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/30' },
+    { value: 'vacation', label: 'Férias', icon: Palmtree, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/30' },
     { value: 'pending', label: 'Pendente', icon: Circle, color: 'text-text-tertiary', bg: 'bg-elements border-border-gray' },
     { value: 'auto', label: 'Automático', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/30' }
   ];
@@ -161,20 +166,60 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose }: TaskStatu
           )}
 
           {routine.recurrence !== 'once' && (
-            <div className="flex items-center gap-3 p-3 bg-bg-primary border border-border-base rounded-lg">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={applyToAll}
-                  onChange={(e) => setApplyToAll(e.target.checked)}
-                />
-                <div className="w-9 h-5 bg-elements peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-primary after:border-border-gray after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
+            <div className="flex flex-col gap-2 p-4 bg-bg-primary border border-border-base rounded-lg">
+              <label className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+                Escopo da Alteração
+                <InfoTooltip>Define quais datas serão afetadas por esta mudança de status.</InfoTooltip>
               </label>
-              <span className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
-                Aplicar a todas as datas
-                <InfoTooltip>Sobrescreve o status em TODAS as datas desta tarefa recorrente, não só nesta. Use com cuidado — não pode ser desfeito em massa.</InfoTooltip>
-              </span>
+              <div className="relative">
+                <button
+                  ref={scopeDropdownBtnRef}
+                  type="button"
+                  onClick={() => {
+                    if (!isScopeDropdownOpen && scopeDropdownBtnRef.current) {
+                      setScopeDropdownRect(scopeDropdownBtnRef.current.getBoundingClientRect());
+                    }
+                    setIsScopeDropdownOpen(!isScopeDropdownOpen);
+                  }}
+                  className={`w-full bg-bg-secondary border rounded-lg pl-3 pr-4 py-2 text-sm text-text-primary transition-all flex justify-between items-center cursor-pointer ${isScopeDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}>
+                  <span className="truncate pr-2">
+                    {applyScope === 'current' ? `Somente nesta data (${dateStr})` :
+                     applyScope === 'future' ? 'Desta data em diante (Futuro)' :
+                     applyScope === 'past' ? 'Desta data para trás (Passado)' :
+                     'Todas as datas (⚠️ Sobrescreve histórico)'}
+                  </span>
+                  <ChevronDown size={16} className={`shrink-0 text-text-tertiary transition-transform duration-200 ${isScopeDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isScopeDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-60" onClick={() => setIsScopeDropdownOpen(false)} />
+                    <div
+                      style={scopeDropdownRect ? {
+                        position: 'fixed',
+                        top: scopeDropdownRect.bottom + 6,
+                        left: scopeDropdownRect.left,
+                        width: scopeDropdownRect.width,
+                        zIndex: 61,
+                        maxHeight: Math.min(192, window.innerHeight - scopeDropdownRect.bottom - 12),
+                      } : {}}
+                        className="bg-bg-secondary border border-border-base rounded-lg shadow-xl overflow-y-auto flex flex-col py-1 animate-in fade-in slide-in-from-top-2 duration-200"
+                      >
+                        {[
+                          { value: 'current', label: `Somente nesta data (${dateStr})` },
+                          { value: 'future', label: 'Desta data em diante (Futuro)' },
+                          { value: 'past', label: 'Desta data para trás (Passado)' },
+                          { value: 'all', label: 'Todas as datas (⚠️ Sobrescreve histórico)' },
+                        ].map(option => (
+                          <button key={option.value} type="button" onClick={() => { setApplyScope(option.value as any); setIsScopeDropdownOpen(false); }}
+                            className={`w-full text-left px-4 py-3 text-sm transition-colors cursor-pointer ${applyScope === option.value ? 'text-text-primary bg-elements font-medium' : 'text-text-secondary hover:bg-elements hover:text-text-primary'}`}>
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

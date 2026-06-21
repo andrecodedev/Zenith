@@ -165,6 +165,9 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
                   {status === 'canceled' && (
                     <span className="text-xs px-2 py-1 rounded-sm inline-block bg-purple-500/10 text-purple-500 border border-purple-500/20">Cancelado</span>
                   )}
+                  {status === 'vacation' && (
+                    <span className="text-xs px-2 py-1 rounded-sm inline-block bg-orange-500/10 text-orange-500 border border-orange-500/20">Férias</span>
+                  )}
                 </>
               )}
             </div>
@@ -248,11 +251,12 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
 
             {!isMultipleTimes && (() => {
               const statusesConfig: Record<import('../../types').TaskStatus, { label: string, color: string }> = {
-                pending: { label: 'Observações (Pendente)', color: 'text-text-tertiary' },
-                in_progress: { label: 'Observações (Andamento)', color: 'text-yellow-500' },
-                completed: { label: 'Observações (Concluído)', color: 'text-emerald-500' },
-                late: { label: 'Justificativa (Atraso)', color: 'text-red-500' },
-                canceled: { label: 'Motivo (Cancelado)', color: 'text-purple-500' },
+                pending: { label: 'Pendente', color: 'bg-neutral-500' },
+                in_progress: { label: 'Em andamento', color: 'bg-yellow-500' },
+                completed: { label: 'Concluído', color: 'bg-emerald-500' },
+                late: { label: 'Em Atraso', color: 'bg-red-500' },
+                canceled: { label: 'Cancelado', color: 'bg-purple-500' },
+                vacation: { label: 'Férias', color: 'bg-orange-500' }
               };
               const noteValue = taskInstance?.notes?.[status] || taskInstance?.statusNote || '';
               return (

@@ -18,7 +18,7 @@ interface StoreState {
   toggleTimeSlot: (routineId: string, date: string, time: string) => Promise<void>;
   cycleTaskStatus: (routineId: string, date: string) => Promise<void>;
   setTaskStatus: (routineId: string, date: string, status: TaskStatus, note?: string) => Promise<void>;
-  setTaskStatusForAll: (routineId: string, status: TaskStatus | undefined, note?: string) => Promise<void>;
+  setTaskStatusForAll: (routineId: string, status: TaskStatus | undefined, note?: string, scope?: 'all' | 'future' | 'past', referenceDate?: string) => Promise<void>;
   updateTaskNote: (routineId: string, date: string, status: import('../types').TaskStatus, note: string) => Promise<void>;
   
   appNotifications: import('../types').AppNotification[];
@@ -362,12 +362,19 @@ export const useStore = create<StoreState>((set, get) => ({
     );
   },
 
-  setTaskStatusForAll: async (routineId, status, note) => {
+  setTaskStatusForAll: async (routineId, status, note, scope = 'all', referenceDate = '') => {
     const userId = await getUserId();
     const state = get();
     
     // Find all existing instances for this routine
-    const existingInstances = state.taskInstances.filter(t => t.routineId === routineId);
+    let existingInstances = state.taskInstances.filter(t => t.routineId === routineId);
+    
+    if (scope === 'future' && referenceDate) {
+      existingInstances = existingInstances.filter(t => t.date >= referenceDate);
+    } else if (scope === 'past' && referenceDate) {
+      existingInstances = existingInstances.filter(t => t.date <= referenceDate);
+    }
+
     if (existingInstances.length === 0) return;
 
     const updatedInstances = existingInstances.map(current => {

@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Trash2, Plus, Minus, Settings } from 'lucide-react';
+import { Plus, X, Trash2, Settings, CheckCircle2, Circle, Clock, AlertCircle, RefreshCcw, XCircle, ChevronDown, Palmtree, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { format, addDays } from 'date-fns';
 import { getCategoryStyles } from '../../utils/colors';
-import type { RecurrenceType, Routine } from '../../types';
+import type { RecurrenceType, Routine, TaskStatus } from '../../types';
 import { CategoryManagerModal } from './CategoryManagerModal';
 
 interface TaskModalProps {
@@ -40,6 +40,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [customDays, setCustomDays] = useState<number[]>([]);
   const [specificDate, setSpecificDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
   const [useMultipleTimes, setUseMultipleTimes] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
@@ -48,16 +49,19 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
+  const [statusOverride, setStatusOverride] = useState<TaskStatus | 'auto'>('auto');
 
   React.useEffect(() => {
     if (isOpen) {
       if (initialData) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTitle(initialData.title);
         setDescription(initialData.description || '');
         setTime(initialData.time || '');
         setEndTime(initialData.endTime || '');
         setCategoryId(initialData.categoryId || categories[0]?.id || '');
         setTimes(initialData.times?.length ? initialData.times : ['08:00']);
+        setStatusOverride(initialData.statusOverride || 'auto');
 
         if (initialData.recurrence === 'multiple_times') {
           // backward compat: old multiple_times = daily + múltiplos horários
@@ -85,6 +89,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         setEndTime('');
         setTimes(['08:00']);
         setCategoryId(categories[0]?.id || '');
+        setStatusOverride('auto');
         setRecurrenceMenu('daily');
         setCustomDays([]);
         setSpecificDate(format(new Date(), 'yyyy-MM-dd'));
@@ -112,7 +117,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     setIsSubmitting(true);
     setFeedbackState({ type: null, message: '' });
 
-    let finalRecurrence: RecurrenceType = 'daily';
+    let finalRecurrence: RecurrenceType;
     let finalDate: string | undefined = undefined;
 
     if (recurrenceMenu === 'today') {
@@ -142,6 +147,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           time: recurrenceMenu !== 'multiple_times' ? (time || undefined) : undefined,
           endTime: recurrenceMenu !== 'multiple_times' ? (endTime || undefined) : undefined,
           times: validTimes,
+          statusOverride: statusOverride === 'auto' ? undefined : statusOverride,
         });
       } else {
         await addRoutine({
@@ -154,6 +160,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           time: recurrenceMenu !== 'multiple_times' ? (time || undefined) : undefined,
           endTime: recurrenceMenu !== 'multiple_times' ? (endTime || undefined) : undefined,
           times: validTimes,
+          statusOverride: statusOverride === 'auto' ? undefined : statusOverride,
         });
       }
 
@@ -463,34 +470,74 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             </div>
           </div>
 
+          {/* Status Inicial/Global */}
+          <div>
+            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
+              Status Padrão
+              <InfoTooltip>Define um status fixo para esta tarefa (ignora o cálculo automático baseado no horário). Útil se a tarefa já estiver cancelada ou concluída antes mesmo de começar.</InfoTooltip>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { value: 'auto', label: 'Automático', icon: RefreshCcw, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/30' },
+                { value: 'completed', label: 'Concluído', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/30' },
+                { value: 'in_progress', label: 'Em Andamento', icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10 border-yellow-500/30' },
+                { value: 'late', label: 'Em Atraso', icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/30' },
+                { value: 'canceled', label: 'Cancelado', icon: XCircle, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/30' },
+                { value: 'vacation', label: 'Férias', icon: Palmtree, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/30' },
+                { value: 'pending', label: 'Pendente', icon: Circle, color: 'text-text-tertiary', bg: 'bg-elements border-border-gray' },
+              ].map((s) => {
+                const Icon = s.icon;
+                const isSelected = statusOverride === s.value;
+                return (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setStatusOverride(s.value as TaskStatus | 'auto')}
+                    className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer text-left ${
+                      isSelected ? s.bg : 'bg-bg-primary border-border-base hover:border-border-gray'
+                    }`}
+                  >
+                    <Icon size={16} className={`shrink-0 ${isSelected ? s.color : 'text-text-tertiary'}`} />
+                    <span className={`text-xs font-medium truncate ${isSelected ? 'text-text-primary' : 'text-text-secondary'}`}>
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Repetição */}
           <div className="relative">
             <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
               Repetição
               <InfoTooltip>Define com que frequência esta tarefa aparece na sua agenda. "Horários Específicos" cria sub-itens independentes por horário — ideal para metas como beber água ou tomar remédio.</InfoTooltip>
             </label>
-            <button
-              ref={dropdownBtnRef}
-              type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`w-full bg-bg-primary border rounded-lg pl-4 pr-5 py-3 text-text-primary transition-all flex justify-between items-center cursor-pointer ${isDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}>
+              <button
+                ref={dropdownBtnRef}
+                type="button"
+                onClick={() => {
+                  if (!isDropdownOpen && dropdownBtnRef.current) {
+                    setDropdownRect(dropdownBtnRef.current.getBoundingClientRect());
+                  }
+                  setIsDropdownOpen(!isDropdownOpen);
+                }}
+                className={`w-full bg-bg-primary border rounded-lg pl-4 pr-5 py-3 text-text-primary transition-all flex justify-between items-center cursor-pointer ${isDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}>
               <span>{recurrenceOptions.find(o => o.value === recurrenceMenu)?.label}</span>
               <ChevronDown size={18} className={`shrink-0 ml-2 text-text-tertiary transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-            {isDropdownOpen && (() => {
-              const rect = dropdownBtnRef.current?.getBoundingClientRect();
-              return (
-                <>
-                  <div className="fixed inset-0 z-60" onClick={() => setIsDropdownOpen(false)} />
-                  <div
-                    style={rect ? {
-                      position: 'fixed',
-                      top: rect.bottom + 6,
-                      left: rect.left,
-                      width: rect.width,
-                      zIndex: 61,
-                      maxHeight: Math.min(192, window.innerHeight - rect.bottom - 12),
-                    } : {}}
+            {isDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-60" onClick={() => setIsDropdownOpen(false)} />
+                <div
+                  style={dropdownRect ? {
+                    position: 'fixed',
+                    top: dropdownRect.bottom + 6,
+                    left: dropdownRect.left,
+                    width: dropdownRect.width,
+                    zIndex: 61,
+                    maxHeight: Math.min(192, window.innerHeight - dropdownRect.bottom - 12),
+                  } : {}}
                     className="bg-bg-secondary border border-border-base rounded-lg shadow-xl overflow-y-auto flex flex-col py-1 animate-in fade-in slide-in-from-top-2 duration-200"
                   >
                     {recurrenceOptions.map(option => (
@@ -500,9 +547,8 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                       </button>
                     ))}
                   </div>
-                </>
-              );
-            })()}
+              </>
+            )}
           </div>
 
           {/* Toggle: múltiplos horários por dia */}

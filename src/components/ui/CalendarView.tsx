@@ -21,6 +21,7 @@ const getStatusColor = (status: TaskStatus) => {
     case 'in_progress': return 'bg-yellow-500';
     case 'late': return 'bg-red-500';
     case 'canceled': return 'bg-purple-500';
+    case 'vacation': return 'bg-orange-500';
     default: return 'bg-neutral-500';
   }
 };
