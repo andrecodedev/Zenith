@@ -150,6 +150,7 @@ export const useStore = create<StoreState>((set, get) => ({
       custom_days: routine.customDays ?? null,
       date: routine.date ?? null,
       time: routine.time ?? null,
+      status_override: routine.statusOverride ?? null,
     };
     if (routine.endTime !== undefined) insertPayload.end_time = routine.endTime;
     if (routine.times !== undefined) insertPayload.times = routine.times;
@@ -173,6 +174,7 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updates.time !== undefined) dbUpdates.time = updates.time;
     if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime;
     if (updates.times !== undefined) dbUpdates.times = updates.times ?? null;
+    if (updates.statusOverride !== undefined) dbUpdates.status_override = updates.statusOverride ?? null;
 
     await supabase.from('routines').update(dbUpdates).eq('id', id);
   },
