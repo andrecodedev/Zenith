@@ -50,12 +50,14 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [statusOverride, setStatusOverride] = useState<TaskStatus | 'auto'>('auto');
+  const hasInitialized = useRef(false);
 
   React.useEffect(() => {
     if (isOpen) {
-      if (initialData) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTitle(initialData.title);
+      if (!hasInitialized.current) {
+        if (initialData) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setTitle(initialData.title);
         setDescription(initialData.description || '');
         setTime(initialData.time || '');
         setEndTime(initialData.endTime || '');
@@ -95,8 +97,12 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         setSpecificDate(format(new Date(), 'yyyy-MM-dd'));
         setUseMultipleTimes(false);
       }
+      hasInitialized.current = true;
+      }
+    } else {
+      hasInitialized.current = false;
     }
-  }, [isOpen, initialData, categories]);
+  }, [isOpen, initialData]);
 
   const recurrenceOptions = [
     { value: 'today', label: 'Somente hoje' },
