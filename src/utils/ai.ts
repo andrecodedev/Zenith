@@ -66,7 +66,7 @@ Tarefas já agendadas do usuário (não crie conflitos com estas):
 ${JSON.stringify(compactRoutines.slice(0, 100))}
 
 Regras INEGOCIÁVEIS de agendamento:
-1. Cada aula dura em média 1 hora.
+1. Se a ementa fornecer a duração/tempo da aula, calcule o \`endTime\` exato da aula adicionando essa duração ao \`time\`. Se não fornecer, assuma que cada aula dura em média 1 hora.
 2. Agende no máximo 2 aulas por dia.
 3. Respeite o descanso humano: NUNCA agende aulas entre 22:00 e 08:00.
 4. Dias de semana (Seg-Sex): Tente agendar preferencialmente após as 18:00.

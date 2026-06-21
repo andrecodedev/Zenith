@@ -8,10 +8,10 @@ import { addDays, format, parseISO } from 'date-fns';
 const SYLLABUS_PROMPT = `Tenho a ementa de um curso. Reformate-a seguindo EXATAMENTE este padrão, sem adicionar nada além disso:
 
 MÓDULO: [nome do módulo]
-AULA: [nome da aula]
-AULA: [nome da aula]
+AULA: [nome da aula] - [tempo da aula se houver]
+AULA: [nome da aula] - [tempo da aula se houver]
 
-Cada módulo começa com "MÓDULO:" e cada aula com "AULA:". Aqui está a ementa:
+Cada módulo começa com "MÓDULO:" e cada aula com "AULA:". Se a ementa original contiver a duração da aula (ex: 15m, 01:20:00), coloque no final da linha após um hífen. Aqui está a ementa:
 [COLE SUA EMENTA AQUI]`;
 
 interface CourseBreakerModalProps {
@@ -295,7 +295,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
               Ementa do Curso (Cole tudo aqui)
               <InfoTooltip>
                 <p className="mb-2">Cole a ementa completa do curso. Para melhores resultados, use uma IA (ChatGPT, Gemini) para formatar antes de colar. Padrão esperado:</p>
-                <code className="block bg-bg-secondary rounded p-2 text-text-primary text-[11px] leading-5 whitespace-pre">MÓDULO: Nome do módulo{'\n'}AULA: Nome da aula{'\n'}AULA: Nome da aula</code>
+                <code className="block bg-bg-secondary rounded p-2 text-text-primary text-[11px] leading-5 whitespace-pre">MÓDULO: Nome do módulo{'\n'}AULA: Nome da aula - 15:00{'\n'}AULA: Nome da aula - 01:20:00</code>
                 <CopyButton text={SYLLABUS_PROMPT} />
               </InfoTooltip>
             </label>
