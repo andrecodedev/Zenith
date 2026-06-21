@@ -25,28 +25,41 @@ serve(async () => {
 
   const { data: routines } = await supabase
     .from('routines')
-    .select('id, title, description, user_id, time')
-    .not('time', 'is', null);
+    .select('id, title, description, user_id, time, times');
 
-  if (!routines?.length) {
-    console.log('[push] STOP: no routines with time set');
+  const validRoutines = routines?.filter(r => r.time || (r.times && r.times.length > 0)) || [];
+
+  if (!validRoutines.length) {
+    console.log('[push] STOP: no routines with time/times set');
     return new Response('no routines', { status: 200 });
   }
-  console.log(`[push] ${routines.length} routines with time. Checking against ${hh}:${mm} (nowMin=${nowMin})`);
+  console.log(`[push] ${validRoutines.length} routines with time/times. Checking against ${hh}:${mm} (nowMin=${nowMin})`);
   routines.forEach(r => console.log(`  routine: "${r.title}" time="${r.time}" user=${r.user_id}`));
 
-  const matching = routines.filter(r => {
-    const [rh, rm] = (r.time as string).split(':').map(Number);
-    const diff = Math.abs(rh * 60 + rm - nowMin);
-    console.log(`  match check: "${r.title}" ${r.time} → diff=${diff}`);
-    return diff <= 1;
+  const matching: any[] = [];
+
+  validRoutines.forEach(r => {
+    // Checa time normal
+    if (r.time) {
+      const [rh, rm] = (r.time as string).split(':').map(Number);
+      const diff = Math.abs(rh * 60 + rm - nowMin);
+      if (diff <= 1) matching.push({ ...r, matchedTime: r.time });
+    }
+    // Checa múltiplos horários (array times)
+    if (r.times && Array.isArray(r.times)) {
+      r.times.forEach((t: string) => {
+        const [rh, rm] = t.split(':').map(Number);
+        const diff = Math.abs(rh * 60 + rm - nowMin);
+        if (diff <= 1) matching.push({ ...r, matchedTime: t });
+      });
+    }
   });
 
   if (!matching.length) {
     console.log('[push] STOP: no time match');
     return new Response('no matches', { status: 200 });
   }
-  console.log(`[push] ${matching.length} matching routine(s)`);
+  console.log(`[push] ${matching.length} matching routine slot(s)`);
 
   const { data: alreadySent } = await supabase
     .from('push_sent_log')
@@ -54,12 +67,8 @@ serve(async () => {
     .eq('sent_date', todayStr)
     .in('routine_id', matching.map(r => r.id));
 
-  const sentMap = new Map(alreadySent?.map((r: any) => [r.routine_id, r.routine_time]) ?? []);
-  const toSend = matching.filter(r => {
-    const sentTime = sentMap.get(r.id);
-    if (!sentTime) return true;
-    return sentTime !== r.time;
-  });
+  const sentMap = new Map(alreadySent?.map((r: any) => [`${r.routine_id}_${r.routine_time}`, true]) ?? []);
+  const toSend = matching.filter(r => !sentMap.has(`${r.id}_${r.matchedTime}`));
 
   if (!toSend.length) {
     console.log('[push] STOP: already notified today');
@@ -104,7 +113,7 @@ serve(async () => {
   await Promise.all(sends);
 
   await supabase.from('push_sent_log').upsert(
-    toSend.map(r => ({ routine_id: r.id, sent_date: todayStr, routine_time: r.time })),
+    toSend.map(r => ({ routine_id: r.id, sent_date: todayStr, routine_time: r.matchedTime })),
     { onConflict: 'routine_id,sent_date' }
   );
 

@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../store/useStore';
-import { X, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Trash2, Plus, Minus } from 'lucide-react';
+import { X, ChevronDown, ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, Trash2, Plus, Minus, Settings } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { format, addDays } from 'date-fns';
 import { getCategoryStyles } from '../../utils/colors';
 import type { RecurrenceType, Routine } from '../../types';
+import { CategoryManagerModal } from './CategoryManagerModal';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -39,12 +40,14 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [customDays, setCustomDays] = useState<number[]>([]);
   const [specificDate, setSpecificDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [useMultipleTimes, setUseMultipleTimes] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [feedbackState, setFeedbackState] = useState<{type: 'success' | 'error' | null, message: string}>({ type: null, message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -57,7 +60,9 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         setTimes(initialData.times?.length ? initialData.times : ['08:00']);
 
         if (initialData.recurrence === 'multiple_times') {
-          setRecurrenceMenu('multiple_times');
+          // backward compat: old multiple_times = daily + múltiplos horários
+          setRecurrenceMenu('daily');
+          setUseMultipleTimes(true);
         } else if (initialData.recurrence === 'once') {
           const todayStr = format(new Date(), 'yyyy-MM-dd');
           const tomorrowStr = format(addDays(new Date(), 1), 'yyyy-MM-dd');
@@ -67,9 +72,11 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             setRecurrenceMenu('specific_date');
             if (initialData.date) setSpecificDate(initialData.date);
           }
+          setUseMultipleTimes(!!(initialData.times?.length));
         } else {
           setRecurrenceMenu(initialData.recurrence);
           if (initialData.customDays) setCustomDays(initialData.customDays);
+          setUseMultipleTimes(!!(initialData.times?.length));
         }
       } else {
         setTitle('');
@@ -81,6 +88,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
         setRecurrenceMenu('daily');
         setCustomDays([]);
         setSpecificDate(format(new Date(), 'yyyy-MM-dd'));
+        setUseMultipleTimes(false);
       }
     }
   }, [isOpen, initialData, categories]);
@@ -93,7 +101,6 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     { value: 'weekdays', label: 'Dias úteis (Seg-Sex)' },
     { value: 'weekends', label: 'Finais de semana' },
     { value: 'custom', label: 'Dias específicos da semana' },
-    { value: 'multiple_times', label: 'Horários Específicos (por dia)' },
   ];
 
   if (!isOpen) return null;
@@ -117,15 +124,11 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     } else if (recurrenceMenu === 'specific_date') {
       finalRecurrence = 'once';
       finalDate = specificDate;
-    } else if (recurrenceMenu === 'multiple_times') {
-      finalRecurrence = 'multiple_times';
     } else {
       finalRecurrence = recurrenceMenu as RecurrenceType;
     }
 
-    const validTimes = recurrenceMenu === 'multiple_times'
-      ? times.filter(t => t.length === 5)
-      : undefined;
+    const validTimes = useMultipleTimes ? times.filter(t => t.length === 5) : undefined;
 
     try {
       if (initialData) {
@@ -176,6 +179,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     setTimes(['08:00']);
     setRecurrenceMenu('daily');
     setCustomDays([]);
+    setUseMultipleTimes(false);
     setActiveTemplate(null);
     setShowConfirmClose(false);
     setFeedbackState({ type: null, message: '' });
@@ -206,7 +210,9 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     if (recurrenceMenu === 'custom') {
       if ([...customDays].sort().join() !== [...(initialData.customDays || [])].sort().join()) return true;
     }
-    if (recurrenceMenu === 'multiple_times') {
+    const origMultiple = initialData.recurrence === 'multiple_times' || !!(initialData.times?.length);
+    if (useMultipleTimes !== origMultiple) return true;
+    if (useMultipleTimes) {
       if ([...times].sort().join() !== [...(initialData.times || [])].sort().join()) return true;
     }
     return false;
@@ -253,11 +259,14 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     setActiveTemplate(tpl.label);
     setTitle(tpl.title);
     setDescription(tpl.description);
-    setRecurrenceMenu(tpl.recurrence);
-    if (tpl.recurrence === 'multiple_times' && 'times' in tpl) {
-      setTimes([...tpl.times]);
-    } else if ('time' in tpl && tpl.time) {
-      setTime(tpl.time as string);
+    if (tpl.recurrence === 'multiple_times') {
+      setRecurrenceMenu('daily');
+      setUseMultipleTimes(true);
+      if ('times' in tpl) setTimes([...tpl.times]);
+    } else {
+      setRecurrenceMenu(tpl.recurrence);
+      setUseMultipleTimes(false);
+      if ('time' in tpl && tpl.time) setTime(tpl.time as string);
     }
     const pessoalCat = categories.find(c => c.name.toLowerCase().includes('pessoal'));
     if (pessoalCat) setCategoryId(pessoalCat.id);
@@ -431,10 +440,19 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
 
           {/* Categoria */}
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
-              Categoria
-              <InfoTooltip>Agrupa tarefas por área. A cor da categoria aparece como tag colorida na lista do dia.</InfoTooltip>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+                Categoria
+                <InfoTooltip>Agrupa tarefas por área. A cor da categoria aparece como tag colorida na lista do dia.</InfoTooltip>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCategoryManagerOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-sm transition-all border text-text-secondary bg-elements border-border-base hover:bg-elements-hover hover:border-border-gray hover:text-text-primary cursor-pointer"
+              >
+                <Settings size={12} /> Gerenciar
+              </button>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {categories.map(cat => (
                 <button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)}
@@ -487,8 +505,22 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             })()}
           </div>
 
-          {/* Horários Específicos */}
-          {recurrenceMenu === 'multiple_times' && (
+          {/* Toggle: múltiplos horários por dia */}
+          <div
+            className="flex items-center justify-between p-3 bg-bg-primary border border-border-base rounded-lg cursor-pointer select-none"
+            onClick={() => setUseMultipleTimes(prev => !prev)}
+          >
+            <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary cursor-pointer">
+              Múltiplos horários por dia
+              <InfoTooltip>Ativa repetição por horários dentro do mesmo dia — ex: tomar remédio às 08:00 e 20:00. Os dias de repetição são definidos no campo "Repetição" acima.</InfoTooltip>
+            </label>
+            <div className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${useMultipleTimes ? 'bg-blue-500' : 'bg-elements border border-border-gray'}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${useMultipleTimes ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </div>
+          </div>
+
+          {/* Horários Específicos (visível só quando toggle ON) */}
+          {useMultipleTimes && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
@@ -520,7 +552,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                 ))}
               </div>
               <p className="text-xs text-text-tertiary mt-2">
-                Cada horário vira um sub-item independente. Progresso: {times.filter(t => t.length === 5).length} horário(s) configurado(s).
+                {times.filter(t => t.length === 5).length} horário(s) configurado(s) — repetem conforme a frequência selecionada acima.
               </p>
             </div>
           )}
@@ -550,8 +582,8 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             </div>
           )}
 
-          {/* Horário único (não para multiple_times) */}
-          {recurrenceMenu !== 'multiple_times' && (
+          {/* Horário único (visível só quando toggle OFF) */}
+          {!useMultipleTimes && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
@@ -583,7 +615,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
             )}
             <button
               type="submit"
-              disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0) || (recurrenceMenu === 'multiple_times' && times.filter(t => t.length === 5).length === 0) || isSubmitting || feedbackState.type === 'success'}
+              disabled={!title.trim() || (recurrenceMenu === 'custom' && customDays.length === 0) || (useMultipleTimes && times.filter(t => t.length === 5).length === 0) || isSubmitting || feedbackState.type === 'success'}
               className={`relative w-full rounded-lg py-3 font-bold transition-all cursor-pointer flex items-center justify-center gap-2 overflow-hidden ${feedbackState.type === 'success' ? 'bg-emerald-500/20 text-emerald-500 cursor-default' : 'bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-text-primary'}`}>
               {isSubmitting ? (<><Loader2 size={20} className="animate-spin" />Salvando...</>) :
                feedbackState.type === 'success' ? (<><CheckCircle2 size={20} />Salvo com sucesso!</>) :
@@ -592,6 +624,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           </div>
         </form>
       </div>
+      <CategoryManagerModal isOpen={isCategoryManagerOpen} onClose={() => setIsCategoryManagerOpen(false)} />
     </div>
   );
 }

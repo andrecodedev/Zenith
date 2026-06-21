@@ -27,7 +27,7 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
   const taskInstances = useStore(s => s.taskInstances);
   const toggleTimeSlot = useStore(s => s.toggleTimeSlot);
 
-  const isMultipleTimes = routine.recurrence === 'multiple_times';
+  const isMultipleTimes = routine.recurrence === 'multiple_times' || (!!routine.times && routine.times.length > 0);
   const times = routine.times || [];
 
   // Instâncias de cada slot de horário
@@ -127,15 +127,22 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
                 {category?.name}
               </span>
               {isMultipleTimes ? (
-                <span className={`text-xs px-2 py-1 rounded-sm inline-block border ${
-                  completedCount === totalCount
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                    : completedCount > 0
-                    ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                    : 'bg-elements text-text-secondary border-border-gray'
-                }`}>
-                  {completedCount}/{totalCount} completos
-                </span>
+                <>
+                  <span className={`text-xs px-2 py-1 rounded-sm inline-block border ${
+                    completedCount === totalCount
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                      : completedCount > 0
+                      ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                      : 'bg-elements text-text-secondary border-border-gray'
+                  }`}>
+                    {completedCount}/{totalCount} completos
+                  </span>
+                  {times.length > 0 && (
+                    <span className="text-xs px-2 py-1 rounded-sm inline-block bg-elements text-text-secondary border border-border-gray truncate max-w-[200px]">
+                      {times.map(t => t.slice(0, 5)).join(' • ')}
+                    </span>
+                  )}
+                </>
               ) : (
                 <>
                   {routine.time && (

@@ -28,6 +28,28 @@ const getStatusColor = (status: TaskStatus) => {
 const HOUR_HEIGHT = 60; // 60px per hour
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+// Distribui eventos sobrepostos em colunas lado a lado
+function assignColumns<T extends { key: string; startMinutes: number; endMinutes: number }>(
+  events: T[]
+): (T & { col: number; totalCols: number })[] {
+  if (!events.length) return [];
+  const sorted = [...events].sort((a, b) => a.startMinutes - b.startMinutes);
+  const colEnds: number[] = [];
+  const withCols = sorted.map(ev => {
+    let col = colEnds.findIndex(t => t <= ev.startMinutes);
+    if (col === -1) { col = colEnds.length; colEnds.push(0); }
+    colEnds[col] = ev.endMinutes;
+    return { ...ev, col };
+  });
+  return withCols.map(ev => {
+    const overlapping = withCols.filter(e =>
+      e.startMinutes < ev.endMinutes && e.endMinutes > ev.startMinutes
+    );
+    const totalCols = overlapping.reduce((max, e) => Math.max(max, e.col + 1), 1);
+    return { ...ev, totalCols };
+  });
+}
+
 export function CalendarView({ selectedDate, onNavigate, onSelectDate }: CalendarViewProps) {
   const { routines, categories, taskInstances } = useStore();
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
@@ -160,7 +182,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
 
       <div className="flex-1 flex flex-col min-h-0 overflow-x-auto hide-scrollbar">
         {viewMode === 'month' ? (
-          <div className="flex-1 flex flex-col min-w-[700px]">
+          <div className="flex-1 flex flex-col min-w-[1400px]">
             {/* Cabecalho dos dias da semana (Mês) */}
             <div className="grid grid-cols-7 border-b border-border-base shrink-0">
               {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
@@ -194,7 +216,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
                           <div 
                             key={routine.id}
                             onClick={() => setSelectedRoutineId({ id: routine.id, dateStr: dStr })}
-                            className={`px-1.5 py-0.5 text-[10px] rounded truncate cursor-pointer transition-transform hover:scale-[1.02] flex items-center gap-1 ${isCompleted ? 'opacity-50 line-through bg-bg-secondary' : 'bg-bg-secondary border border-border-base/50'}`}
+                            className={`px-1.5 py-1 text-xs rounded truncate cursor-pointer transition-transform hover:scale-[1.02] flex items-center gap-1 ${isCompleted ? 'opacity-50 line-through bg-bg-secondary' : 'bg-bg-secondary border border-border-base/50'}`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusColor(status)}`} />
                             {routine.time && <span className="font-bold">{routine.time}</span>}
@@ -203,7 +225,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
                         );
                       })}
                       {dayRoutines.length > 4 && (
-                        <div className="text-[10px] text-text-tertiary text-center cursor-pointer hover:text-text-primary mt-1">
+                        <div className="text-xs text-text-tertiary text-center cursor-pointer hover:text-text-primary mt-1">
                           + {dayRoutines.length - 4} mais
                         </div>
                       )}
@@ -216,50 +238,58 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
         ) : (
           <>
             {/* Grid Header (Days) */}
-            <div className={`flex border-b border-border-base shrink-0 ml-16 ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[840px]'}`}>
-          {currentDays.map(({ dateStr, dayName, dayNumber }) => {
-          const isTodaysDate = dateStr === format(new Date(), 'yyyy-MM-dd');
-          return (
-            <div key={dateStr} className="flex-1 text-center py-3 border-r border-border-base last:border-r-0 min-w-[120px]">
-              <div className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">{dayName}</div>
-              <div className={`text-2xl font-bold font-title inline-flex items-center justify-center w-10 h-10 rounded-full ${isTodaysDate ? 'bg-btn-bg text-text-primary' : 'text-text-primary'}`}>
-                {dayNumber}
-              </div>
-            </div>
-          );
-        })}
-        </div>
-
-        {/* All Day Section (Optional feature space, hidden for now unless we have tasks without time) */}
-        {currentDays.some(({ dateStr }) => routines.some(r => isTaskDueToday(r, dateStr) && !r.time)) && (
-          <div className={`flex border-b border-border-base shrink-0 ml-16 ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[840px]'}`}>
-            {currentDays.map(({ dateStr }) => {
-            const allDayRoutines = routines.filter(r => isTaskDueToday(r, dateStr) && !r.time);
-            return (
-              <div key={dateStr} className="flex-1 p-1 border-r border-border-base last:border-r-0 min-h-[40px] flex flex-col gap-1 min-w-[120px]">
-                {allDayRoutines.map(routine => {
-                  const category = categories.find(c => c.id === routine.categoryId);
-                  const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
-                  const status = computeTaskStatus(routine, dateStr, instance);
-                  
+            <div className={`flex border-b border-border-base shrink-0 ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[1800px]'}`}>
+              <div className="w-16 shrink-0 border-r border-border-base bg-bg-primary" />
+              <div className="flex-1 flex">
+                {currentDays.map(({ dateStr, dayName, dayNumber }) => {
+                  const isTodaysDate = dateStr === format(new Date(), 'yyyy-MM-dd');
                   return (
-                    <div
-                      key={routine.id}
-                      onClick={() => setSelectedRoutineId({ id: routine.id, dateStr })}
-                      className={`px-2 py-1 text-xs rounded truncate cursor-pointer ${getCategoryStyles(category?.color)} ${(status === 'completed' || status === 'canceled') ? 'opacity-50 line-through' : ''}`}
-                    >
-                      {routine.title}
+                    <div key={dateStr} className="flex-1 text-center py-3 border-r border-border-base last:border-r-0 min-w-[240px]">
+                      <div className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">{dayName}</div>
+                      <div className={`text-2xl font-bold font-title inline-flex items-center justify-center w-10 h-10 rounded-full ${isTodaysDate ? 'bg-btn-bg text-text-primary' : 'text-text-primary'}`}>
+                        {dayNumber}
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            );
-          })}
+            </div>
+
+        {/* All Day Section — só tarefas sem horário E sem times[] */}
+        {currentDays.some(({ dateStr }) => routines.some(r => isTaskDueToday(r, dateStr) && !r.time && !r.times?.length)) && (
+          <div className={`flex border-b border-border-base shrink-0 ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[1800px]'}`}>
+            <div className="w-16 shrink-0 border-r border-border-base bg-bg-primary flex flex-col justify-center items-center text-[10px] text-text-tertiary font-medium">
+              o dia todo
+            </div>
+            <div className="flex-1 flex">
+              {currentDays.map(({ dateStr }) => {
+                const allDayRoutines = routines.filter(r => isTaskDueToday(r, dateStr) && !r.time && !r.times?.length);
+                return (
+                  <div key={dateStr} className="flex-1 p-1 border-r border-border-base last:border-r-0 min-h-[40px] flex flex-col gap-1 min-w-[240px]">
+                    {allDayRoutines.map(routine => {
+                      const category = categories.find(c => c.id === routine.categoryId);
+                      const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
+                      const status = computeTaskStatus(routine, dateStr, instance);
+                      
+                      return (
+                        <div
+                          key={routine.id}
+                          onClick={() => setSelectedRoutineId({ id: routine.id, dateStr })}
+                          className={`px-2 py-1 text-xs rounded truncate cursor-pointer ${getCategoryStyles(category?.color)} ${(status === 'completed' || status === 'canceled') ? 'opacity-50 line-through' : ''}`}
+                        >
+                          {routine.title}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Scrollable Timeline Grid */}
-        <div className={`flex-1 overflow-y-auto relative hide-scrollbar ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[840px]'}`} ref={gridRef}>
+        <div className={`flex-1 overflow-y-auto relative hide-scrollbar ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[1800px]'}`} ref={gridRef}>
           <div className="flex h-[1440px]"> {/* 24 hours * 60px */}
             
             {/* Time Labels (Y-axis) */}
@@ -290,54 +320,84 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
               </div>
             )}
 
-            {/* Day Columns */}
+            {/* Day Columns — pool unificado, estilo Google Calendar */}
             {currentDays.map(({ dateStr }) => {
-              const timedRoutines = routines.filter(r => isTaskDueToday(r, dateStr) && r.time);
-              
+              // Pool único: eventos com horário + slots de múltiplos horários
+              const allEvs = [
+                ...routines
+                  .filter(r => isTaskDueToday(r, dateStr) && r.time)
+                  .map(r => ({
+                    key: r.id,
+                    routine: r,
+                    slotTime: r.time!,
+                    isMultiSlot: false as const,
+                    startMinutes: parseTimeToMinutes(r.time!),
+                    endMinutes: r.endTime
+                      ? parseTimeToMinutes(r.endTime)
+                      : parseTimeToMinutes(r.time!) + 60,
+                  })),
+                ...routines
+                  .filter(r => isTaskDueToday(r, dateStr) && !r.time && !!r.times?.length)
+                  .flatMap(r =>
+                    (r.times || []).map(slotTime => ({
+                      key: `${r.id}_${dateStr}_${slotTime}`,
+                      routine: r,
+                      slotTime,
+                      isMultiSlot: true as const,
+                      startMinutes: parseTimeToMinutes(slotTime),
+                      endMinutes: parseTimeToMinutes(slotTime) + 45,
+                    }))
+                  ),
+              ];
+
+              const positioned = assignColumns(allEvs);
+
               return (
-                <div key={dateStr} className="flex-1 relative border-r border-border-base/30 last:border-r-0 min-w-[120px]">
-                  {timedRoutines.map(routine => {
-                    const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
-                    const status = computeTaskStatus(routine, dateStr, instance);
-                        const isCompleted = status === 'completed' || status === 'canceled';
+                <div key={dateStr} className="flex-1 relative border-r border-border-base/30 last:border-r-0 min-w-[240px]">
+                  {positioned.map(ev => {
+                    const { col, totalCols, startMinutes, endMinutes } = ev;
+                    const leftPct = (col / totalCols) * 100;
+                    const widthPct = (1 / totalCols) * 100;
+
+                    const category = categories.find(c => c.id === ev.routine.categoryId);
+                    const styleClass = getCategoryStyles(category?.color);
                     
-                    const startMinutes = parseTimeToMinutes(routine.time!);
-                    const endMinutes = routine.endTime ? parseTimeToMinutes(routine.endTime) : startMinutes + 60; // default 1h
-                    const duration = Math.max(endMinutes - startMinutes, 30); // min 30px height
+                    const duration = endMinutes - startMinutes;
+                    
+                    // Se for multi slot, tem um ID de instância diferente
+                    const slotId = ev.isMultiSlot ? `${ev.routine.id}_${dateStr}_${ev.slotTime.replace(':', '')}` : undefined;
+                    const instance = ev.isMultiSlot 
+                      ? taskInstances.find(t => t.id === slotId)
+                      : taskInstances.find(t => t.routineId === ev.routine.id && t.date === dateStr);
+                      
+                    const status = ev.isMultiSlot
+                      ? (instance?.completed ? 'completed' : 'pending')
+                      : computeTaskStatus(ev.routine, dateStr, instance);
+
+                    const isCompleted = status === 'completed' || status === 'canceled';
 
                     return (
                       <div
-                        key={routine.id}
-                        onClick={() => setSelectedRoutineId({ id: routine.id, dateStr })}
-                        className={`absolute left-1 right-1 rounded-md py-1 px-2 overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] border shadow-sm z-10 flex flex-col justify-start ${
-                          isCompleted ? 'bg-bg-secondary/80 border-border-base/50' : 'bg-bg-secondary border-border-gray hover:border-neutral-500'
-                        }`}
-                        style={{ 
+                        key={ev.key}
+                        onClick={() => setSelectedRoutineId({ id: ev.routine.id, dateStr })}
+                        className={`absolute rounded-md px-2 py-1 overflow-hidden cursor-pointer transition-all hover:brightness-110 hover:shadow-md z-10 flex flex-col justify-start ${styleClass} ${isCompleted ? 'opacity-50' : ''}`}
+                        style={{
                           top: `${startMinutes}px`,
-                          height: `${duration}px`
+                          height: `${Math.max(duration, 30)}px`,
+                          left: `calc(${leftPct}% + 1px)`,
+                          width: `calc(${widthPct}% - 2px)`,
                         }}
                       >
-                        <div className="flex items-start gap-1.5">
-                          <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${getStatusColor(status)}`} />
-                          <div className="flex-1 min-w-0">
-                            {duration <= 30 ? (
-                              <p className={`text-xs font-bold leading-tight truncate ${isCompleted ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
-                                {routine.time} <span className="font-normal opacity-80 ml-1">{routine.title}</span>
-                              </p>
-                            ) : (
-                              <>
-                                <p className={`text-xs font-bold leading-tight truncate ${isCompleted ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
-                                  {routine.title}
-                                </p>
-                                <p className="text-[10px] text-text-secondary mt-0.5 truncate">
-                                  {routine.time} - {routine.endTime || `${Math.floor(endMinutes/60).toString().padStart(2, '0')}:${(endMinutes%60).toString().padStart(2, '0')}`}
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                         <p className={`text-xs font-bold leading-tight truncate ${isCompleted ? 'line-through' : ''}`}>
+                           {ev.routine.title}
+                         </p>
+                         <p className="text-[10px] opacity-80 mt-0.5 truncate leading-none">
+                           {ev.slotTime.slice(0, 5)} {ev.routine.endTime && !ev.isMultiSlot ? `- ${ev.routine.endTime.slice(0,5)}` : ''}
+                         </p>
                       </div>
                     );
+
+
                   })}
                 </div>
               );

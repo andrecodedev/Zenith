@@ -9,6 +9,8 @@ interface StoreState {
   
   fetchData: () => Promise<void>;
   addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
+  updateCategory: (id: string, updates: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   addRoutine: (routine: Omit<Routine, 'id' | 'createdAt'>) => Promise<void>;
   updateRoutine: (id: string, updates: Partial<Routine>) => Promise<void>;
   deleteRoutine: (id: string) => Promise<void>;
@@ -115,6 +117,20 @@ export const useStore = create<StoreState>((set, get) => ({
       color: category.color,
       icon: category.icon
     });
+  },
+
+  updateCategory: async (id, updates) => {
+    set(state => ({
+      categories: state.categories.map(c => c.id === id ? { ...c, ...updates } : c)
+    }));
+    await supabase.from('categories').update(updates).eq('id', id);
+  },
+
+  deleteCategory: async (id) => {
+    set(state => ({
+      categories: state.categories.filter(c => c.id !== id)
+    }));
+    await supabase.from('categories').delete().eq('id', id);
   },
 
   addRoutine: async (routine) => {
