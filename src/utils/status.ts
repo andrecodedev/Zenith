@@ -2,16 +2,23 @@ import { parseISO, isPast, startOfToday } from 'date-fns';
 import type { Routine, TaskInstance, TaskStatus } from '../types';
 
 export function computeTaskStatus(routine: Routine, dateStr: string, instance?: TaskInstance, timeStr?: string): TaskStatus {
-  // Status explícito do usuário tem prioridade absoluta
-  if (instance?.status) return instance.status;
+  // Determina o status base
+  let baseStatus: TaskStatus = 'pending';
 
-  // Override global da rotina
-  if (routine.statusOverride) return routine.statusOverride;
+  if (instance?.status) {
+    baseStatus = instance.status;
+  } else if (routine.statusOverride) {
+    baseStatus = routine.statusOverride;
+  } else if (instance?.completed) {
+    baseStatus = 'completed';
+  }
 
-  // Flag legada de completed
-  if (instance?.completed) return 'completed';
+  // Se o status for qualquer coisa além de Pendente (Concluído, Férias, Cancelado, etc), ele é soberano.
+  if (baseStatus !== 'pending') {
+    return baseStatus;
+  }
 
-  // Sem status explícito: calcula automaticamente
+  // Inteligência: Se estiver Pendente, o relógio tem a palavra final. Se passou da hora, fica Atrasado.
   const timeToCheck = timeStr || routine.time;
   if (timeToCheck) {
     const scheduledDateTime = parseISO(`${dateStr}T${timeToCheck}`);
