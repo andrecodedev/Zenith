@@ -29,34 +29,59 @@ export async function registerServiceWorker() {
 }
 
 export async function subscribeToPush(): Promise<boolean> {
-  if (!VAPID_PUBLIC_KEY) return false;
-  if (!('PushManager' in window)) return false;
+  if (!VAPID_PUBLIC_KEY) { console.warn('[push] VAPID_PUBLIC_KEY ausente'); return false; }
+  if (!('PushManager' in window)) { console.warn('[push] PushManager não disponível'); return false; }
 
   const granted = await requestNotificationPermission();
-  if (!granted) return false;
+  if (!granted) { console.warn('[push] permissão negada'); return false; }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { console.warn('[push] sem usuário autenticado'); return false; }
 
+    const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
-      });
+
+    if (subscription) {
+      // Verificar se este endpoint já está salvo para o user atual
+      const { data: existing } = await supabase
+        .from('push_subscriptions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('endpoint', subscription.endpoint)
+        .maybeSingle();
+
+      if (existing) {
+        console.log('[push] subscription já existe para user:', user.id);
+        return true;
+      }
+
+      // Endpoint pertence a outro user ou sumiu do banco — forçar unsubscribe
+      // para gerar endpoint novo (sem isso, o upsert bateria na RLS do outro user)
+      await subscription.unsubscribe();
+      console.log('[push] subscription antiga removida, gerando nova para user:', user.id);
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
+    });
 
     const sub = subscription.toJSON();
     const keys = sub.keys as { p256dh: string; auth: string };
 
-    await supabase.from('push_subscriptions').upsert(
-      { user_id: user.id, endpoint: sub.endpoint, p256dh: keys.p256dh, auth: keys.auth },
-      { onConflict: 'endpoint' }
-    );
+    // Limpar entradas antigas deste user e inserir nova limpa
+    await supabase.from('push_subscriptions').delete().eq('user_id', user.id);
+    const { error } = await supabase.from('push_subscriptions').insert({
+      user_id: user.id,
+      endpoint: sub.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+    });
 
+    if (error) { console.error('[push] falha ao salvar no banco:', error); return false; }
+
+    console.log('[push] subscription salva para user:', user.id);
     return true;
   } catch (err) {
     console.error('[subscribeToPush]', err);
