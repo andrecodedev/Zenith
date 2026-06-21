@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2 } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2 } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -14,6 +14,7 @@ import { StatsView } from './components/ui/StatsView';
 import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
 import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
+import { BulkEditorModal } from './components/ui/BulkEditorModal';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -177,6 +178,7 @@ function App() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isBulkEditorModalOpen, setIsBulkEditorModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [statusModalData, setStatusModalData] = useState<{isOpen: boolean, routine: Routine | null, dateStr: string | null, timeStr?: string}>({
     isOpen: false, 
@@ -536,9 +538,17 @@ function App() {
                 </button>
                 <button
                   onClick={() => setIsCourseModalOpen(true)}
-                  className="cursor-pointer bg-btn-bg hover:bg-btn-hover text-text-primary px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all border border-border-base active:scale-95 whitespace-nowrap"
+                  className="bg-bg-secondary border border-border-base text-text-secondary px-3 md:px-4 py-2 rounded-lg font-bold hover:text-text-primary hover:border-neutral-500 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shadow-sm h-[42px] mt-2 md:mt-0"
                 >
-                  <Sparkles size={16} /> Importar Curso
+                  <Sparkles size={20} />
+                  <span className="hidden sm:inline">Importar Cursos</span>
+                </button>
+                <button
+                  onClick={() => setIsBulkEditorModalOpen(true)}
+                  className="bg-bg-secondary border border-border-base text-text-secondary px-3 py-2 rounded-lg font-bold hover:text-text-primary hover:border-neutral-500 transition-all cursor-pointer flex items-center justify-center shadow-sm h-[42px] mt-2 md:mt-0"
+                  title="Configuração Global (Lote)"
+                >
+                  <Settings2 size={20} />
                 </button>
               </div>
 
@@ -602,6 +612,7 @@ function App() {
 
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <CourseBreakerModal isOpen={isCourseModalOpen} onClose={() => setIsCourseModalOpen(false)} />
+      <BulkEditorModal isOpen={isBulkEditorModalOpen} onClose={() => setIsBulkEditorModalOpen(false)} />
       <TaskStatusModal 
         isOpen={statusModalData.isOpen} 
         routine={statusModalData.routine}
