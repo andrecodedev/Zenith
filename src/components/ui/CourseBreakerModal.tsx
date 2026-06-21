@@ -66,7 +66,8 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             recurrence: 'once',
             date: item.date,
             time: item.time,
-            endTime: item.endTime
+            endTime: item.endTime,
+            statusOverride: 'pending'
           });
         }
 
@@ -98,7 +99,8 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             title: `${prefix} ${lesson}`,
             categoryId: courseCategory.id,
             recurrence: 'once',
-            date: dateStr
+            date: dateStr,
+            statusOverride: 'pending'
           });
 
           lessonsScheduledToday++;
