@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStats } from '../../utils/useStats';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Flame, Trophy, TrendingUp, CheckCircle2, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, TrendingUp, CheckCircle2, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTodayStr } from '../../utils/date';
 
 export function StatsView() {
