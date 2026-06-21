@@ -12,11 +12,12 @@ import { TaskStatusModal } from './TaskStatusModal';
 interface RoutineDetailsModalProps {
   routine: Routine | null;
   dateStr: string | null;
+  timeStr?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: RoutineDetailsModalProps) {
+export function RoutineDetailsModal({ routine, dateStr, timeStr, isOpen, onClose }: RoutineDetailsModalProps) {
   const { categories, taskInstances } = useStore();
   const [isEditing, setIsEditing] = React.useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = React.useState(false);
@@ -24,9 +25,9 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
   if (!isOpen || !routine || !dateStr) return null;
 
   const category = categories.find(c => c.id === routine.categoryId);
-  const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr);
+  const instance = taskInstances.find(t => t.routineId === routine.id && t.date === dateStr && (!timeStr || t.id.endsWith(`_${timeStr.replace(':', '')}`)));
   
-  const status = computeTaskStatus(routine, dateStr, instance);
+  const status = computeTaskStatus(routine, dateStr, instance, timeStr);
 
   return (
     <div 
@@ -57,9 +58,9 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
               <span className="text-xs text-text-tertiary bg-bg-primary px-2 py-1 rounded-sm border border-border-base">
                 {format(parseISO(dateStr), "dd 'de' MMM", { locale: ptBR })}
               </span>
-              {routine.time && (
+              {(timeStr || routine.time) && (
                 <span className="text-xs text-text-secondary bg-elements px-2 py-1 rounded-sm border border-border-gray">
-                  {routine.time}
+                  {timeStr || routine.time}
                 </span>
               )}
               {status === 'in_progress' && (
@@ -143,6 +144,7 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
         isOpen={isStatusModalOpen}
         routine={routine}
         dateStr={dateStr}
+        timeStr={timeStr}
         onClose={() => setIsStatusModalOpen(false)}
       />
     </div>

@@ -55,7 +55,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
   const { routines, categories, taskInstances } = useStore();
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
-  const [selectedRoutineId, setSelectedRoutineId] = useState<{ id: string, dateStr: string } | null>(null);
+  const [selectedRoutineId, setSelectedRoutineId] = useState<{ id: string, dateStr: string, timeStr?: string } | null>(null);
   
   const selectedRoutine = selectedRoutineId 
     ? routines.find(r => r.id === selectedRoutineId.id)
@@ -380,7 +380,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
                     return (
                       <div
                         key={ev.key}
-                        onClick={() => setSelectedRoutineId({ id: ev.routine.id, dateStr })}
+                        onClick={() => setSelectedRoutineId({ id: ev.routine.id, dateStr, timeStr: ev.isMultiSlot ? ev.slotTime : undefined })}
                         className={`absolute rounded-md px-2 py-1 overflow-hidden cursor-pointer transition-all hover:brightness-110 hover:shadow-md z-10 flex flex-col justify-start ${styleClass} ${isCompleted ? 'opacity-50' : ''}`}
                         style={{
                           top: `${startMinutes}px`,
@@ -414,6 +414,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
         isOpen={!!selectedRoutine}
         routine={selectedRoutine || null}
         dateStr={selectedRoutineId?.dateStr || ''}
+        timeStr={selectedRoutineId?.timeStr}
         onClose={() => setSelectedRoutineId(null)}
       />
     </div>

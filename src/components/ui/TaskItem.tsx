@@ -103,7 +103,14 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
             </div>
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (isMultipleTimes) {
+                setIsExpanded(prev => !prev);
+              } else {
+                onToggle(); 
+              }
+            }}
             className="shrink-0 transition-colors cursor-pointer"
           >
             {status === 'completed' && <CheckCircle2 size={24} className="text-emerald-500" />}

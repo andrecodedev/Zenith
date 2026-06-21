@@ -317,16 +317,6 @@ export const useStore = create<StoreState>((set, get) => ({
   setTaskStatus: async (routineId, date, status, note, timeStr) => {
     const userId = await getUserId();
     const state = get();
-    const routine = state.routines.find(r => r.id === routineId);
-
-    // Propagação Inteligente: Se alterou do Calendário (macro) e a tarefa tem múltiplos horários, aplica em todos!
-    if (!timeStr && routine?.times && routine.times.length > 0) {
-      for (const t of routine.times) {
-        await state.setTaskStatus(routineId, date, status, note, t);
-      }
-      return;
-    }
-
     const suffix = timeStr ? `_${timeStr.replace(':', '')}` : '';
     const instanceId = `${routineId}_${date}${suffix}`;
     const existingIndex = state.taskInstances.findIndex((t) => t.id === instanceId);
