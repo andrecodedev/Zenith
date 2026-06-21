@@ -151,6 +151,8 @@ export const useStore = create<StoreState>((set, get) => ({
       date: routine.date ?? null,
       time: routine.time ?? null,
       status_override: routine.statusOverride ?? null,
+      notes_override: routine.notesOverride ?? null,
+      excluded_dates: routine.excludedDates ?? null,
     };
     if (routine.endTime !== undefined) insertPayload.end_time = routine.endTime;
     if (routine.times !== undefined) insertPayload.times = routine.times;
@@ -175,6 +177,8 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime;
     if (updates.times !== undefined) dbUpdates.times = updates.times ?? null;
     if (updates.statusOverride !== undefined) dbUpdates.status_override = updates.statusOverride ?? null;
+    if (updates.notesOverride !== undefined) dbUpdates.notes_override = updates.notesOverride ?? null;
+    if (updates.excludedDates !== undefined) dbUpdates.excluded_dates = updates.excludedDates ?? null;
 
     await supabase.from('routines').update(dbUpdates).eq('id', id);
   },
