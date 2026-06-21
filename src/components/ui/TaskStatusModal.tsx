@@ -17,7 +17,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
   const { taskInstances, setTaskStatus, updateRoutine, setTaskStatusForAll } = useStore();
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | 'auto'>('pending');
   const [note, setNote] = useState('');
-  const [applyScope, setApplyScope] = useState<'current' | 'past' | 'future' | 'all'>('current');
+  const [applyScope, setApplyScope] = useState<'current' | 'all'>('current');
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isScopeDropdownOpen, setIsScopeDropdownOpen] = useState(false);
@@ -67,15 +67,12 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
           notesOverride: note || undefined
         });
         await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note, 'all', dateStr);
-      } else if (applyScope === 'current') {
+      } else {
         if (selectedStatus === 'auto') {
           await setTaskStatus(routine.id, dateStr, undefined as any, '', timeStr);
         } else {
           await setTaskStatus(routine.id, dateStr, selectedStatus, note, timeStr);
         }
-      } else {
-        // past or future
-        await setTaskStatusForAll(routine.id, selectedStatus === 'auto' ? undefined : selectedStatus, note, applyScope, dateStr);
       }
       
       setShowSuccess(true);
@@ -187,8 +184,6 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
                   className={`w-full bg-bg-secondary border rounded-lg pl-3 pr-4 py-2 text-sm text-text-primary transition-all flex justify-between items-center cursor-pointer ${isScopeDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}>
                   <span className="truncate pr-2">
                     {applyScope === 'current' ? `Somente nesta data (${dateStr})` :
-                     applyScope === 'future' ? 'Desta data em diante (Futuro)' :
-                     applyScope === 'past' ? 'Desta data para trás (Passado)' :
                      'Todas as datas (⚠️ Sobrescreve histórico)'}
                   </span>
                   <ChevronDown size={16} className={`shrink-0 text-text-tertiary transition-transform duration-200 ${isScopeDropdownOpen ? 'rotate-180' : ''}`} />
@@ -210,8 +205,6 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
                       >
                         {[
                           { value: 'current', label: `Somente nesta data (${dateStr})` },
-                          { value: 'future', label: 'Desta data em diante (Futuro)' },
-                          { value: 'past', label: 'Desta data para trás (Passado)' },
                           { value: 'all', label: 'Todas as datas (⚠️ Sobrescreve histórico)' },
                         ].map(option => (
                           <button key={option.value} type="button" onClick={() => { setApplyScope(option.value as any); setIsScopeDropdownOpen(false); }}
