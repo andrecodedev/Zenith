@@ -28,14 +28,25 @@ serve(async () => {
     .select('id, title, description, user_id, time')
     .not('time', 'is', null);
 
-  if (!routines?.length) return new Response('no routines', { status: 200 });
+  if (!routines?.length) {
+    console.log('[push] STOP: no routines with time set');
+    return new Response('no routines', { status: 200 });
+  }
+  console.log(`[push] ${routines.length} routines with time. Checking against ${hh}:${mm} (nowMin=${nowMin})`);
+  routines.forEach(r => console.log(`  routine: "${r.title}" time="${r.time}" user=${r.user_id}`));
 
   const matching = routines.filter(r => {
     const [rh, rm] = (r.time as string).split(':').map(Number);
-    return Math.abs(rh * 60 + rm - nowMin) <= 1;
+    const diff = Math.abs(rh * 60 + rm - nowMin);
+    console.log(`  match check: "${r.title}" ${r.time} → diff=${diff}`);
+    return diff <= 1;
   });
 
-  if (!matching.length) return new Response('no matches', { status: 200 });
+  if (!matching.length) {
+    console.log('[push] STOP: no time match');
+    return new Response('no matches', { status: 200 });
+  }
+  console.log(`[push] ${matching.length} matching routine(s)`);
 
   const { data: alreadySent } = await supabase
     .from('push_sent_log')
@@ -46,19 +57,26 @@ serve(async () => {
   const sentMap = new Map(alreadySent?.map((r: any) => [r.routine_id, r.routine_time]) ?? []);
   const toSend = matching.filter(r => {
     const sentTime = sentMap.get(r.id);
-    if (!sentTime) return true;       // nunca notificou hoje
-    return sentTime !== r.time;       // horário mudou → notifica de novo
+    if (!sentTime) return true;
+    return sentTime !== r.time;
   });
 
-  if (!toSend.length) return new Response('already notified today', { status: 200 });
+  if (!toSend.length) {
+    console.log('[push] STOP: already notified today');
+    return new Response('already notified today', { status: 200 });
+  }
 
   const userIds = [...new Set(toSend.map(r => r.user_id))];
+  console.log(`[push] Looking for subscriptions for users: ${userIds.join(', ')}`);
   const { data: subscriptions } = await supabase
     .from('push_subscriptions')
     .select('*')
     .in('user_id', userIds);
 
-  if (!subscriptions?.length) return new Response('no subscriptions', { status: 200 });
+  if (!subscriptions?.length) {
+    console.log('[push] STOP: no subscriptions found for these users');
+    return new Response('no subscriptions', { status: 200 });
+  }
 
   const sends = toSend.flatMap(routine =>
     subscriptions
