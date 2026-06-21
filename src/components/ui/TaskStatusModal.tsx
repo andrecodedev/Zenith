@@ -30,21 +30,27 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
     ? taskInstances.find(t => t.routineId === routine.id && t.date === dateStr && (!timeStr || t.id.endsWith(`_${timeStr.replace(':', '')}`))) 
     : undefined;
 
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
     if (isOpen && routine && dateStr) {
-      if (instance?.status) {
-        setSelectedStatus(instance.status);
-        setNote(instance.notes?.[instance.status] || instance.statusNote || '');
-      } else if (routine.statusOverride) {
-        setSelectedStatus(routine.statusOverride);
-        setNote(routine.notesOverride || '');
-      } else {
-        // Se não tem status na instância nem global, está no modo Automático!
-        setSelectedStatus('auto');
-        setNote('');
+      if (!hasInitialized.current) {
+        if (instance?.status) {
+          setSelectedStatus(instance.status);
+          setNote(instance.notes?.[instance.status] || instance.statusNote || '');
+        } else if (routine.statusOverride) {
+          setSelectedStatus(routine.statusOverride);
+          setNote(routine.notesOverride || '');
+        } else {
+          setSelectedStatus('auto');
+          setNote('');
+        }
+        setApplyScope('current');
+        setShowSuccess(false);
+        hasInitialized.current = true;
       }
-      setApplyScope('current');
-      setShowSuccess(false);
+    } else {
+      hasInitialized.current = false;
     }
   }, [isOpen, routine, dateStr]);
 
