@@ -50,7 +50,23 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [statusOverride, setStatusOverride] = useState<TaskStatus | 'auto'>('auto');
+  const [canScrollLeftTpl, setCanScrollLeftTpl] = useState(false);
+  const [canScrollRightTpl, setCanScrollRightTpl] = useState(false);
   const hasInitialized = useRef(false);
+
+  const checkScrollTpl = () => {
+    if (templatesRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = templatesRef.current;
+      setCanScrollLeftTpl(scrollLeft > 0);
+      setCanScrollRightTpl(Math.ceil(scrollLeft) < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  React.useEffect(() => {
+    checkScrollTpl();
+    window.addEventListener('resize', checkScrollTpl);
+    return () => window.removeEventListener('resize', checkScrollTpl);
+  }, []);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -418,15 +434,22 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                 Templates rápidos
                 <InfoTooltip>Atalhos pré-configurados para tarefas comuns. Clique uma vez para preencher o formulário automaticamente. Clique novamente para desselecionar e limpar.</InfoTooltip>
               </label>
-              <div className="relative flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => templatesRef.current?.scrollBy({ left: -140, behavior: 'smooth' })}
-                  className="shrink-0 p-1 rounded-md bg-bg-primary border border-border-base hover:bg-elements text-text-tertiary hover:text-text-primary transition-all cursor-pointer"
+              <div className="relative flex items-center group">
+                {canScrollLeftTpl && (
+                  <button
+                    type="button"
+                    onClick={() => templatesRef.current?.scrollBy({ left: -140, behavior: 'smooth' })}
+                    className="absolute left-0 z-10 w-8 h-full flex items-center justify-start pl-1 bg-gradient-to-r from-bg-secondary via-bg-secondary/90 to-transparent text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                )}
+                
+                <div 
+                  ref={templatesRef} 
+                  onScroll={checkScrollTpl}
+                  className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1 relative"
                 >
-                  <ChevronLeft size={16} />
-                </button>
-                <div ref={templatesRef} className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1">
                   {TEMPLATES.map((tpl) => (
                     <button
                       key={tpl.label}
@@ -442,13 +465,16 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => templatesRef.current?.scrollBy({ left: 140, behavior: 'smooth' })}
-                  className="shrink-0 p-1 rounded-md bg-bg-primary border border-border-base hover:bg-elements text-text-tertiary hover:text-text-primary transition-all cursor-pointer"
-                >
-                  <ChevronRight size={16} />
-                </button>
+
+                {canScrollRightTpl && (
+                  <button
+                    type="button"
+                    onClick={() => templatesRef.current?.scrollBy({ left: 140, behavior: 'smooth' })}
+                    className="absolute right-0 z-10 w-8 h-full flex items-center justify-end pr-1 bg-gradient-to-l from-bg-secondary via-bg-secondary/90 to-transparent text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                )}
               </div>
             </div>
           )}

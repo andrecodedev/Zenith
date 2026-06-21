@@ -1,5 +1,5 @@
-import { Search, X, ChevronDown } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Search, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import type { Category, TaskStatus } from '../../types';
 
 interface FilterBarProps {
@@ -22,6 +22,24 @@ export function FilterBar({ searchQuery, onSearchChange, selectedCategory, onCat
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortRect, setSortRect] = useState<DOMRect | null>(null);
   const sortBtnRef = useRef<HTMLButtonElement>(null);
+
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (categoriesRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = categoriesRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(Math.ceil(scrollLeft) < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [categories]);
 
   const statusOptions = [
     { value: 'all', label: 'Status: Todos' },
@@ -143,30 +161,54 @@ export function FilterBar({ searchQuery, onSearchChange, selectedCategory, onCat
         </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => onCategoryChange(null)}
-          className={`text-xs px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-            selectedCategory === null
-              ? 'bg-text-primary text-bg-primary border-text-primary'
-              : 'bg-bg-secondary text-text-secondary border-border-base hover:border-border-gray'
-          }`}
-        >
-          Todas
-        </button>
-        {categories.map(cat => (
+      <div className="relative flex items-center group">
+        {canScrollLeft && (
           <button
-            key={cat.id}
-            onClick={() => onCategoryChange(selectedCategory === cat.id ? null : cat.id)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-              selectedCategory === cat.id
+            onClick={() => categoriesRef.current?.scrollBy({ left: -150, behavior: 'smooth' })}
+            className="absolute left-0 z-10 w-6 h-full flex items-center justify-center bg-gradient-to-r from-bg-primary via-bg-primary/90 to-transparent text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+        
+        <div 
+          ref={categoriesRef}
+          onScroll={checkScroll}
+          className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 flex-1 relative"
+        >
+          <button
+            onClick={() => onCategoryChange(null)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              selectedCategory === null
                 ? 'bg-text-primary text-bg-primary border-text-primary'
                 : 'bg-bg-secondary text-text-secondary border-border-base hover:border-border-gray'
             }`}
           >
-            {cat.name}
+            Todas
           </button>
-        ))}
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => onCategoryChange(selectedCategory === cat.id ? null : cat.id)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                selectedCategory === cat.id
+                  ? 'bg-text-primary text-bg-primary border-text-primary'
+                  : 'bg-bg-secondary text-text-secondary border-border-base hover:border-border-gray'
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {canScrollRight && (
+          <button
+            onClick={() => categoriesRef.current?.scrollBy({ left: 150, behavior: 'smooth' })}
+            className="absolute right-0 z-10 w-6 h-full flex items-center justify-center bg-gradient-to-l from-bg-primary via-bg-primary/90 to-transparent text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
       </div>
     </div>
   );
