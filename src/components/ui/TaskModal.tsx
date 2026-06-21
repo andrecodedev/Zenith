@@ -455,9 +455,9 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               ref={dropdownBtnRef}
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`w-full bg-bg-primary border rounded-lg px-4 py-3 text-text-primary transition-all flex justify-between items-center cursor-pointer ${isDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}>
+              className={`w-full bg-bg-primary border rounded-lg pl-4 pr-5 py-3 text-text-primary transition-all flex justify-between items-center cursor-pointer ${isDropdownOpen ? 'border-border-gray ring-1 ring-border-gray' : 'border-border-base hover:border-border-gray'}`}>
               <span>{recurrenceOptions.find(o => o.value === recurrenceMenu)?.label}</span>
-              <ChevronDown size={18} className={`text-text-tertiary transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={18} className={`shrink-0 ml-2 text-text-tertiary transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {isDropdownOpen && (() => {
               const rect = dropdownBtnRef.current?.getBoundingClientRect();

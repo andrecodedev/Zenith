@@ -98,12 +98,12 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
               }}
               className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10 [color-scheme:dark] [html.light_&]:[color-scheme:light]"
             />
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-elements text-text-secondary hover:text-text-primary hover:bg-elements-hover transition-all cursor-pointer border border-border-gray">
+            <div className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-lg bg-elements text-text-secondary hover:text-text-primary hover:bg-elements-hover transition-all cursor-pointer border border-border-gray">
               <Calendar size={16} />
               <span className="capitalize text-sm font-medium">
                 {format(parseISO(selectedDate), "MMMM 'de' yyyy", { locale: ptBR })}
               </span>
-              <ChevronDown size={14} className="opacity-70 ml-1" />
+              <ChevronDown size={14} className="shrink-0 opacity-70 ml-1" />
             </div>
           </div>
         </div>
@@ -119,10 +119,10 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
           <div className="relative border-r border-border-base/50 mr-1 pr-1 h-full flex items-center">
             <button 
               onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
-              className="flex items-center gap-2 bg-transparent text-sm font-bold text-text-primary px-3 py-1.5 cursor-pointer hover:bg-elements-hover rounded-md transition-colors h-full"
+              className="flex items-center gap-2 bg-transparent text-sm font-bold text-text-primary pl-3 pr-4 py-1.5 cursor-pointer hover:bg-elements-hover rounded-md transition-colors h-full"
             >
               <span className="capitalize">{viewMode === 'day' ? 'Dia' : viewMode === 'week' ? 'Semana' : 'Mês'}</span>
-              <ChevronDown size={14} className={`transition-transform ${isViewDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`shrink-0 transition-transform ${isViewDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             
             {isViewDropdownOpen && (
