@@ -10,7 +10,7 @@ export function StatsView() {
   const [referenceDate, setReferenceDate] = useState(today);
   const isCurrentWeek = referenceDate === today;
 
-  const { currentStreak, bestStreak, weekData, weeklyPct, totalCompletedAllTime, todayTotal, todayCompleted } = useStats(referenceDate);
+  const { weekData, weeklyPct, totalCompletedAllTime, todayTotal, todayCompleted } = useStats(referenceDate);
 
   const handlePrev = () => setReferenceDate(format(subDays(parseISO(referenceDate), 7), 'yyyy-MM-dd'));
   const handleNext = () => {
@@ -23,52 +23,32 @@ export function StatsView() {
   const todayLabel = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-4 pb-12">
+    <div className="w-full max-w-4xl mx-auto space-y-6 pb-12">
       <div>
-        <h2 className="text-3xl font-bold font-title mb-1">Estatísticas</h2>
-        <p className="text-text-secondary capitalize">{todayLabel}</p>
+        <h2 className="text-3xl sm:text-4xl font-bold font-title mb-1">Estatísticas</h2>
+        <p className="text-sm sm:text-base text-text-secondary capitalize">{todayLabel}</p>
       </div>
 
-      {/* Streak cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-bg-secondary border border-border-base rounded-xl p-4 flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 text-text-tertiary">
-            <Flame size={15} />
-            <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Streak atual</span>
-          </div>
-          <p className="text-4xl font-bold text-text-primary leading-none mt-1">{currentStreak}</p>
-          <p className="text-xs text-text-tertiary">dias seguidos</p>
-        </div>
-
-        <div className="bg-bg-secondary border border-border-base rounded-xl p-4 flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 text-text-tertiary">
-            <Trophy size={15} />
-            <span className="text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Melhor streak</span>
-          </div>
-          <p className="text-4xl font-bold text-text-primary leading-none mt-1">{bestStreak}</p>
-          <p className="text-xs text-text-tertiary">dias seguidos</p>
-        </div>
-      </div>
 
       {/* Weekly bar chart */}
-      <div className="bg-bg-secondary border border-border-base rounded-xl p-4">
+      <div className="bg-bg-secondary border border-border-base rounded-xl p-6">
         {/* Nav de semana */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4">
           <div className="flex items-center gap-2 text-text-secondary">
-            <TrendingUp size={15} />
-            <span className="text-xs font-bold uppercase tracking-wider">7 dias</span>
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">7 dias</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handlePrev} className="p-1 rounded hover:bg-elements text-text-tertiary hover:text-text-primary transition-colors cursor-pointer">
-              <ChevronLeft size={16} />
+          <div className="flex items-center justify-end gap-1 sm:gap-2">
+            <button onClick={handlePrev} className="p-1 sm:p-1.5 rounded hover:bg-elements text-text-tertiary hover:text-text-primary transition-colors cursor-pointer">
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <span className="text-xs text-text-secondary font-medium w-24 text-center">{weekStart} – {weekEnd}</span>
+            <span className="text-xs sm:text-sm text-text-secondary font-medium w-24 sm:w-28 text-center">{weekStart} – {weekEnd}</span>
             <button
               onClick={handleNext}
               disabled={isCurrentWeek}
-              className="p-1 rounded hover:bg-elements text-text-tertiary hover:text-text-primary transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default"
+              className="p-1.5 rounded hover:bg-elements text-text-tertiary hover:text-text-primary transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-default"
             >
-              <ChevronRight size={16} />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
             {!isCurrentWeek && (
               <button
@@ -81,11 +61,11 @@ export function StatsView() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end mb-3">
-          <span className="text-sm font-bold text-text-primary">{weeklyPct}% média</span>
+        <div className="flex items-center justify-end mb-4">
+          <span className="text-sm sm:text-lg font-bold text-text-primary">{weeklyPct}% média</span>
         </div>
 
-        <div className="flex items-end gap-1.5 h-20">
+        <div className="flex items-end gap-1.5 sm:gap-2 h-32 sm:h-40">
           {weekData.map(day => {
             const isToday = day.dateStr === today;
             const barPct = day.total === 0 ? 0 : Math.max(6, day.pct);
@@ -98,16 +78,16 @@ export function StatsView() {
 
             return (
               <div key={day.dateStr} className="flex-1 flex flex-col items-center gap-1.5">
-                <span className="text-[9px] text-text-tertiary font-medium h-3 flex items-center">
+                <span className="text-[9px] sm:text-[10px] text-text-tertiary font-medium h-3 sm:h-4 flex items-center">
                   {day.total > 0 && day.pct > 0 ? `${day.pct}%` : ''}
                 </span>
-                <div className="w-full h-12 flex items-end">
+                <div className="w-full h-24 sm:h-32 flex items-end">
                   <div
                     className={`w-full rounded-sm transition-all duration-500 ${barColor} ${isToday ? 'ring-1 ring-white/20' : ''}`}
                     style={{ height: day.total === 0 ? '4px' : `${barPct}%` }}
                   />
                 </div>
-                <span className={`text-[10px] font-semibold uppercase ${isToday ? 'text-text-primary' : 'text-text-tertiary'}`}>
+                <span className={`text-[10px] sm:text-xs mt-1 font-semibold uppercase ${isToday ? 'text-text-primary' : 'text-text-tertiary'}`}>
                   {day.label}
                 </span>
               </div>
@@ -117,36 +97,36 @@ export function StatsView() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-bg-secondary border border-border-base rounded-xl p-3 flex flex-col gap-1">
-          <div className="flex items-center gap-1 text-text-tertiary mb-0.5">
-            <CheckCircle2 size={12} />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Hoje</span>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-bg-secondary border border-border-base rounded-xl p-3 sm:p-6 flex flex-col gap-1">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-text-tertiary mb-0.5 sm:mb-1">
+            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider">Hoje</span>
           </div>
-          <p className="text-2xl font-bold leading-none">
-            {todayCompleted}<span className="text-xs text-text-tertiary font-normal">/{todayTotal}</span>
+          <p className="text-2xl sm:text-4xl font-bold leading-none mt-1 sm:mt-2">
+            {todayCompleted}<span className="text-[10px] sm:text-sm text-text-tertiary font-normal">/{todayTotal}</span>
           </p>
-          <p className="text-[10px] text-text-tertiary">concluídas</p>
+          <p className="text-[9px] sm:text-xs text-text-tertiary mt-0.5 sm:mt-1">concluídas</p>
         </div>
 
-        <div className="bg-bg-secondary border border-border-base rounded-xl p-3 flex flex-col gap-1">
-          <div className="flex items-center gap-1 text-text-tertiary mb-0.5">
-            <Target size={12} />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Semana</span>
+        <div className="bg-bg-secondary border border-border-base rounded-xl p-3 sm:p-6 flex flex-col gap-1">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-text-tertiary mb-0.5 sm:mb-1">
+            <Target className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider">Semana</span>
           </div>
-          <p className="text-2xl font-bold leading-none">
-            {weeklyPct}<span className="text-xs text-text-tertiary font-normal">%</span>
+          <p className="text-2xl sm:text-4xl font-bold leading-none mt-1 sm:mt-2">
+            {weeklyPct}<span className="text-[10px] sm:text-sm text-text-tertiary font-normal">%</span>
           </p>
-          <p className="text-[10px] text-text-tertiary">conclusão</p>
+          <p className="text-[9px] sm:text-xs text-text-tertiary mt-0.5 sm:mt-1">conclusão</p>
         </div>
 
-        <div className="bg-bg-secondary border border-border-base rounded-xl p-3 flex flex-col gap-1">
-          <div className="flex items-center gap-1 text-text-tertiary mb-0.5">
-            <Trophy size={12} />
-            <span className="text-[9px] font-bold uppercase tracking-wider">Total</span>
+        <div className="bg-bg-secondary border border-border-base rounded-xl p-3 sm:p-6 flex flex-col gap-1">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-text-tertiary mb-0.5 sm:mb-1">
+            <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider">Total</span>
           </div>
-          <p className="text-2xl font-bold leading-none">{totalCompletedAllTime}</p>
-          <p className="text-[10px] text-text-tertiary">feitas</p>
+          <p className="text-2xl sm:text-4xl font-bold leading-none mt-1 sm:mt-2">{totalCompletedAllTime}</p>
+          <p className="text-[9px] sm:text-xs text-text-tertiary mt-0.5 sm:mt-1">feitas</p>
         </div>
       </div>
     </div>
