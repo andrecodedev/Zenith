@@ -83,36 +83,49 @@ function App() {
       const currentDateStr = getTodayStr();
       
       routines.forEach(routine => {
-        if (!routine.time) return;
-        
-        const [hours, minutes] = routine.time.split(':').map(Number);
-        const taskMinutes = hours * 60 + minutes;
-        
-        // Verifica se a hora atual passou da hora da tarefa (margem de 5 minutos)
-        const isTimeMatch = currentMinutes >= taskMinutes && currentMinutes <= taskMinutes + 5;
+        if (!isTaskDueToday(routine, currentDateStr)) return;
 
-        if (isTaskDueToday(routine, currentDateStr) && isTimeMatch) {
-          const instanceId = `${routine.id}_${currentDateStr}`;
-          const instance = taskInstances.find(t => t.id === instanceId);
+        const checkAndNotify = (timeStr: string, slotIdSuffix: string = '') => {
+          const [hours, minutes] = timeStr.split(':').map(Number);
+          const taskMinutes = hours * 60 + minutes;
           
-          if (notifiedTasks.current.has(instanceId)) return;
-          if (instance && instance.completed) return;
-          
-          sendTaskNotification(
-            `Hora da Tarefa: ${routine.title}`,
-            routine.description || "Não esqueça de marcar como concluída!",
-            routine.id,
-            currentDateStr
-          );
-          
-          useStore.getState().addNotification(
-            `Lembrete: ${routine.title}`,
-            routine.description || "Chegou a hora de executar esta tarefa!",
-            routine.id,
-            currentDateStr
-          );
-          
-          notifiedTasks.current.add(instanceId);
+          // Verifica se a hora atual passou da hora da tarefa (margem de 5 minutos)
+          const isTimeMatch = currentMinutes >= taskMinutes && currentMinutes <= taskMinutes + 5;
+
+          if (isTimeMatch) {
+            const instanceId = `${routine.id}_${currentDateStr}${slotIdSuffix}`;
+            const instance = taskInstances.find(t => t.id === instanceId);
+            
+            if (notifiedTasks.current.has(instanceId)) return;
+            if (instance && instance.completed) return;
+            
+            const timeLabel = slotIdSuffix ? ` às ${timeStr}` : '';
+            
+            sendTaskNotification(
+              `Hora da Tarefa: ${routine.title}`,
+              routine.description || `Não esqueça de marcar como concluída${timeLabel}!`,
+              routine.id,
+              currentDateStr
+            );
+            
+            useStore.getState().addNotification(
+              `Lembrete: ${routine.title}`,
+              routine.description || `Chegou a hora de executar esta tarefa${timeLabel}!`,
+              routine.id,
+              currentDateStr
+            );
+            
+            notifiedTasks.current.add(instanceId);
+          }
+        };
+
+        if (routine.recurrence === 'multiple_times' && routine.times && routine.times.length > 0) {
+          routine.times.forEach(t => {
+            const slotIdSuffix = `_${t.replace(':', '')}`;
+            checkAndNotify(t, slotIdSuffix);
+          });
+        } else if (routine.time) {
+          checkAndNotify(routine.time);
         }
       });
     }, 10000);
