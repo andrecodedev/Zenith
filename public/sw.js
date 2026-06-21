@@ -6,15 +6,19 @@ self.addEventListener('install', (event) => {
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? { title: 'Zenith', body: 'Você tem uma tarefa agora!' };
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/logo.png',
-      badge: '/logo.png',
-      data: data.payload ?? {},
-      actions: [
-        { action: 'completed', title: 'Concluído' },
-        { action: 'in_progress', title: 'Em andamento' },
-      ]
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const appVisible = clients.some(c => c.visibilityState === 'visible');
+      if (appVisible) return; // app aberto: notificação local já cuida
+      return self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: '/logo.png',
+        badge: '/logo.png',
+        data: data.payload ?? {},
+        actions: [
+          { action: 'completed', title: 'Concluído' },
+          { action: 'in_progress', title: 'Em andamento' },
+        ]
+      });
     })
   );
 });
