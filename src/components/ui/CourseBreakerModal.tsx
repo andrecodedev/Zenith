@@ -387,9 +387,15 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
           </div>
           </div>
 
-          <div className="pt-4 flex gap-2">
-            <button 
-              type="submit"
+          <div className="pt-4 flex flex-col gap-3">
+            {isLoading && (
+              <p className="text-xs text-text-tertiary text-center animate-pulse">
+                A IA está cruzando sua agenda e processando as aulas. Para cursos grandes, isso pode levar até 40 segundos.
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button 
+                type="submit"
               disabled={isLoading || !courseName || !syllabus || !apiKey || (!isSmartSchedule && studyDays.length === 0)}
               className="flex-1 bg-btn-bg hover:bg-btn-hover active:bg-btn-active disabled:opacity-50 disabled:cursor-not-allowed text-text-primary rounded-lg py-4 font-bold transition-all flex items-center justify-center gap-2 cursor-pointer">
               {isLoading ? (
@@ -407,6 +413,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 Cancelar
               </button>
             )}
+            </div>
           </div>
         </form>
         )}
