@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { X, Search, ChevronDown, Square, CheckSquare, Settings2 } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
