@@ -105,7 +105,8 @@ export function RoutineDetailsModal({ routine, dateStr, isOpen, onClose }: Routi
                 in_progress: { label: 'Observações (Andamento)', color: 'text-yellow-500', focusColor: 'focus:border-yellow-500 focus:ring-yellow-500 border-yellow-500/30' },
                 completed: { label: 'Observações (Concluído)', color: 'text-emerald-500', focusColor: 'focus:border-emerald-500 focus:ring-emerald-500 border-emerald-500/30' },
                 late: { label: 'Justificativa (Atraso)', color: 'text-red-500', focusColor: 'focus:border-red-500 focus:ring-red-500 border-red-500/30' },
-                canceled: { label: 'Motivo (Cancelado)', color: 'text-purple-500', focusColor: 'focus:border-purple-500 focus:ring-purple-500 border-purple-500/30' }
+                canceled: { label: 'Motivo (Cancelado)', color: 'text-purple-500', focusColor: 'focus:border-purple-500 focus:ring-purple-500 border-purple-500/30' },
+                vacation: { label: 'Motivo (Férias)', color: 'text-orange-500', focusColor: 'focus:border-orange-500 focus:ring-orange-500 border-orange-500/30' }
               };
 
               const activeStatuses = [status];

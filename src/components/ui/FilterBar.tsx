@@ -1,5 +1,5 @@
 import { Search, X, ChevronDown } from 'lucide-react';
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import type { Category, TaskStatus } from '../../types';
 
 interface FilterBarProps {
