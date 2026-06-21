@@ -12,6 +12,8 @@ export interface Routine {
   endTime?: string; // HH:mm (optional end time)
   times?: string[]; // HH:mm[] for multiple_times recurrence
   excludedDates?: string[]; // YYYY-MM-DD dates where this routine should not appear
+  startDate?: string; // YYYY-MM-DD - Override for when the routine begins
+  endDate?: string; // YYYY-MM-DD - Date when the routine expires/dies
   statusOverride?: TaskStatus; // Global status override for all instances
   notesOverride?: string; // Global notes override
   createdAt: number;

@@ -88,6 +88,8 @@ export const useStore = create<StoreState>((set, get) => ({
         excludedDates: r.excluded_dates || undefined,
         statusOverride: r.status_override || undefined,
         notesOverride: r.notes_override || undefined,
+        startDate: r.start_date || undefined,
+        endDate: r.end_date || undefined,
         createdAt: new Date(r.created_at).getTime()
       })),
       taskInstances: (taskRes.data || []).map(t => ({
@@ -153,6 +155,8 @@ export const useStore = create<StoreState>((set, get) => ({
       status_override: routine.statusOverride ?? null,
       notes_override: routine.notesOverride ?? null,
       excluded_dates: routine.excludedDates ?? null,
+      start_date: routine.startDate ?? null,
+      end_date: routine.endDate ?? null,
     };
     if (routine.endTime !== undefined) insertPayload.end_time = routine.endTime;
     if (routine.times !== undefined) insertPayload.times = routine.times;
@@ -179,6 +183,8 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updates.statusOverride !== undefined) dbUpdates.status_override = updates.statusOverride ?? null;
     if (updates.notesOverride !== undefined) dbUpdates.notes_override = updates.notesOverride ?? null;
     if (updates.excludedDates !== undefined) dbUpdates.excluded_dates = updates.excludedDates ?? null;
+    if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate ?? null;
+    if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate ?? null;
 
     await supabase.from('routines').update(dbUpdates).eq('id', id);
   },

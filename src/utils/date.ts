@@ -35,11 +35,17 @@ export const generateCalendarWeek = (baseDateStr: string) => {
 };
 
 export const isTaskDueToday = (routine: Routine, dateStr: string) => {
-  if (routine.createdAt) {
+  if (routine.startDate) {
+    if (dateStr < routine.startDate) return false;
+  } else if (routine.createdAt) {
     const createdDateStr = format(new Date(routine.createdAt), 'yyyy-MM-dd');
     if (dateStr < createdDateStr) {
       return false;
     }
+  }
+
+  if (routine.endDate && dateStr > routine.endDate) {
+    return false;
   }
 
   if (routine.excludedDates?.includes(dateStr)) {
