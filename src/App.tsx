@@ -58,12 +58,12 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (session) {
         useStore.getState().fetchData();
         if (currentView === 'hero') setCurrentView('dashboard');
-        if (notificationsEnabled) subscribeToPush();
+        if (event === 'SIGNED_IN' && notificationsEnabled) subscribeToPush();
       } else {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
         setCurrentView('hero');
@@ -189,7 +189,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
-  const [sortMode, setSortMode] = useState<'manual' | 'time' | 'status'>('manual');
+  const [sortMode, setSortMode] = useState<'manual' | 'time' | 'status'>('time');
 
   const [routineOrder, setRoutineOrder] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('routine_order') || '[]'); }

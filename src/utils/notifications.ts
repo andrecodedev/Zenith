@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+let _subscribing = false;
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -29,12 +30,14 @@ export async function registerServiceWorker() {
 }
 
 export async function subscribeToPush(): Promise<boolean> {
+  if (_subscribing) return false;
   if (!VAPID_PUBLIC_KEY) { console.warn('[push] VAPID_PUBLIC_KEY ausente'); return false; }
   if (!('PushManager' in window)) { console.warn('[push] PushManager não disponível'); return false; }
 
   const granted = await requestNotificationPermission();
   if (!granted) { console.warn('[push] permissão negada'); return false; }
 
+  _subscribing = true;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { console.warn('[push] sem usuário autenticado'); return false; }
@@ -85,6 +88,8 @@ export async function subscribeToPush(): Promise<boolean> {
   } catch (err) {
     console.error('[subscribeToPush]', err);
     return false;
+  } finally {
+    _subscribing = false;
   }
 }
 
