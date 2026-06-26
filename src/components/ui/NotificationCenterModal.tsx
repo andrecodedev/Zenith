@@ -4,6 +4,7 @@ import { InfoTooltip } from './InfoTooltip';
 import { useStore } from '../../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { subscribeToPush, unsubscribeFromPush } from '../../utils/notifications';
 
 interface NotificationCenterModalProps {
   isOpen: boolean;
@@ -176,6 +177,11 @@ export function NotificationCenterModal({
               const newValue = !notificationsEnabled;
               setNotificationsEnabled(newValue);
               localStorage.setItem('notifications_enabled', String(newValue));
+              if (newValue) {
+                subscribeToPush();
+              } else {
+                unsubscribeFromPush();
+              }
             }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${notificationsEnabled ? 'bg-green-500' : 'bg-text-tertiary'}`}
           >

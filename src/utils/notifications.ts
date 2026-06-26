@@ -70,14 +70,13 @@ export async function subscribeToPush(): Promise<boolean> {
     const sub = subscription.toJSON();
     const keys = sub.keys as { p256dh: string; auth: string };
 
-    // Limpar entradas antigas deste user e inserir nova limpa
-    await supabase.from('push_subscriptions').delete().eq('user_id', user.id);
-    const { error } = await supabase.from('push_subscriptions').insert({
+    // Insere o novo endpoint (sem deletar os outros dispositivos do usuário)
+    const { error } = await supabase.from('push_subscriptions').upsert({
       user_id: user.id,
       endpoint: sub.endpoint,
       p256dh: keys.p256dh,
       auth: keys.auth,
-    });
+    }, { onConflict: 'endpoint' });
 
     if (error) { console.error('[push] falha ao salvar no banco:', error); return false; }
 
