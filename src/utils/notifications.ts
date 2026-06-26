@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 let _subscribing = false;
+let _subscribeAttempted = false;
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -30,7 +31,8 @@ export async function registerServiceWorker() {
 }
 
 export async function subscribeToPush(): Promise<boolean> {
-  if (_subscribing) return false;
+  if (_subscribing || _subscribeAttempted) return false;
+  _subscribeAttempted = true;
   if (!VAPID_PUBLIC_KEY) { console.warn('[push] VAPID_PUBLIC_KEY ausente'); return false; }
   if (!('PushManager' in window)) { console.warn('[push] PushManager não disponível'); return false; }
 
@@ -94,6 +96,7 @@ export async function subscribeToPush(): Promise<boolean> {
 }
 
 export async function unsubscribeFromPush(): Promise<void> {
+  _subscribeAttempted = false;
   if (!('serviceWorker' in navigator)) return;
   try {
     const registration = await navigator.serviceWorker.ready;
