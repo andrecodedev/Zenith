@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore';
 import { Plus, X, Trash2, Settings, CheckCircle2, Circle, Clock, AlertCircle, RefreshCcw, XCircle, ChevronDown, Palmtree, ChevronLeft, ChevronRight, Sparkles, Loader2, Minus } from 'lucide-react';
 import { InfoTooltip } from './InfoTooltip';
 import { format, addDays } from 'date-fns';
+import { callWithFallback } from '../../utils/ai';
 import { getCategoryStyles } from '../../utils/colors';
 import type { RecurrenceType, Routine, TaskStatus } from '../../types';
 import { CategoryManagerModal } from './CategoryManagerModal';
@@ -314,10 +315,10 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
     setIsGenerating(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        // Fallback mais robusto caso não tenha a chave configurada
+      const geminiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+      const groqKey = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
+
+      if (!geminiKey && !groqKey) {
         const mockDescriptions: Record<string, string> = {
           'react': 'Estudar os fundamentos do React, focando em componentes e hooks.',
           'node': 'Revisar a arquitetura do Node.js, Event Loop e APIs REST.',
@@ -329,39 +330,14 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           'daily': 'Atualizar a equipe sobre o status das tarefas e bloqueios do dia.',
         };
         const foundKey = Object.keys(mockDescriptions).find(key => title.toLowerCase().includes(key));
-        
-        // Simular o delay de uma API
         await new Promise(resolve => setTimeout(resolve, 800));
-        
-        if (foundKey) {
-          setDescription(mockDescriptions[foundKey]);
-        } else {
-          setDescription(`Planejar e executar os passos necessários para concluir a tarefa: "${title.trim()}".`);
-        }
+        setDescription(foundKey ? mockDescriptions[foundKey] : `Planejar e executar os passos necessários para concluir a tarefa: "${title.trim()}".`);
         return;
       }
 
-      // Chamada real para a API do Gemini
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: `Gere uma descrição curta, prática e motivadora (máximo de 2 frases) para uma tarefa chamada: "${title.trim()}". Não use aspas, não use markdown, seja direto.` }]
-          }]
-        })
-      });
-
-      if (!response.ok) throw new Error('Falha na API da IA');
-      
-      const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (generatedText) {
-        setDescription(generatedText.trim());
-      } else {
-        throw new Error('Resposta vazia da IA');
-      }
+      const prompt = `Gere uma descrição curta, prática e motivadora (máximo de 2 frases) para uma tarefa chamada: "${title.trim()}". Não use aspas, não use markdown, seja direto.`;
+      const generatedText = await callWithFallback(prompt, geminiKey, 0.7);
+      setDescription(generatedText.trim());
 
     } catch (error) {
       console.error('Erro ao gerar descrição com IA:', error);

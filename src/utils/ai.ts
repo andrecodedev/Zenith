@@ -36,6 +36,55 @@ Preferências do usuário (aplique obrigatoriamente):
 `;
 }
 
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
+
+async function callGemini(prompt: string, apiKey: string, temperature: number, signal?: AbortSignal): Promise<string> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature } }),
+    }
+  );
+  if (!res.ok) throw Object.assign(new Error(`Gemini ${res.status}`), { status: res.status });
+  const data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+async function callGroq(prompt: string, temperature: number, signal?: AbortSignal): Promise<string> {
+  if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY ausente');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
+    signal,
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      temperature,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error(`Groq ${res.status}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+export async function callWithFallback(prompt: string, geminiApiKey: string | undefined, temperature: number, signal?: AbortSignal): Promise<string> {
+  if (geminiApiKey) {
+    try {
+      return await callGemini(prompt, geminiApiKey, temperature, signal);
+    } catch (err: any) {
+      if (err.status === 503 || err.status === 429 || err.status === 500) {
+        console.warn('[AI] Gemini indisponível, tentando Groq...');
+        return await callGroq(prompt, temperature, signal);
+      }
+      throw err;
+    }
+  }
+  return await callGroq(prompt, temperature, signal);
+}
+
 export async function parseCourseWithGemini(apiKey: string, syllabus: string, signal?: AbortSignal): Promise<string[]> {
   const prompt = `
 Você é um organizador de estudos especialista.
@@ -48,41 +97,15 @@ Ementa:
 ${syllabus}
   `;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal,
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-        }
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("Gemini API Error:", response.status, errorBody);
-    throw new Error(`Falha na API (Status ${response.status}). Verifique sua chave ou olhe o Console (F12).`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates[0].content.parts[0].text;
-  
   try {
-    // Tentar limpar caso a IA retorne com crases
+    const text = await callWithFallback(prompt, apiKey, 0.2, signal);
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const lessons = JSON.parse(cleanText);
     if (!Array.isArray(lessons)) throw new Error('Retorno não é um array');
     return lessons;
   } catch (err) {
-    console.error("Erro no parse do JSON da IA", text);
-    throw new Error('A IA não retornou um formato válido. Tente novamente.', { cause: err });
+    console.error("Erro no parse/chamada da IA", err);
+    throw new Error('A IA falhou ou não retornou um formato válido. Tente novamente.');
   }
 }
 
@@ -128,33 +151,14 @@ Formato exato de cada objeto no array:
 }
 `;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal,
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1 }
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Falha na API Gemini (Status ${response.status}).`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates[0].content.parts[0].text;
-  
   try {
+    const text = await callWithFallback(prompt, apiKey, 0.1, signal);
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const scheduledLessons = JSON.parse(cleanText);
     if (!Array.isArray(scheduledLessons)) throw new Error('Retorno não é um array');
     return scheduledLessons;
   } catch (err) {
-    console.error("Erro no parse do JSON da IA", text);
+    console.error("Erro no parse/chamada da IA", err);
     throw new Error('A IA falhou em gerar o agendamento. Tente novamente.');
   }
 }
