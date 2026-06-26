@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { generateCalendarWeek, isTaskDueToday } from '../../utils/date';
-import { ChevronLeft, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Calendar, X } from 'lucide-react';
 import { computeTaskStatus } from '../../utils/status';
 import { format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getCategoryStyles } from '../../utils/colors';
 import { RoutineDetailsModal } from './RoutineDetailsModal';
-import type { TaskStatus } from '../../types';
+import type { Routine, TaskStatus } from '../../types';
 
 interface CalendarViewProps {
   selectedDate: string;
@@ -26,8 +26,47 @@ const getStatusColor = (status: TaskStatus) => {
   }
 };
 
-const HOUR_HEIGHT = 60; // 60px per hour
+const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MAX_VIS = 4; // máximo de eventos visíveis por cluster antes de colapsar em pill
+
+type CalEvent = {
+  key: string;
+  routine: Routine;
+  slotTime: string;
+  isMultiSlot: boolean;
+  startMinutes: number;
+  endMinutes: number;
+};
+
+type CalEventPos = CalEvent & { col: number; totalCols: number };
+
+// Componentes conexos do grafo de sobreposição (closure transitiva de A↔B↔C)
+function findTimeClusters<T extends { key: string; startMinutes: number; endMinutes: number }>(
+  events: T[]
+): T[][] {
+  const clusters: T[][] = [];
+  const visited = new Set<string>();
+  for (const ev of events) {
+    if (visited.has(ev.key)) continue;
+    const cluster: T[] = [ev];
+    visited.add(ev.key);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const other of events) {
+        if (visited.has(other.key)) continue;
+        if (cluster.some(e => e.startMinutes < other.endMinutes && e.endMinutes > other.startMinutes)) {
+          cluster.push(other);
+          visited.add(other.key);
+          changed = true;
+        }
+      }
+    }
+    clusters.push(cluster);
+  }
+  return clusters;
+}
 
 // Distribui eventos sobrepostos em colunas lado a lado
 function assignColumns<T extends { key: string; startMinutes: number; endMinutes: number }>(
@@ -56,6 +95,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const [selectedRoutineId, setSelectedRoutineId] = useState<{ id: string, dateStr: string, timeStr?: string } | null>(null);
+  const [overflowGroup, setOverflowGroup] = useState<{ events: CalEvent[]; dateStr: string } | null>(null);
   
   const selectedRoutine = selectedRoutineId 
     ? routines.find(r => r.id === selectedRoutineId.id)
@@ -351,26 +391,46 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
                   ),
               ];
 
-              const positioned = assignColumns(allEvs);
+              // Agrupa por componente conexo e limita visíveis por cluster
+              const clusters = findTimeClusters(allEvs);
+              const visibleEvs: CalEventPos[] = [];
+              const overflowClusters: { overflow: CalEvent[]; all: CalEvent[]; startMin: number; endMin: number }[] = [];
+
+              for (const cluster of clusters) {
+                const sorted = [...cluster].sort((a, b) => a.startMinutes - b.startMinutes);
+                if (sorted.length <= MAX_VIS) {
+                  (assignColumns(sorted) as CalEventPos[]).forEach(ev => visibleEvs.push(ev));
+                } else {
+                  // Primeiros MAX_VIS - 1 em colunas fixas; restantes no pill
+                  sorted.slice(0, MAX_VIS - 1).forEach((ev, idx) => {
+                    visibleEvs.push({ ...ev, col: idx, totalCols: MAX_VIS });
+                  });
+                  const hide = sorted.slice(MAX_VIS - 1);
+                  overflowClusters.push({
+                    overflow: hide,
+                    all: sorted,
+                    startMin: Math.min(...hide.map(e => e.startMinutes)),
+                    endMin: Math.max(...hide.map(e => e.endMinutes)),
+                  });
+                }
+              }
 
               return (
                 <div key={dateStr} className="flex-1 relative border-r border-border-base/30 last:border-r-0 min-w-[240px]">
-                  {positioned.map(ev => {
-                    const { col, totalCols, startMinutes, endMinutes } = ev;
-                    const leftPct = (col / totalCols) * 100;
-                    const widthPct = (1 / totalCols) * 100;
+                  {visibleEvs.map(ev => {
+                    const leftPct = (ev.col / ev.totalCols) * 100;
+                    const widthPct = (1 / ev.totalCols) * 100;
+                    const { startMinutes, endMinutes } = ev;
+                    const duration = endMinutes - startMinutes;
 
                     const category = categories.find(c => c.id === ev.routine.categoryId);
                     const styleClass = getCategoryStyles(category?.color);
-                    
-                    const duration = endMinutes - startMinutes;
-                    
-                    // Se for multi slot, tem um ID de instância diferente
+
                     const slotId = ev.isMultiSlot ? `${ev.routine.id}_${dateStr}_${ev.slotTime.replace(':', '')}` : undefined;
-                    const instance = ev.isMultiSlot 
+                    const instance = ev.isMultiSlot
                       ? taskInstances.find(t => t.id === slotId)
                       : taskInstances.find(t => t.routineId === ev.routine.id && t.date === dateStr);
-                      
+
                     const status = ev.isMultiSlot
                       ? (instance?.completed ? 'completed' : 'pending')
                       : computeTaskStatus(ev.routine, dateStr, instance);
@@ -384,22 +444,38 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
                         className={`absolute rounded-md px-2 py-1 overflow-hidden cursor-pointer transition-all hover:brightness-110 hover:shadow-md z-10 flex flex-col justify-start ${styleClass} ${isCompleted ? 'opacity-50' : ''}`}
                         style={{
                           top: `${startMinutes}px`,
-                          height: `${Math.max(duration, 30)}px`,
+                          height: `${Math.max(duration, 48)}px`,
                           left: `calc(${leftPct}% + 1px)`,
                           width: `calc(${widthPct}% - 2px)`,
                         }}
                       >
-                         <p className={`text-xs font-bold leading-tight truncate ${isCompleted ? 'line-through' : ''}`}>
-                           {ev.routine.title}
-                         </p>
-                         <p className="text-[10px] opacity-80 mt-0.5 truncate leading-none">
-                           {ev.slotTime.slice(0, 5)} {ev.routine.endTime && !ev.isMultiSlot ? `- ${ev.routine.endTime.slice(0,5)}` : ''}
-                         </p>
+                        <p className="text-[10px] opacity-80 leading-none mb-0.5 shrink-0">
+                          {ev.slotTime.slice(0, 5)}{ev.routine.endTime && !ev.isMultiSlot ? ` - ${ev.routine.endTime.slice(0,5)}` : ''}
+                        </p>
+                        <p className={`text-xs font-bold leading-tight truncate ${isCompleted ? 'line-through' : ''}`}>
+                          {ev.routine.title}
+                        </p>
                       </div>
                     );
-
-
                   })}
+
+                  {/* Pill de overflow — compacto, posicionado no início do overflow */}
+                  {overflowClusters.map((cl, ci) => (
+                    <div
+                      key={`overflow-${ci}`}
+                      onClick={() => setOverflowGroup({ events: cl.all, dateStr })}
+                      className="absolute rounded-md cursor-pointer z-20 flex flex-col items-center justify-center gap-0.5 bg-bg-secondary/90 border border-border-gray hover:bg-elements hover:border-neutral-500 transition-all"
+                      style={{
+                        top: `${cl.startMin}px`,
+                        height: '44px',
+                        left: `calc(${((MAX_VIS - 1) / MAX_VIS) * 100}% + 1px)`,
+                        width: `calc(${(1 / MAX_VIS) * 100}% - 2px)`,
+                      }}
+                    >
+                      <span className="text-sm font-bold text-text-primary leading-none">+{cl.overflow.length}</span>
+                      <span className="text-[9px] text-text-tertiary leading-none">ver mais</span>
+                    </div>
+                  ))}
                 </div>
               );
             })}
@@ -410,7 +486,66 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
         )}
       </div>
 
-      <RoutineDetailsModal 
+      {/* Modal de overflow — lista todos os eventos colapsados no horário */}
+      {overflowGroup && (
+        <div
+          className="fixed inset-0 z-100 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setOverflowGroup(null)}
+        >
+          <div
+            className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-sm shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h3 className="font-bold text-text-primary text-sm">Tarefas neste horário</h3>
+                <p className="text-text-tertiary text-xs mt-0.5">{overflowGroup.events.length} no total</p>
+              </div>
+              <button
+                onClick={() => setOverflowGroup(null)}
+                className="text-text-tertiary hover:text-text-primary cursor-pointer transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+              {overflowGroup.events.map(ev => {
+                const instance = ev.isMultiSlot
+                  ? taskInstances.find(t => t.id === `${ev.routine.id}_${overflowGroup.dateStr}_${ev.slotTime.replace(':', '')}`)
+                  : taskInstances.find(t => t.routineId === ev.routine.id && t.date === overflowGroup.dateStr);
+                const status = ev.isMultiSlot
+                  ? (instance?.completed ? 'completed' : 'pending')
+                  : computeTaskStatus(ev.routine, overflowGroup.dateStr, instance);
+                const category = categories.find(c => c.id === ev.routine.categoryId);
+
+                return (
+                  <div
+                    key={ev.key}
+                    onClick={() => {
+                      setOverflowGroup(null);
+                      setSelectedRoutineId({ id: ev.routine.id, dateStr: overflowGroup.dateStr, timeStr: ev.isMultiSlot ? ev.slotTime : undefined });
+                    }}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-border-base hover:bg-elements cursor-pointer transition-colors"
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(status)}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-text-primary text-xs font-medium wrap-break-word leading-snug">{ev.routine.title}</p>
+                      <p className="text-text-tertiary text-[10px] mt-0.5">{ev.slotTime.slice(0, 5)}</p>
+                    </div>
+                    {category && (
+                      <span className={`text-[10px] shrink-0 px-1.5 py-0.5 rounded-sm truncate max-w-[60px] ${getCategoryStyles(category.color)}`}>
+                        {category.name}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <RoutineDetailsModal
         isOpen={!!selectedRoutine}
         routine={selectedRoutine || null}
         dateStr={selectedRoutineId?.dateStr || ''}
