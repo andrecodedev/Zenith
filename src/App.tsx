@@ -15,6 +15,7 @@ import { Hero } from './components/ui/Hero';
 import { AuthModal } from './components/ui/AuthModal';
 import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
 import { BulkEditorModal } from './components/ui/BulkEditorModal';
+import { SobreView } from './components/ui/SobreView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -25,7 +26,7 @@ function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<'hero' | 'dashboard' | 'calendar' | 'stats'>('hero');
+  const [currentView, setCurrentView] = useState<'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats'>('hero');
   const [session, setSession] = useState<Session | null>(null);
   const weekDays = generateWeek(selectedDate);
 
@@ -286,29 +287,53 @@ function App() {
           </div>
         </div>
 
-        {currentView === 'hero' ? (
-          <div className="flex items-center gap-6">
-            <button 
-              onClick={() => setIsLightMode(!isLightMode)}
-              className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
-            >
-              {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
-            {session ? (
-              <button 
-                onClick={() => setShowLogoutConfirm(true)}
-                className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
+        {(currentView === 'hero' || currentView === 'sobre') ? (
+          <div className="flex items-center gap-4">
+            {/* Desktop nav */}
+            <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+              <button
+                onClick={() => setCurrentView('sobre')}
+                className={`cursor-pointer transition-colors uppercase tracking-wider text-xs font-bold ${currentView === 'sobre' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
               >
-                Sair
+                Sobre
               </button>
-            ) : (
-              <button 
-                onClick={() => setIsAuthModalOpen(true)}
-                className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-sm transition-colors mr-2"
+              <button
+                onClick={() => setIsLightMode(!isLightMode)}
+                className="cursor-pointer text-text-tertiary hover:text-text-primary transition-colors"
               >
-                Login
+                {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
               </button>
-            )}
+              {session ? (
+                <button
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="cursor-pointer text-text-primary hover:text-text-secondary font-bold uppercase tracking-wider text-xs transition-colors"
+                >
+                  Sair
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="cursor-pointer border border-white/30 hover:border-white/80 hover:bg-white hover:text-black text-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 [html.light_&]:text-neutral-900 [html.light_&]:border-neutral-900/30 [html.light_&]:hover:bg-neutral-900 [html.light_&]:hover:text-white"
+                >
+                  Entrar
+                </button>
+              )}
+            </nav>
+            {/* Mobile */}
+            <div className="md:hidden flex items-center gap-3">
+              <button
+                onClick={() => setIsLightMode(!isLightMode)}
+                className="cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+              </button>
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              >
+                <Menu size={24} />
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex items-center gap-4">
@@ -392,56 +417,88 @@ function App() {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[100] bg-bg-primary/95 backdrop-blur-md flex flex-col p-6 md:hidden">
-          <div className="flex justify-end mb-8">
-            <button 
+          <div className="flex justify-between items-center mb-8">
+            <span className="text-text-tertiary text-xs uppercase tracking-widest font-bold">Menu</span>
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer p-2"
             >
               <X size={28} />
             </button>
           </div>
-          <nav className="flex flex-col gap-6 text-lg font-medium">
-            <button 
-              onClick={() => {
-                setSelectedDate(today);
-                setCurrentView('dashboard');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
-            >
-              <LayoutDashboard size={24} />
-              Meu Dia
-            </button>
-            <button
-              onClick={() => {
-                setCurrentView('calendar');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'calendar' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
-            >
-              <Calendar size={24} />
-              Calendário
-            </button>
-            <button
-              onClick={() => {
-                setCurrentView('stats');
-                setIsMobileMenuOpen(false);
-              }}
-              className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'stats' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
-            >
-              <BarChart2 size={24} />
-              Estatísticas
-            </button>
-          </nav>
+
+          {(currentView === 'hero' || currentView === 'sobre') ? (
+            <nav className="flex flex-col gap-4 text-lg font-medium">
+              <button
+                onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'sobre' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                Sobre o Zenith
+              </button>
+              {session ? (
+                <>
+                  <button
+                    onClick={() => { setCurrentView('dashboard'); setIsMobileMenuOpen(false); }}
+                    className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
+                  >
+                    <LayoutDashboard size={24} />
+                    Ir para o App
+                  </button>
+                  <button
+                    onClick={() => { setShowLogoutConfirm(true); setIsMobileMenuOpen(false); }}
+                    className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg"
+                  >
+                    Sair
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => { setIsAuthModalOpen(true); setIsMobileMenuOpen(false); }}
+                  className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-primary bg-btn-bg font-bold"
+                >
+                  Entrar / Criar Conta
+                </button>
+              )}
+            </nav>
+          ) : (
+            <nav className="flex flex-col gap-4 text-lg font-medium">
+              <button
+                onClick={() => { setSelectedDate(today); setCurrentView('dashboard'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <LayoutDashboard size={24} />
+                Meu Dia
+              </button>
+              <button
+                onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'calendar' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <Calendar size={24} />
+                Calendário
+              </button>
+              <button
+                onClick={() => { setCurrentView('stats'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'stats' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <BarChart2 size={24} />
+                Estatísticas
+              </button>
+            </nav>
+          )}
         </div>
       )}
 
       {/* Main Content */}
       <main className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'pt-28 px-6 overflow-y-auto'}`}>
         <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
-          
+
           {currentView === 'hero' ? (
             <Hero onStart={() => session ? setCurrentView('dashboard') : setIsAuthModalOpen(true)} />
+          ) : currentView === 'sobre' ? (
+            <SobreView
+              onBack={() => setCurrentView('hero')}
+              onStart={() => session ? setCurrentView('dashboard') : setIsAuthModalOpen(true)}
+            />
           ) : currentView === 'dashboard' ? (
             <div className="w-full flex flex-col pb-24">
 
