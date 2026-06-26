@@ -63,7 +63,7 @@ function App() {
       if (session) {
         useStore.getState().fetchData();
         if (currentView === 'hero') setCurrentView('dashboard');
-        if (event === 'SIGNED_IN' && notificationsEnabled) subscribeToPush();
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && notificationsEnabled) subscribeToPush();
       } else {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
         setCurrentView('hero');
@@ -136,7 +136,7 @@ function App() {
 
   useEffect(() => {
     registerServiceWorker().then(() => {
-      if (session && notificationsEnabled) subscribeToPush();
+      // subscribeToPush é chamado pelo onAuthStateChange no SIGNED_IN — não duplicar aqui
     });
 
     const handleMessage = (event: MessageEvent) => {
