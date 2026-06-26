@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { X, Sparkles, Loader2, Plus, Minus } from 'lucide-react';
 import { InfoTooltip, CopyButton } from './InfoTooltip';
 import { parseCourseWithGemini, smartScheduleCourseWithGemini } from '../../utils/ai';
-import type { CoursePreferences } from '../../utils/ai';
+import type { CoursePreferences, TimeSlot } from '../../utils/ai';
 import { addDays, format, parseISO } from 'date-fns';
 
 const SYLLABUS_PROMPT = `Tenho a ementa de um curso. Reformate-a seguindo EXATAMENTE este padrão, sem adicionar nada além disso:
@@ -32,7 +32,18 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
   const [isSmartSchedule, setIsSmartSchedule] = useState(false);
   const [priority, setPriority] = useState<CoursePreferences['priority']>('normal');
   const [pace, setPace] = useState<CoursePreferences['pace']>('moderado');
-  const [timeSlot, setTimeSlot] = useState<CoursePreferences['timeSlot']>('qualquer');
+  const [timeSlot, setTimeSlot] = useState<TimeSlot[]>(['qualquer']);
+
+  const toggleTimeSlot = (slot: TimeSlot) => {
+    setTimeSlot(prev => {
+      if (slot === 'qualquer') return ['qualquer'];
+      const withoutQualquer = prev.filter(s => s !== 'qualquer');
+      const next = withoutQualquer.includes(slot)
+        ? withoutQualquer.filter(s => s !== slot)
+        : [...withoutQualquer, slot];
+      return next.length === 0 ? ['qualquer'] : next;
+    });
+  };
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState<{
     totalLessons: number;
@@ -277,7 +288,8 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 value={courseName}
                 onChange={e => setCourseName(e.target.value)}
                 placeholder="Ex: React Avançado"
-                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all"
+                disabled={isLoading}
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 required
               />
             </div>
@@ -291,7 +303,8 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 value={schoolName}
                 onChange={e => setSchoolName(e.target.value)}
                 placeholder="Ex: Rocketseat, Udemy..."
-                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all"
+                disabled={isLoading}
+                className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -310,6 +323,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
               onChange={e => setSyllabus(e.target.value)}
               placeholder="Módulo 1&#10;Aula 1 - Intro&#10;Aula 2 - Setup..."
               rows={6}
+              disabled={isLoading}
               className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray transition-all resize-none"
               required
             />
@@ -329,10 +343,11 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   className="sr-only peer"
                   checked={isSmartSchedule}
+                  disabled={isLoading}
                   onChange={(e) => setIsSmartSchedule(e.target.checked)}
                 />
                 <div className="w-9 h-5 bg-elements peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-primary after:border-border-gray after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-btn-bg"></div>
@@ -359,7 +374,8 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                       key={opt.value}
                       type="button"
                       onClick={() => setPriority(opt.value)}
-                      className={`flex-1 min-w-[70px] py-2 rounded-md text-sm font-medium transition-all ${
+                      disabled={isLoading}
+                      className={`flex-1 min-w-[70px] py-2 rounded-md text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                         priority === opt.value
                           ? 'bg-white text-black font-semibold'
                           : 'bg-elements text-text-tertiary hover:bg-elements-hover border border-border-base'
@@ -384,7 +400,8 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                       key={opt.value}
                       type="button"
                       onClick={() => setPace(opt.value)}
-                      className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                      disabled={isLoading}
+                      className={`flex-1 py-2 rounded-md text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                         pace === opt.value
                           ? 'bg-white text-black font-semibold'
                           : 'bg-elements text-text-tertiary hover:bg-elements-hover border border-border-base'
@@ -405,13 +422,14 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                     { value: 'tarde', label: 'Tarde' },
                     { value: 'noite', label: 'Noite' },
                     { value: 'qualquer', label: 'Qualquer' },
-                  ] as { value: CoursePreferences['timeSlot']; label: string }[]).map(opt => (
+                  ] as { value: TimeSlot; label: string }[]).map(opt => (
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setTimeSlot(opt.value)}
-                      className={`flex-1 min-w-[70px] py-2 rounded-md text-sm font-medium transition-all ${
-                        timeSlot === opt.value
+                      disabled={isLoading}
+                      onClick={() => toggleTimeSlot(opt.value)}
+                      className={`flex-1 min-w-[70px] py-2 rounded-md text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                        timeSlot.includes(opt.value)
                           ? 'bg-white text-black font-semibold'
                           : 'bg-elements text-text-tertiary hover:bg-elements-hover border border-border-base'
                       }`}

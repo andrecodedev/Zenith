@@ -1,7 +1,9 @@
+export type TimeSlot = 'manha' | 'tarde' | 'noite' | 'qualquer';
+
 export interface CoursePreferences {
   priority: 'baixa' | 'normal' | 'alta' | 'maxima';
   pace: 'tranquilo' | 'moderado' | 'intenso';
-  timeSlot: 'manha' | 'tarde' | 'noite' | 'qualquer';
+  timeSlot: TimeSlot[];
 }
 
 function buildPreferencesPrompt(prefs: CoursePreferences): string {
@@ -20,12 +22,14 @@ function buildPreferencesPrompt(prefs: CoursePreferences): string {
     intenso: 'Pode agendar aulas consecutivas sem intervalo.',
   }[prefs.pace];
 
-  const timeRule = {
-    manha: 'Prefira horários entre 07:00 e 12:00.',
-    tarde: 'Prefira horários entre 13:00 e 18:00.',
-    noite: 'Prefira horários entre 19:00 e 22:00.',
-    qualquer: 'Distribua nos melhores horários livres, qualquer período do dia.',
-  }[prefs.timeSlot];
+  const slotLabels: Record<string, string> = {
+    manha: 'Manhã (07:00-12:00)',
+    tarde: 'Tarde (13:00-18:00)',
+    noite: 'Noite (19:00-22:00)',
+  };
+  const timeRule = prefs.timeSlot.includes('qualquer') || prefs.timeSlot.length === 0
+    ? 'Distribua nos melhores horários livres, qualquer período do dia.'
+    : `Prefira horários nos seguintes períodos: ${prefs.timeSlot.map(s => slotLabels[s]).filter(Boolean).join(', ')}.`;
 
   return `
 Preferências do usuário (aplique obrigatoriamente):
