@@ -166,19 +166,19 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
         <div className="p-5 space-y-5 overflow-y-auto flex-1">
           <div>
             <div className="text-sm text-text-secondary mb-1">Tarefa {timeStr ? `(Horário: ${timeStr})` : ''}</div>
-            <div className="font-medium text-text-primary truncate">{routine.title}</div>
+            <div className="font-medium text-text-primary wrap-break-word">{routine.title}</div>
           </div>
 
           <div className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
             Status
             <InfoTooltip>
               <strong className="text-text-primary block mb-1">Significado de cada status:</strong>
-              ✅ Concluído — tarefa feita<br/>
-              🕐 Em Andamento — está sendo executada<br/>
-              🔴 Em Atraso — não foi feita no prazo<br/>
-              🚫 Cancelado — não será feita<br/>
-              ⬜ Pendente — aguardando execução<br/>
-              🔄 Automático — calculado pelo horário
+              Concluído: tarefa feita<br/>
+              Em Andamento: está sendo executada<br/>
+              Em Atraso: não foi feita no prazo<br/>
+              Cancelado: não será feita<br/>
+              Pendente: aguardando execução<br/>
+              Automático: calculado pelo horário
             </InfoTooltip>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -239,7 +239,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
                     {applyScope === 'current' ? `Somente nesta data (${dateStr})` :
                      applyScope === 'future' ? 'Desta data em diante (Futuro)' :
                      applyScope === 'past' ? 'Desta data para trás (Passado)' :
-                     'Todas as datas (⚠️ Sobrescreve histórico)'}
+                     'Todas as datas (sobrescreve histórico)'}
                   </span>
                   <ChevronDown size={16} className={`shrink-0 text-text-tertiary transition-transform duration-200 ${isScopeDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -262,7 +262,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
                           { value: 'current', label: `Somente nesta data (${dateStr})` },
                           { value: 'future', label: 'Desta data em diante (Futuro)' },
                           { value: 'past', label: 'Desta data para trás (Passado)' },
-                          { value: 'all', label: 'Todas as datas (⚠️ Sobrescreve histórico)' },
+                          { value: 'all', label: 'Todas as datas (sobrescreve histórico)' },
                         ].map(option => (
                           <button key={option.value} type="button" onClick={() => { setApplyScope(option.value as any); setIsScopeDropdownOpen(false); }}
                             className={`w-full text-left px-4 py-3 text-sm transition-colors cursor-pointer ${applyScope === option.value ? 'text-text-primary bg-elements font-medium' : 'text-text-secondary hover:bg-elements hover:text-text-primary'}`}>

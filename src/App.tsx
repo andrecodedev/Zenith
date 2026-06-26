@@ -338,7 +338,13 @@ function App() {
         ) : (
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-              <button 
+              <button
+                onClick={() => setCurrentView('sobre')}
+                className="cursor-pointer transition-colors uppercase tracking-wider text-xs font-bold text-text-tertiary hover:text-text-primary"
+              >
+                Sobre
+              </button>
+              <button
                 onClick={() => {
                   setSelectedDate(today);
                   setCurrentView('dashboard');
@@ -462,6 +468,12 @@ function App() {
             </nav>
           ) : (
             <nav className="flex flex-col gap-4 text-lg font-medium">
+              <button
+                onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
+                className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
+              >
+                Sobre o Zenith
+              </button>
               <button
                 onClick={() => { setSelectedDate(today); setCurrentView('dashboard'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}

@@ -22,6 +22,7 @@ interface TaskItemProps {
 
 export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, onSlotToggle, onDragStart, onDragOver, onDrop, onDragEnd, isDragOver }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isTitleExpanded, setIsTitleExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -62,11 +63,12 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
     const handleClickOutside = (event: MouseEvent) => {
       if (itemRef.current && !itemRef.current.contains(event.target as Node)) {
         setIsExpanded(false);
+        setIsTitleExpanded(false);
       }
     };
-    if (isExpanded) document.addEventListener('mousedown', handleClickOutside);
+    if (isExpanded || isTitleExpanded) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isExpanded]);
+  }, [isExpanded, isTitleExpanded]);
 
   const handleRowClick = () => {
     if (isMultipleTimes) {
@@ -121,7 +123,10 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
           </button>
 
           <div className="flex-1 min-w-0">
-            <h3 className={`font-medium truncate ${(isCompleted || status === 'canceled') ? 'line-through text-text-tertiary' : 'text-text-primary'}`}>
+            <h3
+              onClick={(e) => { e.stopPropagation(); setIsTitleExpanded(prev => !prev); }}
+              className={`font-medium cursor-pointer select-none ${isTitleExpanded ? 'whitespace-normal wrap-break-word' : 'truncate'} ${(isCompleted || status === 'canceled') ? 'line-through text-text-tertiary' : 'text-text-primary'}`}
+            >
               {routine.title}
             </h3>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
