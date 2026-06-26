@@ -66,7 +66,10 @@ async function callGroq(prompt: string, temperature: number, signal?: AbortSigna
     body: JSON.stringify({
       model: 'llama-3.1-8b-instant',
       temperature,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: 'You are a JSON API. Respond with raw JSON only — no explanations, no markdown, no preamble, no prose.' },
+        { role: 'user', content: prompt },
+      ],
     }),
   });
   if (!res.ok) throw new Error(`Groq ${res.status}`);
@@ -103,8 +106,9 @@ ${syllabus}
 
   try {
     const text = await callWithFallback(prompt, apiKey, 0.2, signal);
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const lessons = JSON.parse(cleanText);
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Nenhum array JSON encontrado na resposta');
+    const lessons = JSON.parse(match[0]);
     if (!Array.isArray(lessons)) throw new Error('Retorno não é um array');
     return lessons;
   } catch (err) {
@@ -157,8 +161,9 @@ Formato exato de cada objeto no array:
 
   try {
     const text = await callWithFallback(prompt, apiKey, 0.1, signal);
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const scheduledLessons = JSON.parse(cleanText);
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Nenhum array JSON encontrado na resposta');
+    const scheduledLessons = JSON.parse(match[0]);
     if (!Array.isArray(scheduledLessons)) throw new Error('Retorno não é um array');
     return scheduledLessons;
   } catch (err) {
