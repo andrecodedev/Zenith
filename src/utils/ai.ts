@@ -42,6 +42,28 @@ Preferências do usuário (aplique obrigatoriamente):
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
 
+function extractJsonArray(text: string): any[] {
+  console.warn('[AI raw]', text.slice(0, 300));
+  // Try direct JSON array
+  const arrMatch = text.match(/\[[\s\S]*\]/);
+  if (arrMatch) {
+    try {
+      const parsed = JSON.parse(arrMatch[0]);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  // Try JSON object containing an array value (model wrapped in {})
+  const objMatch = text.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    try {
+      const obj = JSON.parse(objMatch[0]);
+      const arr = Object.values(obj).find(v => Array.isArray(v));
+      if (arr) return arr as any[];
+    } catch {}
+  }
+  throw new Error('Nenhum array JSON encontrado na resposta');
+}
+
 async function callGemini(prompt: string, apiKey: string, temperature: number, signal?: AbortSignal): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
@@ -64,7 +86,7 @@ async function callGroq(prompt: string, temperature: number, signal?: AbortSigna
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
     signal,
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-70b-versatile',
       temperature,
       messages: [
         { role: 'system', content: 'You are a JSON API. Respond with raw JSON only — no explanations, no markdown, no preamble, no prose.' },
@@ -106,11 +128,7 @@ ${syllabus}
 
   try {
     const text = await callWithFallback(prompt, apiKey, 0.2, signal);
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('Nenhum array JSON encontrado na resposta');
-    const lessons = JSON.parse(match[0]);
-    if (!Array.isArray(lessons)) throw new Error('Retorno não é um array');
-    return lessons;
+    return extractJsonArray(text);
   } catch (err) {
     console.error("Erro no parse/chamada da IA", err);
     throw new Error('A IA falhou ou não retornou um formato válido. Tente novamente.');
@@ -161,11 +179,7 @@ Formato exato de cada objeto no array:
 
   try {
     const text = await callWithFallback(prompt, apiKey, 0.1, signal);
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('Nenhum array JSON encontrado na resposta');
-    const scheduledLessons = JSON.parse(match[0]);
-    if (!Array.isArray(scheduledLessons)) throw new Error('Retorno não é um array');
-    return scheduledLessons;
+    return extractJsonArray(text);
   } catch (err) {
     console.error("Erro no parse/chamada da IA", err);
     throw new Error('A IA falhou em gerar o agendamento. Tente novamente.');
