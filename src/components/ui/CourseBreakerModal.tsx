@@ -361,7 +361,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                       onClick={() => setPriority(opt.value)}
                       className={`flex-1 min-w-[70px] py-2 rounded-md text-sm font-medium transition-all ${
                         priority === opt.value
-                          ? 'bg-btn-bg text-text-primary'
+                          ? 'bg-btn-bg text-text-primary font-semibold ring-2 ring-white/20'
                           : 'bg-elements text-text-tertiary hover:bg-elements-hover border border-border-base'
                       }`}
                     >
@@ -386,7 +386,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                       onClick={() => setPace(opt.value)}
                       className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
                         pace === opt.value
-                          ? 'bg-btn-bg text-text-primary'
+                          ? 'bg-btn-bg text-text-primary font-semibold ring-2 ring-white/20'
                           : 'bg-elements text-text-tertiary hover:bg-elements-hover border border-border-base'
                       }`}
                     >
@@ -412,7 +412,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
                       onClick={() => setTimeSlot(opt.value)}
                       className={`flex-1 min-w-[70px] py-2 rounded-md text-sm font-medium transition-all ${
                         timeSlot === opt.value
-                          ? 'bg-btn-bg text-text-primary'
+                          ? 'bg-btn-bg text-text-primary font-semibold ring-2 ring-white/20'
                           : 'bg-elements text-text-tertiary hover:bg-elements-hover border border-border-base'
                       }`}
                     >
