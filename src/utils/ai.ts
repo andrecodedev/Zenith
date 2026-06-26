@@ -44,7 +44,8 @@ const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
 
 function extractJsonArray(text: string): any[] {
   console.warn('[AI raw]', text.slice(0, 300));
-  // Try direct JSON array
+
+  // 1. Complete JSON array
   const arrMatch = text.match(/\[[\s\S]*\]/);
   if (arrMatch) {
     try {
@@ -52,7 +53,24 @@ function extractJsonArray(text: string): any[] {
       if (Array.isArray(parsed)) return parsed;
     } catch {}
   }
-  // Try JSON object containing an array value (model wrapped in {})
+
+  // 2. Truncated array (output token limit hit — response has [ but no closing ])
+  const openIdx = text.indexOf('[');
+  if (openIdx !== -1) {
+    const lastObj = text.lastIndexOf('},');
+    if (lastObj !== -1) {
+      try {
+        const partial = text.slice(openIdx, lastObj + 1) + ']';
+        const parsed = JSON.parse(partial);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.warn(`[AI] Resposta truncada — recuperados ${parsed.length} itens parciais`);
+          return parsed;
+        }
+      } catch {}
+    }
+  }
+
+  // 3. JSON object containing an array value (model wrapped in {})
   const objMatch = text.match(/\{[\s\S]*\}/);
   if (objMatch) {
     try {
@@ -61,6 +79,7 @@ function extractJsonArray(text: string): any[] {
       if (arr) return arr as any[];
     } catch {}
   }
+
   throw new Error('Nenhum array JSON encontrado na resposta');
 }
 
@@ -88,6 +107,7 @@ async function callGroq(prompt: string, temperature: number, signal?: AbortSigna
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       temperature,
+      max_tokens: 8192,
       messages: [
         { role: 'system', content: 'You are a JSON API. Respond with raw JSON only — no explanations, no markdown, no preamble, no prose.' },
         { role: 'user', content: prompt },
