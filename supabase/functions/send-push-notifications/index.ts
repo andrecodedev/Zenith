@@ -25,9 +25,43 @@ serve(async () => {
 
   const { data: routines } = await supabase
     .from('routines')
-    .select('id, title, description, user_id, time, times');
+    .select('id, title, description, user_id, time, times, recurrence, custom_days, date, start_date, end_date, excluded_dates, created_at');
 
-  const validRoutines = routines?.filter(r => r.time || (r.times && r.times.length > 0)) || [];
+  const validRoutines = routines?.filter((r: any) => {
+    if (!r.time && (!r.times || r.times.length === 0)) return false;
+
+    // isTaskDueToday logic
+    if (r.start_date) {
+      if (todayStr < r.start_date) return false;
+    } else if (r.created_at) {
+      const cDate = new Date(r.created_at);
+      const cLocal = new Date(cDate.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+      const createdDateStr = `${cLocal.getFullYear()}-${String(cLocal.getMonth() + 1).padStart(2, '0')}-${String(cLocal.getDate()).padStart(2, '0')}`;
+      if (todayStr < createdDateStr) return false;
+    }
+
+    if (r.end_date && todayStr > r.end_date) return false;
+    if (r.excluded_dates && r.excluded_dates.includes(todayStr)) return false;
+
+    const dayOfWeek = local.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+
+    switch (r.recurrence) {
+      case 'daily':
+        return true;
+      case 'weekdays':
+        return dayOfWeek !== 0 && dayOfWeek !== 6;
+      case 'weekends':
+        return dayOfWeek === 0 || dayOfWeek === 6;
+      case 'custom':
+        return r.custom_days?.includes(dayOfWeek) ?? false;
+      case 'once':
+        return r.date === todayStr;
+      case 'multiple_times':
+        return true;
+      default:
+        return false;
+    }
+  }) || [];
 
   if (!validRoutines.length) {
     console.log('[push] STOP: no routines with time/times set');
