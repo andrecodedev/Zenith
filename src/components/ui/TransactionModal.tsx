@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import type React from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronDown, Search } from 'lucide-react';
 
 // ── Types (exported for InvestmentView) ───────────────────────────────────────
@@ -74,40 +76,72 @@ function Field({ label, optional, children }: { label: string; optional?: boolea
   );
 }
 
-function StyledSelect({ value, onChange, options }: {
+export function StyledSelect({ value, onChange, options }: {
   value: string; onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropStyle, setDropStyle] = useState<React.CSSProperties>({});
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const close = (e: MouseEvent) => {
+      if (btnRef.current && !btnRef.current.closest('[data-styled-select]')?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
   }, []);
+
+  const handleOpen = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const estHeight = options.length * 40 + 8; // px estimado
+      const openUp = spaceBelow < estHeight && rect.top > estHeight;
+      setDropStyle({
+        position: 'fixed',
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+        ...(openUp
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
+      });
+    }
+    setOpen(v => !v);
+  };
 
   const selectedLabel = options.find(o => o.value === value)?.label || 'Selecionar';
 
+  const dropdown = open && (
+    <div
+      style={dropStyle}
+      className="bg-bg-primary border border-border-base rounded-lg shadow-2xl flex flex-col"
+      onMouseDown={e => e.stopPropagation()}
+    >
+      <div className="p-1">
+        {options.map(o => (
+          <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); }}
+            className={`w-full text-left px-3 py-2 text-sm hover:bg-elements hover:text-text-primary rounded-md transition-colors cursor-pointer ${
+              value === o.value ? 'bg-elements/50 text-text-primary' : 'text-text-secondary'
+            }`}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen(v => !v)}
+    <div data-styled-select className="relative">
+      <button ref={btnRef} type="button" onClick={handleOpen}
         className={`flex items-center justify-between ${inputCls} text-left cursor-pointer`}>
         <span className="text-text-primary">{selectedLabel}</span>
-        <ChevronDown size={14} className="text-text-tertiary" />
+        <ChevronDown size={14} className={`text-text-tertiary transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-bg-primary border border-border-base rounded-lg shadow-xl overflow-hidden flex flex-col max-h-60">
-          <div className="overflow-y-auto flex-1 p-1">
-            {options.map(o => (
-              <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-elements hover:text-text-primary rounded-md transition-colors cursor-pointer ${value === o.value ? 'bg-elements/50 text-text-primary' : 'text-text-secondary'}`}>
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {typeof document !== 'undefined' && createPortal(dropdown, document.body)}
     </div>
   );
 }
@@ -183,39 +217,64 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
 }
 
 // ── TransactionModal ──────────────────────────────────────────────────────────
-export function TransactionModal({ categories, initialTicker, initialCategoryId, initialAssetType, onSave, onClose }: {
+export interface ITransactionForEdit {
+  ticker: string; categoryId: string;
+  type: 'buy' | 'sell' | 'dividend'; date: string;
+  quantity: number; price: number; otherCosts: number;
+  assetType?: AssetType; meta?: any;
+}
+
+export function TransactionModal({ categories, initialTicker, initialCategoryId, initialAssetType, initialData, onSave, onClose }: {
   categories: ICat[];
   initialTicker?: string;
   initialCategoryId?: string;
   initialAssetType?: AssetType;
+  initialData?: ITransactionForEdit;
   onSave: (data: TransactionData) => Promise<void>;
   onClose: () => void;
 }) {
-  const [txType, setTxType] = useState<'buy' | 'sell' | 'dividend'>('buy');
-  const [assetType, setAssetType] = useState<AssetType>(initialAssetType ?? 'acoes');
-  const [categoryId, setCategoryId] = useState(initialCategoryId ?? categories[0]?.id ?? '');
+  const isEditing = !!initialData;
+
+  // Helper: converte número para string formatada para os inputs de preço
+  const numToStr = (n: number) => n > 0 ? n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 }) : '';
+
+  const [txType, setTxType] = useState<'buy' | 'sell' | 'dividend'>(initialData?.type ?? 'buy');
+  const [assetType, setAssetType] = useState<AssetType>(initialData?.assetType ?? initialAssetType ?? 'acoes');
+  const [categoryId, setCategoryId] = useState(initialData?.categoryId ?? initialCategoryId ?? categories[0]?.id ?? '');
   const [saving, setSaving] = useState(false);
 
   // Common fields
-  const [ticker,     setTicker]     = useState(initialTicker ?? '');
-  const [date,       setDate]       = useState(todayStr);
-  const [qty,        setQty]        = useState('');
-  const [priceStr,   setPriceStr]   = useState('');
-  const [otherCosts, setOtherCosts] = useState('');
+  const [ticker,     setTicker]     = useState(initialData?.ticker ?? initialTicker ?? '');
+  const [date,       setDate]       = useState(initialData?.date ?? todayStr);
+  const [qty,        setQty]        = useState(initialData?.quantity ? String(initialData.quantity) : '');
+  const [priceStr,   setPriceStr]   = useState(initialData?.price ? numToStr(initialData.price) : '');
+  const [otherCosts, setOtherCosts] = useState(initialData?.otherCosts ? numToStr(initialData.otherCosts) : '');
 
   // Fundos
-  const [valorInvestido, setValorInvestido] = useState('');
-  const [precoCota,      setPrecoCota]      = useState('');
+  const totalInvested = useMemo(() => (initialData?.quantity ?? 0) * (initialData?.price ?? 0), [initialData]);
+  const [valorInvestido, setValorInvestido] = useState(
+    initialData?.assetType === 'fundos' && totalInvested > 0
+      ? 'R$ ' + totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+      : ''
+  );
+  const [precoCota, setPrecoCota] = useState(
+    initialData?.assetType === 'fundos' && initialData.price > 0 ? numToStr(initialData.price) : ''
+  );
 
   // Renda Fixa
-  const [emissor,        setEmissor]        = useState('');
-  const [tipoTitulo,     setTipoTitulo]     = useState('CDB');
-  const [indexador,      setIndexador]      = useState('CDI');
-  const [taxa,           setTaxa]           = useState('');
-  const [forma,          setForma]          = useState('Pós-fixado');
-  const [valorRF,        setValorRF]        = useState('');
-  const [liquidezDiaria, setLiquidezDiaria] = useState(false);
-  const [vencimento,     setVencimento]     = useState('');
+  const rfMeta = initialData?.meta as any;
+  const [emissor,        setEmissor]        = useState(rfMeta?.emissor ?? initialData?.ticker ?? initialTicker ?? 'Nubank');
+  const [tipoTitulo,     setTipoTitulo]     = useState(rfMeta?.tipoTitulo ?? 'CDB');
+  const [indexador,      setIndexador]      = useState(rfMeta?.indexador ?? 'CDI');
+  const [taxa,           setTaxa]           = useState(rfMeta?.taxa ? String(rfMeta.taxa).replace('.', ',') : '100,00');
+  const [forma,          setForma]          = useState(rfMeta?.forma ?? 'Pós-fixado');
+  const [valorRF,        setValorRF]        = useState(
+    initialData?.assetType === 'renda_fixa' && initialData.price > 0
+      ? 'R$ ' + initialData.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+      : ''
+  );
+  const [liquidezDiaria, setLiquidezDiaria] = useState(rfMeta?.liquidezDiaria ?? false);
+  const [vencimento,     setVencimento]     = useState(rfMeta?.vencimento ?? '');
 
   const isCripto   = assetType === 'cripto';
   const isFundos   = assetType === 'fundos';
@@ -285,13 +344,16 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
   const catOptions = categories.map(c => ({ value: c.id, label: c.name }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans"
+    <div className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans"
+      style={{ zIndex: isEditing ? 60 : 50 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-bg-secondary border border-border-base/30 rounded-xl w-full max-w-[480px] shadow-2xl flex flex-col max-h-[92vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 shrink-0">
-          <span className="text-lg font-bold text-text-primary tracking-tight">Adicionar Lançamento</span>
+          <span className="text-lg font-bold text-text-primary tracking-tight">
+            {isEditing ? 'Editar Lançamento' : 'Adicionar Lançamento'}
+          </span>
           <button onClick={onClose} className="text-text-tertiary hover:text-text-primary cursor-pointer transition-colors p-1 -mr-1">
             <X size={20} />
           </button>
@@ -331,8 +393,18 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Emissor">
-                    <input value={emissor} onChange={e => setEmissor(e.target.value)}
+                    <input list="bancos-list" value={emissor} onChange={e => setEmissor(e.target.value)}
                       placeholder="Ex: Banco Inter" className={inputCls} />
+                    <datalist id="bancos-list">
+                      <option value="Nubank" />
+                      <option value="Banco Inter" />
+                      <option value="BTG Pactual" />
+                      <option value="XP Investimentos" />
+                      <option value="Itaú" />
+                      <option value="Bradesco" />
+                      <option value="Banco do Brasil" />
+                      <option value="Caixa Econômica" />
+                    </datalist>
                   </Field>
                   <Field label="Tipo de título">
                     <StyledSelect value={tipoTitulo} onChange={setTipoTitulo}
@@ -358,8 +430,10 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
                       options={FORMA_OPTS.map(v => ({ value: v, label: v }))} />
                   </Field>
                   <Field label="Valor investido">
-                    <input value={valorRF} onChange={e => setValorRF(e.target.value)}
-                      placeholder="0,00" className={inputCls} />
+                    <input value={valorRF} onChange={e => {
+                      const digits = e.target.value.replace(/\D/g, '');
+                      setValorRF(digits ? 'R$ ' + (parseInt(digits) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '');
+                    }} placeholder="R$ 0,00" inputMode="numeric" className={inputCls} />
                   </Field>
                 </div>
                 <Toggle value={liquidezDiaria} onChange={setLiquidezDiaria} label="Liquidez diária" />
@@ -463,7 +537,7 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
           </button>
           <button onClick={submit} disabled={!isValid || saving}
             className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed ${txType === 'buy' ? 'bg-text-primary hover:opacity-80 text-bg-primary' : 'bg-red-500 hover:bg-red-600 text-[#ffffff]'}`}>
-            {saving ? 'Salvando...' : 'Adicionar Lançamento'}
+            {saving ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Adicionar Lançamento'}
           </button>
         </div>
 

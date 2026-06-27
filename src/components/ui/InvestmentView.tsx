@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Plus, Trash2, Target, ChevronDown, ChevronUp, Pencil, RefreshCw, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { PieChart, Pie, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { TransactionData, AssetType } from './TransactionModal';
-import { TransactionModal } from './TransactionModal';
+import { TransactionModal, StyledSelect } from './TransactionModal';
+import { TransactionHistoryModal } from './TransactionHistoryModal';
 
 // ── Interfaces ─────────────────────────────────────────────────────────────────
 interface ICategory {
@@ -16,15 +17,18 @@ interface IWatchlistItem {
   id: string; categoryId: string; ticker: string;
   name: string; price: number; changePercent: number; logoUrl?: string;
 }
-interface ITransaction {
+export interface ITransaction {
   id: string; ticker: string; categoryId: string;
   type: 'buy' | 'sell' | 'dividend'; date: string;
   quantity: number; price: number; otherCosts: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   assetType?: AssetType; meta?: any;
 }
 interface IHolding {
   ticker: string; categoryId: string;
   qty: number; avgPrice: number; totalInvested: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  assetType?: AssetType; meta?: any; purchaseDate?: string;
 }
 interface PConfig {
   investPatrimonio: number;
@@ -36,7 +40,7 @@ interface DistRow {
   label: string; currentPct: number; onCurrentPctCh?: (v: number) => void;
   idealPct: number; onIdealCh: (v: number) => void; goal?: GoalInfo;
 }
-type PriceData = { price: number; changePercent: number; name: string; fetchedAt: number; logoUrl?: string };
+type PriceData = { price: number; changePercent: number; name: string; fetchedAt: number; logoUrl?: string; _isRF?: boolean };
 type PriceCache = Record<string, PriceData>;
 
 // ── Constants & storage ────────────────────────────────────────────────────────
@@ -82,7 +86,9 @@ const fetchQuote = async (ticker: string): Promise<{ name: string; price: number
 
 const fetchPrices = async (tickers: string[], cache: PriceCache): Promise<PriceCache> => {
   const now = Date.now();
-  const stale = tickers.filter(t => !cache[t] || now - cache[t].fetchedAt > CACHE_TTL);
+  // RF não são tickers de bolsa — filtrar antes de chamar a API
+  const marketTickers = tickers.filter(t => !cache[t]?._isRF);
+  const stale = marketTickers.filter(t => !cache[t] || now - cache[t].fetchedAt > CACHE_TTL);
   if (!stale.length) return cache;
   const chunks: string[][] = [];
   for (let i = 0; i < stale.length; i += 20) chunks.push(stale.slice(i, i + 20));
@@ -106,16 +112,131 @@ const fetchPrices = async (tickers: string[], cache: PriceCache): Promise<PriceC
   return next;
 };
 
+type MacroRates = {
+  cdiHistory?: Record<string, number>;
+  [key: string]: number | Record<string, number> | undefined;
+};
+
+let cachedMacroRates: MacroRates | null = null;
+const getMacroRates = async (): Promise<MacroRates> => {
+  if (cachedMacroRates) return cachedMacroRates;
+  try {
+    const cachedStr = localStorage.getItem('ZENITH_MACRO_RATES_V2');
+    if (cachedStr) {
+      const data = JSON.parse(cachedStr);
+      if (Date.now() - data.fetchedAt < 1000 * 60 * 60 * 24) {
+        cachedMacroRates = data.rates;
+        return data.rates;
+      }
+    }
+    const [cdi, selic, ipca, cdiHistoryRes] = await Promise.all([
+      fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.4389/dados/ultimos/1?formato=json').then(r => r.json()),
+      fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json').then(r => r.json()),
+      fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/1?formato=json').then(r => r.json()),
+      fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados/ultimos/2000?formato=json').then(r => r.json()),
+    ]);
+    
+    const cdiHistory: Record<string, number> = {};
+    if (Array.isArray(cdiHistoryRes)) {
+      cdiHistoryRes.forEach((item: { data: string; valor: string | number }) => {
+        cdiHistory[item.data] = Number(item.valor) / 100; // Taxa ao dia em decimal puro
+      });
+    }
+
+    const rates = {
+      'CDI': Number(cdi[0].valor) / 100,
+      'SELIC': Number(selic[0].valor) / 100,
+      'IPCA': Number(ipca[0].valor) / 100,
+      'IGPM': 0.040, 'INPC': 0.045, 'TR': 0.0065, 'TJLP': 0.075, 'PRÉ': 0,
+      cdiHistory
+    };
+    cachedMacroRates = rates;
+    localStorage.setItem('ZENITH_MACRO_RATES_V2', JSON.stringify({ rates, fetchedAt: Date.now() }));
+    return rates;
+  } catch {
+    return {
+      'CDI': 0.1415, 'SELIC': 0.1425,
+      'IPCA': 0.0472, 'IGPM': 0.040, 'INPC': 0.045,
+      'TR': 0.0065, 'TJLP': 0.075, 'PRÉ': 0,
+      cdiHistory: {}
+    };
+  }
+};
+
+// Estima o valor atual de um ativo de Renda Fixa com base na taxa e dias decorridos
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const calcRFCurrentPrice = (valorInicial: number, meta: any, purchaseDate: string, macroRates: any, targetDate?: string | Date): number => {
+  if (!valorInicial || !purchaseDate) return valorInicial;
+  
+  // Garante que o parse da data (YYYY-MM-DD) caia no mesmo dia local, evitando que UTC-3 jogue pro dia anterior
+  const pParts = purchaseDate.split('-');
+  const purchase = pParts.length === 3 ? new Date(Number(pParts[0]), Number(pParts[1]) - 1, Number(pParts[2]), 12, 0, 0) : new Date(purchaseDate);
+  const now = targetDate ? (typeof targetDate === 'string' && targetDate.includes('-') ? new Date(Number(targetDate.split('-')[0]), Number(targetDate.split('-')[1]) - 1, Number(targetDate.split('-')[2]), 12, 0, 0) : new Date(targetDate)) : new Date();
+  const dias = Math.max(0, (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24));
+  if (dias === 0) return valorInicial;
+  
+  const taxaPct = Number(meta?.taxa) || 100;
+  const indexador = (meta?.indexador || 'CDI').toUpperCase();
+  
+  let fator = 1;
+  
+  // Cálculo EXATO para CDI usando o histórico diário do BCB
+  if (indexador === 'CDI' && macroRates?.cdiHistory && Object.keys(macroRates.cdiHistory).length > 0) {
+    const iterDate = new Date(purchase.getTime());
+    iterDate.setHours(12, 0, 0, 0);
+    const end = new Date(now.getTime());
+    end.setHours(12, 0, 0, 0);
+    
+    while (iterDate <= end) {
+      const dd = String(iterDate.getDate()).padStart(2, '0');
+      const mm = String(iterDate.getMonth() + 1).padStart(2, '0');
+      const yyyy = iterDate.getFullYear();
+      const dateKey = `${dd}/${mm}/${yyyy}`;
+      
+      const cdiDiario = macroRates.cdiHistory[dateKey];
+      if (cdiDiario !== undefined) {
+        fator *= (1 + (cdiDiario * (taxaPct / 100)));
+      }
+      iterDate.setDate(iterDate.getDate() + 1);
+    }
+  } else {
+    // Fallback de aproximação para outros indexadores
+    const diasUteis = dias * (252 / 365);
+    let taxaAnual: number;
+    if (indexador === 'PRÉ' || indexador === 'PRÉ-FIXADO') {
+      taxaAnual = taxaPct / 100;
+    } else {
+      const safeRates = macroRates || {};
+      taxaAnual = (safeRates[indexador] ?? safeRates['CDI'] ?? 0.104) * (taxaPct / 100);
+    }
+    fator = Math.pow(1 + taxaAnual, diasUteis / 252);
+  }
+
+  const valorBruto = valorInicial * fator;
+  const lucroBruto = valorBruto - valorInicial;
+  
+  // Tabela Regressiva do Imposto de Renda (Renda Fixa)
+  let aliquotaIR = 0.225; // Até 180 dias
+  if (dias > 180 && dias <= 360) aliquotaIR = 0.20;
+  else if (dias > 360 && dias <= 720) aliquotaIR = 0.175;
+  else if (dias > 720) aliquotaIR = 0.15;
+  
+  // LCI/LCA e Debêntures Incentivadas são isentas, mas por segurança assumimos IR se não especificado
+  const isIsento = meta?.tipo && ['LCI', 'LCA', 'CRI', 'CRA'].some(t => meta.tipo.toUpperCase().includes(t));
+  // Retorna o valor bruto para espelhar o comportamento padrão do Investidor10 (que mostra saldo bruto)
+  return valorBruto;
+};
+
 const calcHoldings = (transactions: ITransaction[]): IHolding[] => {
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
   const map = new Map<string, IHolding>();
   for (const t of sorted) {
-    const cur = map.get(t.ticker) || { ticker: t.ticker, categoryId: t.categoryId, qty: 0, avgPrice: 0, totalInvested: 0 };
+    const cur = map.get(t.ticker) || { ticker: t.ticker, categoryId: t.categoryId, qty: 0, avgPrice: 0, totalInvested: 0, assetType: t.assetType, meta: t.meta, purchaseDate: t.date };
     if (t.type === 'buy') {
       const cost = t.quantity * t.price + t.otherCosts;
       const newQty = cur.qty + t.quantity;
       const newAvg = newQty > 0 ? (cur.qty * cur.avgPrice + cost) / newQty : 0;
-      map.set(t.ticker, { ...cur, qty: newQty, avgPrice: newAvg, totalInvested: cur.totalInvested + cost });
+      map.set(t.ticker, { ...cur, qty: newQty, avgPrice: newAvg, totalInvested: cur.totalInvested + cost, assetType: t.assetType, meta: t.meta, purchaseDate: cur.purchaseDate || t.date });
     } else if (t.type === 'sell') {
       const newQty = cur.qty - t.quantity;
       if (newQty < 0.0001) map.delete(t.ticker);
@@ -158,26 +279,27 @@ function Editable({ value, onSave, right = false, placeholder = '' }: {
   const [ed, setEd] = useState(false);
   const [d, setD] = useState(value);
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (ed) { setD(value); ref.current?.focus(); ref.current?.select(); } }, [ed, value]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (ed) { setD(value); setTimeout(() => { ref.current?.focus(); ref.current?.select(); }, 0); } }, [ed, value]);
   const done = () => { setEd(false); if (d !== value) onSave(d); };
   if (ed) return (
     <input ref={ref} value={d} onChange={e => setD(e.target.value)} onBlur={done}
       onKeyDown={e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') setEd(false); }}
-      className={`bg-transparent outline-none w-full text-sm font-mono ${right ? 'text-right' : ''}`} />
+      className={`bg-transparent outline-none w-full p-0 m-0 border-transparent border-0 ring-0 focus:ring-0 leading-tight text-sm font-mono ${right ? 'text-right' : ''}`} />
   );
   return (
     <span onClick={() => setEd(true)}
-      className={`cursor-text block text-sm font-mono ${right ? 'text-right' : ''} ${!value ? 'text-text-tertiary/30' : ''}`}>
+      className={`cursor-text block w-full p-0 m-0 border-transparent border-0 leading-tight text-sm font-mono ${right ? 'text-right' : ''} ${!value ? 'text-text-tertiary/30' : ''}`}>
       {value || placeholder || ' '}
     </span>
   );
 }
 
 // ── Distribution table ─────────────────────────────────────────────────────────
-function DistTable({ title, patrimonio, aportar, onPatrimonioCh, onAportarCh, rows, rebalance = false }: {
-  title: string;   patrimonio: number; aportar: number;
-  onPatrimonioCh: (v: number) => void; onAportarCh: (v: number) => void;
-  rows: DistRow[]; rebalance?: boolean;
+function DistTable({ title, patrimonioLabel = "Patrimônio atual", patrimonio, aportar, onPatrimonioCh, onAportarCh, rows, rebalance = false, isSimulator = false }: {
+  title: string; patrimonioLabel?: string; patrimonio: number; aportar: number;
+  onPatrimonioCh?: (v: number) => void; onAportarCh?: (v: number) => void;
+  rows: DistRow[]; rebalance?: boolean; isSimulator?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const sumIdeal = rows.reduce((s, r) => s + r.idealPct, 0);
@@ -187,7 +309,9 @@ function DistTable({ title, patrimonio, aportar, onPatrimonioCh, onAportarCh, ro
 
   let rowsFinal: (DistRow & { quantoColoco: number })[];
 
-  if (rebalance && activeGoals.length > 0 && totalGoalPriority > 0 && aportar > 0) {
+  if (isSimulator) {
+    rowsFinal = rows.map(row => ({ ...row, quantoColoco: sumIdeal > 0 ? patrimonio * (row.idealPct / sumIdeal) : 0 }));
+  } else if (rebalance && activeGoals.length > 0 && totalGoalPriority > 0 && aportar > 0) {
     const goalAporte = (totalGoalPriority / 100) * aportar;
     const goalMap = new Map<string, number>();
     let usedForGoals = 0;
@@ -236,24 +360,34 @@ function DistTable({ title, patrimonio, aportar, onPatrimonioCh, onAportarCh, ro
         <table className="w-full min-w-[360px] border-collapse">
           <thead>
             <tr className="bg-elements/20">
-              <th colSpan={2} className="px-4 py-2.5 text-left font-normal border border-border-base">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Patrimônio atual</span>
-                  <Editable value={patrimonio > 0 ? fmt(patrimonio) : ''} onSave={v => onPatrimonioCh(parseFmt(v))} right placeholder="Editar" />
+              <th colSpan={isSimulator ? 3 : 2} className={`px-4 py-2.5 text-left font-normal border border-border-base ${isSimulator ? 'w-full' : 'w-[60%]'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">{patrimonioLabel}</span>
+                  <div className="w-32 text-right">
+                    {onPatrimonioCh ? (
+                      <Editable value={patrimonio > 0 ? fmt(patrimonio) : ''} onSave={v => onPatrimonioCh(parseFmt(v))} right placeholder="Editar" />
+                    ) : (
+                      <span className="text-sm font-mono font-bold text-text-primary cursor-default select-text">{fmt(patrimonio)}</span>
+                    )}
+                  </div>
                 </div>
               </th>
-              <th colSpan={2} className="px-4 py-2.5 text-left font-normal border border-border-base">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Quanto vou aportar</span>
-                  <Editable value={aportar > 0 ? fmt(aportar) : ''} onSave={v => onAportarCh(parseFmt(v))} right placeholder="Editar" />
-                </div>
-              </th>
+              {!isSimulator && (
+                <th colSpan={2} className="px-4 py-2.5 text-left font-normal border border-border-base w-[40%]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">Quanto vou aportar</span>
+                    <div className="w-24 text-right">
+                      {onAportarCh && <Editable value={aportar > 0 ? fmt(aportar) : ''} onSave={v => onAportarCh(parseFmt(v))} right placeholder="Editar" />}
+                    </div>
+                  </div>
+                </th>
+              )}
             </tr>
             <tr className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider bg-bg-secondary">
-              <th className="px-4 py-2 text-left font-normal border border-border-base">Categoria</th>
-              <th className="px-3 py-2 text-right font-normal w-20 border border-border-base">% Atual</th>
-              <th className="px-3 py-2 text-right font-normal w-24 border border-border-base">% Ideal</th>
-              <th className="px-3 py-2 text-right font-normal border border-border-base">Quanto Coloco</th>
+              <th className={`px-4 py-2 text-left font-normal border border-border-base ${isSimulator ? 'w-[50%]' : 'w-[40%]'}`}>Categoria</th>
+              {!isSimulator && <th className="px-3 py-2 text-right font-normal w-[20%] border border-border-base">% Atual</th>}
+              <th className={`px-3 py-2 text-right font-normal ${isSimulator ? 'w-[25%]' : 'w-[15%]'} border border-border-base`}>% Ideal</th>
+              <th className={`px-3 py-2 text-right font-normal ${isSimulator ? 'w-[25%]' : 'w-[25%]'} border border-border-base`}>{isSimulator ? 'Valor Destinado' : 'Quanto Coloco'}</th>
             </tr>
           </thead>
           <tbody className="bg-bg-primary">
@@ -271,14 +405,16 @@ function DistTable({ title, patrimonio, aportar, onPatrimonioCh, onAportarCh, ro
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 text-right w-20 border border-border-base">
-                    {row.onCurrentPctCh ? (
-                      <Editable value={fmtP(row.currentPct)} onSave={v => row.onCurrentPctCh!(parseFmt(v))} right />
-                    ) : (
-                      <span className="text-sm font-mono text-text-secondary">{fmtP(row.currentPct)}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-right w-24 border border-border-base">
+                  {!isSimulator && (
+                    <td className="px-3 py-2.5 text-right w-20 border border-border-base">
+                      {row.onCurrentPctCh ? (
+                        <Editable value={fmtP(row.currentPct)} onSave={v => row.onCurrentPctCh!(parseFmt(v))} right />
+                      ) : (
+                        <span className="text-sm font-mono text-text-secondary">{fmtP(row.currentPct)}</span>
+                      )}
+                    </td>
+                  )}
+                  <td className={`px-3 py-2.5 text-right ${isSimulator ? 'w-[25%]' : 'w-24'} border border-border-base`}>
                     <Editable value={fmtP(row.idealPct)} onSave={v => row.onIdealCh(parseFmt(v))} right />
                   </td>
                   <td className={`px-3 py-2.5 text-right text-sm font-mono border border-border-base ${row.quantoColoco > 0 ? (hasActiveGoal ? 'text-text-primary' : 'text-emerald-400') : 'text-text-tertiary/40'}`}>
@@ -291,9 +427,13 @@ function DistTable({ title, patrimonio, aportar, onPatrimonioCh, onAportarCh, ro
           <tfoot className="bg-bg-secondary">
             <tr>
               <td className="px-4 py-2.5 text-[10px] text-text-tertiary uppercase tracking-wider border border-border-base">Total</td>
-              <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{rebalance ? fmtP(sumCurrentPct) : ''}</td>
+              {!isSimulator && (
+                <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{rebalance ? fmtP(sumCurrentPct) : ''}</td>
+              )}
               <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{fmtP(sumIdeal)}</td>
-              <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{fmt(aportar)}</td>
+              <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">
+                {isSimulator ? fmt(rowsFinal.reduce((s, r) => s + r.quantoColoco, 0)) : fmt(aportar)}
+              </td>
             </tr>
           </tfoot>
         </table>
@@ -522,6 +662,33 @@ function GoalsSection({ goals, categories, investPatrimonio, onAdd, onDelete, on
 // ── Add Transaction Modal ──────────────────────────────────────────────────────
 // Transaction modal imported from TransactionModal.tsx
 
+// ── Confirm Modal ──────────────────────────────────────────────────────────────
+function ConfirmModal({ title, message, confirmLabel = 'Excluir', onConfirm, onCancel }: {
+  title: string; message: string; confirmLabel?: string;
+  onConfirm: () => void; onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-bg-secondary border border-border-base rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-base font-bold text-text-primary">{title}</h3>
+          <p className="text-sm text-text-secondary">{message}</p>
+        </div>
+        <div className="flex items-center justify-end gap-3">
+          <button onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-text-tertiary hover:text-text-primary transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button onClick={onConfirm}
+            className="px-5 py-2 text-sm font-bold bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer">
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Portfolio Summary cards ────────────────────────────────────────────────────
 function PortfolioSummary({ holdings, prices, totalCost, transactions }: {
   holdings: IHolding[]; prices: PriceCache; totalCost: number; transactions: ITransaction[];
@@ -552,12 +719,51 @@ function PortfolioSummary({ holdings, prices, totalCost, transactions }: {
   );
 }
 
+// ── DonutChart (pure SVG, no recharts bugs) ───────────────────────────────────
+function DonutChart({ data, size = 160 }: { data: { name: string; value: number; fill: string }[]; size?: number }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.3;           // raio do centro do anel
+  const strokeW = size * 0.175;   // espessura do anel
+  const circumference = 2 * Math.PI * r;
+  const gap = data.length > 1 ? 2 : 0; // px de gap entre fatias
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  const segments = data.reduce((acc, d, i) => {
+    const pct = d.value / total;
+    const dash = Math.max(0, pct * circumference - gap);
+    const prevPct = i > 0 ? data[i - 1].value / total : 0;
+    const offset = i > 0 ? acc[i - 1].offset + prevPct * circumference : 0;
+    acc.push({ ...d, dash, space: circumference - dash, offset });
+    return acc;
+  }, [] as (typeof data[0] & { dash: number; space: number; offset: number })[]);
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+      {/* trilha de fundo */}
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeW} />
+      {segments.map((seg, i) => (
+        <circle
+          key={i} cx={cx} cy={cy} r={r} fill="none"
+          stroke={seg.fill} strokeWidth={strokeW}
+          strokeDasharray={`${seg.dash} ${seg.space}`}
+          strokeDashoffset={-seg.offset}
+          strokeLinecap="butt"
+        />
+      ))}
+    </svg>
+  );
+}
+
 // ── Portfolio Chart ────────────────────────────────────────────────────────────
 function PortfolioChart({ categories, holdings, prices }: {
   categories: ICategory[]; holdings: IHolding[]; prices: PriceCache;
 }) {
   const data = categories.map(c => {
-    const value = holdings.filter(h => h.categoryId === c.id).reduce((s, h) => s + h.qty * (prices[h.ticker]?.price || 0), 0);
+    const value = holdings.filter(h => h.categoryId === c.id).reduce((s, h) => {
+      const p = prices[h.ticker]?.price || (h.qty > 0 ? h.totalInvested / h.qty : 0);
+      return s + h.qty * p;
+    }, 0);
     return { name: c.name, value, fill: c.color };
   }).filter(d => d.value > 0);
 
@@ -565,21 +771,31 @@ function PortfolioChart({ categories, holdings, prices }: {
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="bg-bg-secondary border border-border-base rounded-xl px-4 py-4">
-      <h3 className="text-lg font-bold text-text-primary mb-3">Alocação por Categoria</h3>
-      <div className="flex items-center gap-6 flex-wrap">
-        <div className="shrink-0">
-          <PieChart width={150} height={150}>
-            <Pie data={data} cx={75} cy={75} innerRadius={45} outerRadius={70} dataKey="value" stroke="none" />
-          </PieChart>
+    <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold text-text-primary">Ativos na Carteira</h3>
+        <div className="w-40">
+          <StyledSelect
+            value="all"
+            onChange={() => {}}
+            options={[{ value: 'all', label: 'Todos os tipos' }]}
+          />
         </div>
-        <div className="flex-1 grid grid-cols-1 gap-1.5 min-w-[160px]">
+      </div>
+      
+      <div className="flex items-center justify-between gap-6 flex-1 px-4">
+        <div className="shrink-0 relative flex items-center justify-center">
+          <DonutChart data={data} size={160} />
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 gap-3 min-w-[160px]">
           {data.map(d => (
-            <div key={d.name} className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: d.fill }} />
-              <span className="text-xs text-text-secondary flex-1 truncate">{d.name}</span>
-              <span className="text-xs font-mono font-bold text-text-primary">{(d.value / total * 100).toFixed(1)}%</span>
-              <span className="text-xs font-mono text-text-tertiary">{fmt(d.value)}</span>
+            <div key={d.name} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: d.fill }} />
+                <span className="text-xs font-semibold text-text-secondary truncate">{d.name}</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-text-primary">{(d.value / total * 100).toFixed(2)}%</span>
             </div>
           ))}
         </div>
@@ -589,14 +805,17 @@ function PortfolioChart({ categories, holdings, prices }: {
 }
 
 // ── Evolution Chart ────────────────────────────────────────────────────────────
-function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]; prices: PriceCache }) {
+function EvolutionChart({ transactions, prices, holdings }: { transactions: ITransaction[]; prices: PriceCache, holdings: IHolding[] }) {
+  const [period, setPeriod] = useState<'12m' | 'all'>('12m');
+  const [hiddenSeries, setHiddenSeries] = useState({ valorAplicado: false, ganhoCapital: false });
+
   const data = useMemo(() => {
     if (transactions.length === 0) return [];
     
     // Sort transactions by date
     const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
     
-    const timeline: { date: string; custoAcumulado: number; valorAtivos: number }[] = [];
+    const timeline: { date: string; rawDate: string; valorAplicado: number; ganhoCapital: number; valorAtivos: number }[] = [];
     const holdMap = new Map<string, { qty: number; totalInvested: number }>();
     
     let currentCusto = 0;
@@ -619,13 +838,32 @@ function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]
       // Calculate current value based on the most recent prices (which is an approximation since we don't have historical prices, but gives an idea of accumulated wealth)
       let currentValor = 0;
       holdMap.forEach((val, ticker) => {
-        const currentPrice = prices[ticker]?.price || 0;
+        let currentPrice = prices[ticker]?.price || 0;
+        
+        // Se for Renda Fixa, calcula o valor EXATO retroativo até a data deste ponto no gráfico
+        if (prices[ticker]?._isRF) {
+          const holding = holdings.find(h => h.ticker === ticker); 
+          if (holding) {
+             const buyTxs = transactions.filter(tx => tx.ticker === ticker && tx.type === 'buy' && new Date(tx.date) <= new Date(t.date));
+             let totalVal = 0;
+             buyTxs.forEach(tx => {
+               const cost = tx.quantity * tx.price + tx.otherCosts;
+               totalVal += calcRFCurrentPrice(cost, holding.meta, tx.date, cachedMacroRates, t.date);
+             });
+             const totalBuyQty = buyTxs.reduce((sum, tx) => sum + tx.quantity, 0);
+             const proportion = totalBuyQty > 0 ? (val.qty / totalBuyQty) : 0;
+             currentPrice = val.qty > 0 ? (totalVal * proportion) / val.qty : 0;
+          }
+        }
+        
         currentValor += val.qty * (currentPrice > 0 ? currentPrice : (val.totalInvested / val.qty || 0)); // fallback to avg cost if no price
       });
       
       timeline.push({
-        date: new Date(t.date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
-        custoAcumulado: currentCusto,
+        date: new Date(t.date).toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' }),
+        rawDate: t.date,
+        valorAplicado: currentCusto,
+        ganhoCapital: currentValor - currentCusto,
         valorAtivos: currentValor
       });
     }
@@ -640,38 +878,79 @@ function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]
       }
     });
     
+    // Filter by period
+    if (period === '12m') {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      return deduped.filter(d => new Date(d.rawDate) >= oneYearAgo);
+    }
+    
     return deduped;
-  }, [transactions, prices]);
+  }, [transactions, prices, period, holdings]);
 
   if (data.length === 0) return null;
 
   return (
-    <div className="bg-bg-secondary border border-border-base rounded-xl px-4 py-4 flex flex-col h-full">
-      <h3 className="text-lg font-bold text-text-primary mb-3">Evolução Patrimonial</h3>
-      <div className="flex-1 min-h-[160px] -ml-4 mt-2">
+    <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold text-text-primary">Evolução do Patrimônio</h3>
+        <div className="flex items-center gap-3">
+          <div className="w-36">
+            <StyledSelect
+              value={period}
+              onChange={v => setPeriod(v as '12m' | 'all')}
+              options={[
+                { value: '12m', label: '12 Meses' },
+                { value: 'all', label: 'Desde o início' },
+              ]}
+            />
+          </div>
+          <div className="w-36">
+            <StyledSelect
+              value="all"
+              onChange={() => {}}
+              options={[{ value: 'all', label: 'Todos os tipos' }]}
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex gap-6 mb-4 items-center justify-center">
+        <div 
+          className={`flex items-center gap-2 cursor-pointer transition-opacity ${hiddenSeries.valorAplicado ? 'opacity-40 hover:opacity-70' : 'opacity-100 hover:opacity-80'}`}
+          onClick={() => setHiddenSeries(s => ({ ...s, valorAplicado: !s.valorAplicado }))}
+        >
+          <div className="w-4 h-1.5 rounded-sm bg-[#10b981]" />
+          <span className="text-xs text-text-tertiary select-none">Valor aplicado</span>
+        </div>
+        <div 
+          className={`flex items-center gap-2 cursor-pointer transition-opacity ${hiddenSeries.ganhoCapital ? 'opacity-40 hover:opacity-70' : 'opacity-100 hover:opacity-80'}`}
+          onClick={() => setHiddenSeries(s => ({ ...s, ganhoCapital: !s.ganhoCapital }))}
+        >
+          <div className="w-4 h-1.5 rounded-sm bg-[#a7f3d0]" />
+          <span className="text-xs text-text-tertiary select-none">Ganho de Capital</span>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-[220px] -ml-4">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="colorCusto" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
+          <BarChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
             <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} />
-            <YAxis hide domain={['auto', 'auto']} />
+            <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => 'R$ ' + (val/1000).toFixed(1) + 'k'} />
             <Tooltip 
+              cursor={{fill: '#2a323c', opacity: 0.4}}
               contentStyle={{ backgroundColor: '#111318', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '12px' }}
               itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-              formatter={(value: any) => fmt(Number(value))}
+              formatter={(value: unknown) => fmt(Number(value))}
               labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
             />
-            <Area type="monotone" dataKey="custoAcumulado" name="Custo" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorCusto)" />
-            <Area type="monotone" dataKey="valorAtivos" name="Patrimônio" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorValor)" />
-          </AreaChart>
+            {!hiddenSeries.valorAplicado && (
+              <Bar dataKey="valorAplicado" name="Valor Aplicado" stackId="a" fill="#10b981" radius={hiddenSeries.ganhoCapital ? [4, 4, 4, 4] : [0, 0, 4, 4]} barSize={32} />
+            )}
+            {!hiddenSeries.ganhoCapital && (
+              <Bar dataKey="ganhoCapital" name="Ganho de Capital" stackId="a" fill="#a7f3d0" radius={hiddenSeries.valorAplicado ? [4, 4, 4, 4] : [4, 4, 0, 0]} barSize={32} />
+            )}
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
@@ -679,15 +958,16 @@ function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]
 }
 
 // ── Category Section (Meus Ativos per category) ───────────────────────────────
-function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate, onDeleteTicker, onEditTicker, onAddTransaction }: {
+function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate, onDeleteTicker, onAddTransaction, onEditTicker }: {
   cat: ICategory; holdings: IHolding[]; prices: PriceCache;
   totalPortfolioValue: number;
   onUpdate: (id: string, u: Partial<ICategory>) => void;
   onDeleteTicker: (ticker: string) => void;
-  onEditTicker: (oldTicker: string, newTicker: string) => void;
   onAddTransaction: (ticker?: string, categoryId?: string) => void;
+  onEditTicker: (ticker: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState<{ ticker: string; name: string } | null>(null);
 
 
   const rows = holdings.map(h => {
@@ -716,31 +996,27 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
           <span className="text-sm font-bold" style={{ color: cat.color }}>{cat.name}</span>
           {collapsed ? <ChevronDown size={12} className="text-text-tertiary/50" /> : <ChevronUp size={12} className="text-text-tertiary/50" />}
         </div>
-        <div className="flex items-center gap-5 text-right" onClick={e => e.stopPropagation()}>
-          <div>
+        <div className="flex items-center gap-6 text-right" onClick={e => e.stopPropagation()}>
+          <div className="w-12">
             <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Ativos</div>
             <div className="text-xs font-bold font-mono text-text-primary">{rows.length}</div>
           </div>
-          {totalValue > 0 && (
-            <div>
-              <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Valor Total</div>
-              <div className="text-xs font-bold font-mono text-text-primary">{fmt(totalValue)}</div>
+          <div className="w-24">
+            <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Valor Total</div>
+            <div className="text-xs font-bold font-mono text-text-primary">{totalValue > 0 ? fmt(totalValue) : '—'}</div>
+          </div>
+          <div className="w-20">
+            <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Variação</div>
+            <div className={`text-xs font-bold font-mono ${weightedVar !== null ? (weightedVar >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-text-tertiary/50'}`}>
+              {weightedVar !== null ? `${weightedVar >= 0 ? '+' : ''}${weightedVar.toFixed(2)}%` : '—'}
             </div>
-          )}
-          {weightedVar !== null && (
-            <div>
-              <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Variação</div>
-              <div className={`text-xs font-bold font-mono ${weightedVar >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {weightedVar >= 0 ? '+' : ''}{weightedVar.toFixed(2)}%
-              </div>
-            </div>
-          )}
-          <div>
+          </div>
+          <div className="w-28">
             <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">% Cart / Ideal</div>
-            <div className="text-xs font-bold font-mono text-text-primary flex items-center gap-1">
+            <div className="text-xs font-bold font-mono text-text-primary flex items-center justify-end gap-1">
               <span>{pctCart !== null ? pctCart.toFixed(1) + '%' : '—'}</span>
               <span className="text-text-tertiary/40">/</span>
-              <span className="w-14">
+              <span className="w-12 text-right">
                 <Editable value={fmtP(cat.idealPercent)} onSave={v => onUpdate(cat.id, { idealPercent: parseFmt(v) })} right />
               </span>
             </div>
@@ -799,12 +1075,9 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                       <div className="flex items-center justify-end gap-1.5 transition-opacity">
                         <button onClick={() => onAddTransaction(r.ticker, cat.id)} title="Novo lançamento"
                           className="text-text-tertiary/50 hover:text-indigo-400 cursor-pointer transition-colors"><Plus size={10} strokeWidth={2.5} /></button>
-                        <button onClick={() => {
-                          const nt = prompt(`Editar nome do ativo ${r.ticker}? (Isso atualizará todos os seus lançamentos)`, r.ticker);
-                          if (nt) onEditTicker(r.ticker, nt);
-                        }} title="Editar nome"
+                        <button onClick={() => onEditTicker(r.ticker)} title="Editar Lançamento"
                           className="text-text-tertiary/50 hover:text-emerald-400 cursor-pointer transition-colors"><Pencil size={10} /></button>
-                        <button onClick={() => { if (confirm(`Excluir todos os lançamentos de ${r.ticker}?`)) onDeleteTicker(r.ticker); }}
+                        <button onClick={() => setConfirmDelete({ ticker: r.ticker, name: r.name })}
                           className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={10} /></button>
                       </div>
                     </td>
@@ -825,6 +1098,16 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
           </div>
 
         </>
+      )}
+
+      {confirmDelete !== null && (
+        <ConfirmModal
+          title={`Excluir ${confirmDelete.ticker}`}
+          message={`Todos os lançamentos de ${confirmDelete.name || confirmDelete.ticker} serão removidos permanentemente. Essa ação não pode ser desfeita.`}
+          confirmLabel="Excluir tudo"
+          onConfirm={() => { onDeleteTicker(confirmDelete.ticker); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );
@@ -849,6 +1132,7 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
   const [watchInput, setWatchInput] = useState('');
   const [watchLoading, setWatchLoading] = useState(false);
   const [refreshingWatch, setRefreshingWatch] = useState<string | null>(null);
+
 
   const submitWatch = async (catId: string) => {
     if (!watchInput.trim()) { setAddingCatId(null); return; }
@@ -989,6 +1273,180 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
   );
 }
 
+function TransactionsTab({ transactions, categories, onEdit, onDelete }: {
+  transactions: ITransaction[];
+  categories: ICategory[];
+  onEdit: (t: ITransaction) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState<ITransaction | null>(null);
+  const [period, setPeriod] = useState<'12m' | 'all'>('12m');
+  const [categoryId, setCategoryId] = useState<string>('all');
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      if (categoryId !== 'all' && t.categoryId !== categoryId) return false;
+      if (period === '12m') {
+        const d = new Date(t.date);
+        const cutoff = new Date();
+        cutoff.setFullYear(cutoff.getFullYear() - 1);
+        if (d < cutoff) return false;
+      }
+      return true;
+    });
+  }, [transactions, period, categoryId]);
+
+  const chartData = useMemo(() => {
+    const map = new Map<string, { month: string; compras: number; vendas: number }>();
+    for (const t of filteredTransactions) {
+      const m = t.date.slice(0, 7); // YYYY-MM
+      const cur = map.get(m) || { month: m, compras: 0, vendas: 0 };
+      const val = t.quantity * t.price + t.otherCosts;
+      if (t.type === 'buy') cur.compras += val;
+      if (t.type === 'sell') cur.vendas += val;
+      map.set(m, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month)).map(d => ({
+      ...d,
+      label: d.month.split('-').reverse().join('/') // MM/YYYY
+    }));
+  }, [filteredTransactions]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="bg-bg-secondary border border-border-base rounded-xl p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h3 className="text-lg font-bold text-text-primary">Consolidação de aportes</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-36">
+              <StyledSelect
+                value={period}
+                onChange={v => setPeriod(v as '12m' | 'all')}
+                options={[
+                  { value: '12m', label: '12 Meses' },
+                  { value: 'all', label: 'Desde o início' },
+                ]}
+              />
+            </div>
+            <div className="w-36">
+              <StyledSelect
+                value={categoryId}
+                onChange={setCategoryId}
+                options={[
+                  { value: 'all', label: 'Todos os tipos' },
+                  ...[...categories].sort((a, b) => a.sortOrder - b.sortOrder).map(c => ({ value: c.id, label: c.name }))
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+              <XAxis dataKey="label" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} />
+              <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => 'R$ ' + (val/1000).toFixed(1) + 'k'} />
+              <Tooltip 
+                cursor={{fill: '#2a323c', opacity: 0.4}}
+                contentStyle={{ backgroundColor: '#111318', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '12px' }}
+                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                formatter={(value: unknown) => fmt(Number(value))}
+                labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+              />
+              <Bar dataKey="compras" name="Compras" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
+              <Bar dataKey="vendas" name="Vendas" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      
+      <div className="flex flex-col gap-3">
+        {[...categories].sort((a, b) => a.sortOrder - b.sortOrder).map(cat => (
+          <TransactionCategorySection 
+            key={cat.id} 
+            cat={cat} 
+            transactions={transactions} 
+            onEdit={onEdit} 
+            onDelete={setConfirmDelete} 
+          />
+        ))}
+      </div>
+
+      {confirmDelete && (
+        <ConfirmModal
+          title="Excluir lançamento"
+          message={`Tem certeza que deseja excluir o lançamento de ${confirmDelete.ticker}? Esta ação não pode ser desfeita.`}
+          onConfirm={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TransactionCategorySection({ cat, transactions, onEdit, onDelete }: {
+  cat: ICategory; transactions: ITransaction[]; 
+  onEdit: (t: ITransaction) => void; onDelete: (t: ITransaction) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(true);
+  const catTxs = transactions.filter(t => t.categoryId === cat.id).sort((a, b) => b.date.localeCompare(a.date));
+  if (catTxs.length === 0) return null;
+
+  return (
+    <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
+      <div 
+        className="flex items-center justify-between p-4 bg-bg-secondary border-b border-border-base/30 cursor-pointer hover:bg-elements/10 transition-colors"
+        onClick={() => setCollapsed(v => !v)}
+      >
+        <h4 className="font-bold text-text-primary flex items-center gap-2">
+          <div className="w-3 h-3 rounded-sm" style={{ background: cat.color }} />
+          {cat.name}
+          {collapsed ? <ChevronDown size={12} className="text-text-tertiary/50 ml-2" /> : <ChevronUp size={12} className="text-text-tertiary/50 ml-2" />}
+        </h4>
+        <span className="text-xs text-text-secondary">{catTxs.length} lançamentos</span>
+      </div>
+      {!collapsed && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border-base/50 bg-bg-primary/50">
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary">Ativo</th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary">Tipo</th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary">Data</th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary text-right">Qtd</th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary text-right">Preço</th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary text-right">Total</th>
+                <th className="px-4 py-3 text-xs font-semibold text-text-tertiary text-center">Opções</th>
+              </tr>
+            </thead>
+            <tbody>
+              {catTxs.map(t => (
+                <tr key={t.id} className="border-b border-border-base/50 last:border-0 hover:bg-bg-primary transition-colors">
+                  <td className="px-4 py-3 text-sm font-bold text-text-primary">{t.ticker}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${t.type === 'buy' ? 'bg-emerald-500/10 text-emerald-400' : t.type === 'sell' ? 'bg-rose-500/10 text-rose-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                      {t.type === 'buy' ? 'Compra' : t.type === 'sell' ? 'Venda' : 'Provento'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-text-secondary">{new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                  <td className="px-4 py-3 text-sm font-mono text-text-primary text-right">{t.quantity}</td>
+                  <td className="px-4 py-3 text-sm font-mono text-text-primary text-right">{fmt(t.price)}</td>
+                  <td className="px-4 py-3 text-sm font-mono text-text-primary text-right">{fmt(t.quantity * t.price + t.otherCosts)}</td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); onEdit(t); }} className="text-text-tertiary hover:text-indigo-400 transition-colors cursor-pointer"><Pencil size={14} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDelete(t); }} className="text-text-tertiary hover:text-rose-400 transition-colors cursor-pointer"><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main View ──────────────────────────────────────────────────────────────────
 export function InvestmentView() {
   const [categories, setCategories] = useState<ICategory[]>([]);
@@ -999,16 +1457,21 @@ export function InvestmentView() {
   const [config, setConfig] = useState<PConfig>({
     investPatrimonio: Number(localStorage.getItem(INVEST_PAT_KEY)) || 0,
     patrimonio: 0, aportar: 0,
-    caixaPercent: 25, investPercent: 50, despFixasPercent: 12.5, despVariaveisPercent: 12.5,
+    caixaPercent: 5, investPercent: 15, despFixasPercent: 50, despVariaveisPercent: 30,
   });
   const [loading, setLoading] = useState(true);
   const [loadingPrices, setLoadingPrices] = useState(false);
   const [addModal, setAddModal] = useState<{ ticker?: string; categoryId?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'resumo' | 'planejamento'>('resumo');
+  const [editingTx, setEditingTx] = useState<ITransaction | null>(null);
+  const [historyTicker, setHistoryTicker] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'resumo' | 'planejamento' | 'lancamentos'>('resumo');
   const [userId, setUserId] = useState<string | null>(null);
   const seededRef = useRef(false);
   const priceCacheRef = useRef(priceCache);
-  priceCacheRef.current = priceCache;
+
+  useEffect(() => {
+    priceCacheRef.current = priceCache;
+  }, [priceCache]);
 
   // Derived state
   const holdings = useMemo(() => calcHoldings(transactions), [transactions]);
@@ -1059,10 +1522,10 @@ export function InvestmentView() {
           ...prev,
           patrimonio: Number(cfgData.patrimonio) || 0,
           aportar: Number(cfgData.aportar) || 0,
-          caixaPercent: Number(cfgData.caixa_percent) || 25,
-          investPercent: Number(cfgData.invest_percent) || 50,
-          despFixasPercent: Number(cfgData.desp_fixas_percent) || 12.5,
-          despVariaveisPercent: Number(cfgData.desp_variaveis_percent) || 12.5,
+          caixaPercent: Number(cfgData.caixa_percent) || 5,
+          investPercent: Number(cfgData.invest_percent) || 15,
+          despFixasPercent: Number(cfgData.desp_fixas_percent) || 50,
+          despVariaveisPercent: Number(cfgData.desp_variaveis_percent) || 30,
         }));
       }
       setLoading(false);
@@ -1074,14 +1537,51 @@ export function InvestmentView() {
   useEffect(() => {
     const tickers = holdings.map(h => h.ticker);
     if (tickers.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingPrices(true);
-    fetchPrices(tickers, priceCacheRef.current).then(cache => {
-      setPriceCache(cache);
-      persistPriceCache(cache);
+    Promise.all([fetchPrices(tickers, priceCacheRef.current), getMacroRates()]).then(([cache, macroRates]) => {
+      const nextCache = { ...cache };
+      let hasChanges = false;
+      
+      // Inject RF calculated prices
+      holdings.forEach(h => {
+        if (h.assetType === 'renda_fixa') {
+          // Calcula o valor total EXATO somando cada aporte individualmente
+          const buyTxs = transactions.filter(t => t.ticker === h.ticker && t.type === 'buy');
+          let totalBrutoFuturo = 0;
+          buyTxs.forEach(t => {
+            const cost = t.quantity * t.price + t.otherCosts;
+            totalBrutoFuturo += calcRFCurrentPrice(cost, h.meta, t.date, macroRates);
+          });
+          
+          // Se houve vendas (resgates parciais), ajustamos o valor total proporcionalmente à quantidade restante
+          const totalBuyQty = buyTxs.reduce((sum, t) => sum + t.quantity, 0);
+          const proportion = totalBuyQty > 0 ? (h.qty / totalBuyQty) : 0;
+          const adjustedTotal = totalBrutoFuturo * proportion;
+          
+          const newPrice = h.qty > 0 ? adjustedTotal / h.qty : 0;
+          nextCache[h.ticker] = {
+            ...nextCache[h.ticker],
+            price: newPrice,
+            changePercent: h.avgPrice > 0 ? ((newPrice / h.avgPrice) - 1) * 100 : 0,
+            name: h.ticker,
+            fetchedAt: Date.now(),
+            _isRF: true
+          } as PriceData & { _isRF?: boolean };
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        setPriceCache(nextCache);
+        persistPriceCache(nextCache);
+      } else {
+        setPriceCache(cache);
+        persistPriceCache(cache);
+      }
       setLoadingPrices(false);
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdings]);
+  }, [holdings, transactions]);
 
   const saveConfig = useCallback(async (updates: Partial<PConfig>) => {
     setConfig(prev => {
@@ -1131,11 +1631,9 @@ export function InvestmentView() {
     if (userId) await supabase.from('investment_transactions').delete().eq('user_id', userId).eq('ticker', ticker);
   }, [userId]);
 
-  const renameTickerTransactions = useCallback(async (oldTicker: string, newTicker: string) => {
-    const nt = newTicker.trim().toUpperCase();
-    if (!nt || nt === oldTicker) return;
-    setTransactions(prev => prev.map(t => t.ticker === oldTicker ? { ...t, ticker: nt } : t));
-    if (userId) await supabase.from('investment_transactions').update({ ticker: nt }).eq('user_id', userId).eq('ticker', oldTicker);
+  const deleteTransaction = useCallback(async (id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+    if (userId) await supabase.from('investment_transactions').delete().eq('id', id);
   }, [userId]);
 
   const addGoal = useCallback((g: Omit<IGoal, 'id'>) => {
@@ -1202,10 +1700,9 @@ export function InvestmentView() {
     };
   });
 
-  const totalMoneyPat = config.patrimonio + investPatrimonio;
   const moneyRows: DistRow[] = [
-    { label: 'Valor em Caixa (no banco)', currentPct: totalMoneyPat > 0 ? config.patrimonio / totalMoneyPat * 100 : 0, idealPct: config.caixaPercent, onIdealCh: v => saveConfig({ caixaPercent: v }) },
-    { label: 'Investimentos', currentPct: totalMoneyPat > 0 ? investPatrimonio / totalMoneyPat * 100 : 0, idealPct: config.investPercent, onIdealCh: v => saveConfig({ investPercent: v }) },
+    { label: 'Valor em Caixa (no banco)', currentPct: 0, idealPct: config.caixaPercent, onIdealCh: v => saveConfig({ caixaPercent: v }) },
+    { label: 'Investimentos', currentPct: 0, idealPct: config.investPercent, onIdealCh: v => saveConfig({ investPercent: v }) },
     { label: 'Despesas Fixas', currentPct: 0, idealPct: config.despFixasPercent, onIdealCh: v => saveConfig({ despFixasPercent: v }) },
     { label: 'Despesas Variáveis', currentPct: 0, idealPct: config.despVariaveisPercent, onIdealCh: v => saveConfig({ despVariaveisPercent: v }) },
   ];
@@ -1228,6 +1725,12 @@ export function InvestmentView() {
             >
               Planejamento
             </button>
+            <button
+              onClick={() => setActiveTab('lancamentos')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'lancamentos' ? 'bg-text-primary text-bg-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+            >
+              Lançamentos
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -1238,13 +1741,13 @@ export function InvestmentView() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-        {activeTab === 'resumo' ? (
+        {activeTab === 'resumo' && (
           <>
             <PortfolioSummary holdings={holdings} prices={priceCache} totalCost={totalCost} transactions={transactions} />
 
             {holdings.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <EvolutionChart transactions={transactions} prices={priceCache} />
+                <EvolutionChart transactions={transactions} prices={priceCache} holdings={holdings} />
                 <PortfolioChart categories={categories} holdings={holdings} prices={priceCache} />
               </div>
             )}
@@ -1265,29 +1768,33 @@ export function InvestmentView() {
                     totalPortfolioValue={totalValue}
                     onUpdate={updateCat}
                     onDeleteTicker={deleteTransactionsByTicker}
-                    onEditTicker={renameTickerTransactions}
                     onAddTransaction={(ticker, categoryId) => setAddModal({ ticker, categoryId: categoryId ?? cat.id })}
+                    onEditTicker={(ticker) => {
+                      setHistoryTicker(ticker);
+                    }}
                   />
                 ))}
               </div>
             </div>
           </>
-        ) : (
+        )}
+        
+        {activeTab === 'planejamento' && (
           <>
             <div className="flex flex-col gap-4 shrink-0">
               <DistTable
                 title="Distribuição de Investimentos" 
                 patrimonio={investPatrimonio} aportar={config.aportar}
-                onPatrimonioCh={v => saveConfig({ investPatrimonio: v })}
                 onAportarCh={v => saveConfig({ aportar: v })}
                 rows={investRows} rebalance
               />
               <DistTable
-                title="Distribuição de Dinheiro" 
-                patrimonio={config.patrimonio} aportar={config.aportar}
+                title="Distribuição de Dinheiro (Simulador)" 
+                patrimonioLabel="Dinheiro a Distribuir (ex: Salário)"
+                patrimonio={config.patrimonio} aportar={0}
                 onPatrimonioCh={v => saveConfig({ patrimonio: v })}
-                onAportarCh={v => saveConfig({ aportar: v })}
                 rows={moneyRows}
+                isSimulator
               />
             </div>
 
@@ -1306,6 +1813,15 @@ export function InvestmentView() {
             />
           </>
         )}
+
+        {activeTab === 'lancamentos' && (
+          <TransactionsTab
+            transactions={transactions}
+            categories={categories}
+            onEdit={setEditingTx}
+            onDelete={deleteTransaction}
+          />
+        )}
       </div>
 
       {addModal !== null && (
@@ -1315,6 +1831,32 @@ export function InvestmentView() {
           initialCategoryId={addModal.categoryId ?? categories[0]?.id}
           onSave={addTransaction}
           onClose={() => setAddModal(null)}
+        />
+      )}
+
+      {editingTx !== null && (
+        <TransactionModal
+          categories={categories}
+          initialTicker={editingTx.ticker}
+          initialCategoryId={editingTx.categoryId ?? categories[0]?.id}
+          initialData={editingTx}
+          onSave={async (data) => {
+            await supabase.from('investment_transactions').delete().eq('id', editingTx.id);
+            setTransactions(prev => prev.filter(x => x.id !== editingTx.id));
+            await addTransaction(data);
+            setEditingTx(null);
+          }}
+          onClose={() => setEditingTx(null)}
+        />
+      )}
+
+      {historyTicker && (
+        <TransactionHistoryModal
+          ticker={historyTicker}
+          transactions={transactions.filter(t => t.ticker === historyTicker)}
+          onClose={() => setHistoryTicker(null)}
+          onEdit={(t) => { setHistoryTicker(null); setEditingTx(t); }}
+          onDelete={deleteTransaction}
         />
       )}
     </div>
