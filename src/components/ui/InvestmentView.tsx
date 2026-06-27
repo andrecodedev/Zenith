@@ -14,7 +14,7 @@ interface IGoal {
 }
 interface IWatchlistItem {
   id: string; categoryId: string; ticker: string;
-  name: string; price: number; changePercent: number;
+  name: string; price: number; changePercent: number; logoUrl?: string;
 }
 interface ITransaction {
   id: string; ticker: string; categoryId: string;
@@ -36,7 +36,7 @@ interface DistRow {
   label: string; currentPct: number; onCurrentPctCh?: (v: number) => void;
   idealPct: number; onIdealCh: (v: number) => void; goal?: GoalInfo;
 }
-type PriceData = { price: number; changePercent: number; name: string; fetchedAt: number };
+type PriceData = { price: number; changePercent: number; name: string; fetchedAt: number; logoUrl?: string };
 type PriceCache = Record<string, PriceData>;
 
 // ── Constants & storage ────────────────────────────────────────────────────────
@@ -64,14 +64,19 @@ const parseFmt = (s: string): number => {
 };
 
 
-const fetchQuote = async (ticker: string): Promise<{ name: string; price: number; changePercent: number } | null> => {
+const fetchQuote = async (ticker: string): Promise<{ name: string; price: number; changePercent: number; logoUrl?: string } | null> => {
   try {
     const token = import.meta.env.VITE_BRAPI_TOKEN || '';
     const res = await fetch(`https://brapi.dev/api/quote/${ticker}${token ? `?token=${token}` : ''}`);
     const json = await res.json();
     const r = json.results?.[0];
     if (!r) return null;
-    return { name: (r.shortName || r.longName || ticker) as string, price: (r.regularMarketPrice || 0) as number, changePercent: (r.regularMarketChangePercent || 0) as number };
+    return { 
+      name: (r.longName || r.shortName || ticker) as string, 
+      price: (r.regularMarketPrice || 0) as number, 
+      changePercent: (r.regularMarketChangePercent || 0) as number,
+      logoUrl: r.logourl as string | undefined
+    };
   } catch { return null; }
 };
 
@@ -88,7 +93,13 @@ const fetchPrices = async (tickers: string[], cache: PriceCache): Promise<PriceC
       const res = await fetch(`https://brapi.dev/api/quote/${chunk.join(',')}${token ? `?token=${token}` : ''}`);
       const json = await res.json();
       for (const r of (json.results || [])) {
-        next[r.ticker] = { price: r.regularMarketPrice || 0, changePercent: r.regularMarketChangePercent || 0, name: r.shortName || r.longName || r.ticker, fetchedAt: now };
+        next[r.symbol || r.ticker] = { 
+          price: r.regularMarketPrice || 0, 
+          changePercent: r.regularMarketChangePercent || 0, 
+          name: r.longName || r.shortName || r.ticker || r.symbol, 
+          logoUrl: r.logourl,
+          fetchedAt: now 
+        };
       }
     } catch { /* ignore */ }
   }));
@@ -674,10 +685,11 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
     const currentPrice = pd?.price || 0;
     const changePercent = pd?.changePercent || 0;
     const name = pd?.name || h.ticker;
+    const logoUrl = pd?.logoUrl;
     const saldo = h.qty * currentPrice;
     const variacaoPct = h.avgPrice > 0 && currentPrice > 0 ? (currentPrice / h.avgPrice - 1) * 100 : null;
     const pctCarteira = totalPortfolioValue > 0 && saldo > 0 ? saldo / totalPortfolioValue * 100 : null;
-    return { ...h, name, currentPrice, changePercent, saldo, variacaoPct, pctCarteira };
+    return { ...h, name, currentPrice, changePercent, saldo, variacaoPct, pctCarteira, logoUrl };
   });
 
   const totalValue = rows.reduce((s, r) => s + r.saldo, 0);
@@ -748,8 +760,21 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                 {rows.map(r => (
                   <tr key={r.ticker} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
                     <td className="px-4 py-2">
-                      <div className="font-mono font-bold text-text-primary">{r.ticker}</div>
-                      <div className="text-[9px] text-text-tertiary truncate max-w-[90px]">{r.name}</div>
+                      <div className="flex items-center gap-2">
+                        {r.logoUrl ? (
+                          <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+                            <img src={r.logoUrl} alt={r.ticker} className="w-6 h-6 object-contain" />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-md bg-elements flex items-center justify-center text-[10px] font-bold text-text-secondary shrink-0 border border-border-base/50">
+                            {r.ticker.substring(0, 2)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-mono font-bold text-text-primary truncate">{r.ticker}</div>
+                          <div className="text-[9px] text-text-tertiary truncate max-w-[90px]">{r.name}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.qty > 0 ? r.qty : '-'}</td>
                     <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.avgPrice > 0 ? fmt(r.avgPrice) : '-'}</td>
@@ -865,7 +890,20 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
                   <tbody>
                     {catWatchlist.map(w => (
                       <tr key={w.id} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
-                        <td className="px-4 py-1.5 font-mono font-bold text-text-primary">{w.ticker}</td>
+                        <td className="px-4 py-1.5 font-mono font-bold text-text-primary">
+                          <div className="flex items-center gap-2">
+                            {w.logoUrl ? (
+                              <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+                                <img src={w.logoUrl} alt={w.ticker} className="w-6 h-6 object-contain" />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-md bg-elements flex items-center justify-center text-[10px] font-bold text-text-secondary shrink-0 border border-border-base/50">
+                                {w.ticker.substring(0, 2)}
+                              </div>
+                            )}
+                            <span>{w.ticker}</span>
+                          </div>
+                        </td>
                         <td className="px-3 py-1.5 text-text-tertiary truncate max-w-[140px]">{w.name}</td>
                         <td className="px-3 py-1.5 text-right font-mono text-text-secondary">{w.price > 0 ? fmt(w.price) : '-'}</td>
                         <td className="px-3 py-1.5 text-right font-mono">
@@ -1073,7 +1111,7 @@ export function InvestmentView() {
 
   const addWatchlistItem = useCallback(async (categoryId: string, ticker: string) => {
     const quote = await fetchQuote(ticker);
-    const item: IWatchlistItem = { id: crypto.randomUUID(), categoryId, ticker, name: quote?.name || ticker, price: quote?.price || 0, changePercent: quote?.changePercent || 0 };
+    const item: IWatchlistItem = { id: crypto.randomUUID(), categoryId, ticker, name: quote?.name || ticker, price: quote?.price || 0, changePercent: quote?.changePercent || 0, logoUrl: quote?.logoUrl };
     setWatchlist(prev => { const next = [...prev, item]; persistWatchlist(next); return next; });
   }, []);
 
@@ -1086,7 +1124,7 @@ export function InvestmentView() {
     if (!item) return;
     const quote = await fetchQuote(item.ticker);
     if (!quote) return;
-    setWatchlist(prev => { const next = prev.map(w => w.id === id ? { ...w, name: quote.name, price: quote.price, changePercent: quote.changePercent } : w); persistWatchlist(next); return next; });
+    setWatchlist(prev => { const next = prev.map(w => w.id === id ? { ...w, name: quote.name, price: quote.price, changePercent: quote.changePercent, logoUrl: quote.logoUrl } : w); persistWatchlist(next); return next; });
   }, [watchlist]);
 
   const investPatrimonio = totalValue > 0 ? totalValue : config.investPatrimonio;
