@@ -749,7 +749,7 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                   <tr key={r.ticker} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
                     <td className="px-4 py-2">
                       <div className="font-mono font-bold text-text-primary">{r.ticker}</div>
-                      {r.name !== r.ticker && <div className="text-[9px] text-text-tertiary truncate max-w-[90px]">{r.name}</div>}
+                      <div className="text-[9px] text-text-tertiary truncate max-w-[90px]">{r.name}</div>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.qty > 0 ? r.qty : '-'}</td>
                     <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.avgPrice > 0 ? fmt(r.avgPrice) : '-'}</td>
@@ -866,7 +866,7 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
                     {catWatchlist.map(w => (
                       <tr key={w.id} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
                         <td className="px-4 py-1.5 font-mono font-bold text-text-primary">{w.ticker}</td>
-                        <td className="px-3 py-1.5 text-text-tertiary truncate max-w-[140px]">{w.name !== w.ticker ? w.name : ''}</td>
+                        <td className="px-3 py-1.5 text-text-tertiary truncate max-w-[140px]">{w.name}</td>
                         <td className="px-3 py-1.5 text-right font-mono text-text-secondary">{w.price > 0 ? fmt(w.price) : '-'}</td>
                         <td className="px-3 py-1.5 text-right font-mono">
                           {w.price > 0
