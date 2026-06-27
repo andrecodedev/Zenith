@@ -217,3 +217,144 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* ── Tiptap / NotesView editor ─────────────────────────────────────────────── */
+.prose-editor .tiptap {
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+/* Não setar color em elementos — Color extension usa inline style que precisa ganhar */
+.prose-editor .tiptap p { margin-bottom: 0.75rem; }
+.prose-editor .tiptap h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem; }
+.prose-editor .tiptap h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; }
+.prose-editor .tiptap h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.prose-editor .tiptap strong { font-weight: 700; }
+.prose-editor .tiptap em { font-style: italic; }
+.prose-editor .tiptap u { text-decoration: underline; }
+.prose-editor .tiptap s { text-decoration: line-through; opacity: 0.6; }
+
+/* Listas normais */
+.prose-editor .tiptap ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+.prose-editor .tiptap ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+.prose-editor .tiptap li { margin-bottom: 0.25rem; }
+
+/* Task list (checkboxes) */
+.prose-editor .tiptap ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.prose-editor .tiptap ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.35rem; }
+.prose-editor .tiptap ul[data-type="taskList"] li > label { display: flex; align-items: center; margin-top: 2px; }
+.prose-editor .tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 15px; height: 15px; cursor: pointer;
+  accent-color: #4ade80;
+  border-radius: 3px;
+}
+.prose-editor .tiptap ul[data-type="taskList"] li[data-checked="true"] > div { opacity: 0.5; text-decoration: line-through; }
+
+/* Blockquote */
+.prose-editor .tiptap blockquote {
+  border-left: 3px solid var(--border-gray);
+  padding-left: 1rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 0.75rem;
+}
+
+/* Código */
+.prose-editor .tiptap code {
+  background: var(--elements);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-family: monospace;
+  font-size: 0.875em;
+}
+.prose-editor .tiptap pre {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-base);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+.prose-editor .tiptap pre code { background: none; padding: 0; }
+
+/* Linha horizontal */
+.prose-editor .tiptap hr { border: none; border-top: 1px solid var(--border-base); margin: 1.5rem 0; }
+
+/* Links */
+.prose-editor .tiptap a { color: #60a5fa; text-decoration: underline; cursor: pointer; }
+.prose-editor .tiptap a:hover { color: #93c5fd; }
+
+/* Highlight (mark) — multicolor via inline style */
+.prose-editor .tiptap mark {
+  border-radius: 2px;
+  padding: 0.05em 0.1em;
+  color: #000;
+}
+
+/* Placeholder */
+.prose-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ── Syntax Highlighting (lowlight / highlight.js tokens) ─────────────────── */
+.prose-editor .tiptap pre {
+  position: relative;
+}
+.prose-editor .tiptap pre::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  opacity: 0.6;
+  pointer-events: none;
+}
+/* tokens */
+.prose-editor .hljs-keyword,
+.prose-editor .hljs-selector-tag,
+.prose-editor .hljs-built_in,
+.prose-editor .hljs-name,
+.prose-editor .hljs-tag { color: #c792ea; }
+
+.prose-editor .hljs-string,
+.prose-editor .hljs-attr,
+.prose-editor .hljs-selector-attr,
+.prose-editor .hljs-selector-pseudo { color: #c3e88d; }
+
+.prose-editor .hljs-number,
+.prose-editor .hljs-literal,
+.prose-editor .hljs-variable,
+.prose-editor .hljs-template-variable { color: #f78c6c; }
+
+.prose-editor .hljs-comment,
+.prose-editor .hljs-quote { color: #546e7a; font-style: italic; }
+
+.prose-editor .hljs-title,
+.prose-editor .hljs-section,
+.prose-editor .hljs-type,
+.prose-editor .hljs-class { color: #ffcb6b; }
+
+.prose-editor .hljs-meta,
+.prose-editor .hljs-subst { color: #89ddff; }
+
+.prose-editor .hljs-operator,
+.prose-editor .hljs-punctuation { color: #89ddff; }
+
+.prose-editor .hljs-property,
+.prose-editor .hljs-params { color: #82aaff; }
+
+.prose-editor .hljs-symbol,
+.prose-editor .hljs-bullet { color: #89ddff; }
+
+.prose-editor .hljs-addition { color: #c3e88d; background: #003200; }
+.prose-editor .hljs-deletion { color: #f07178; background: #3b0000; }
+.prose-editor .hljs-emphasis { font-style: italic; }
+.prose-editor .hljs-strong { font-weight: bold; }

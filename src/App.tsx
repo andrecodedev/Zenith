@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2 } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -16,6 +16,7 @@ import { AuthModal } from './components/ui/AuthModal';
 import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
 import { BulkEditorModal } from './components/ui/BulkEditorModal';
 import { SobreView } from './components/ui/SobreView';
+import { NotesView } from './components/ui/NotesView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -26,7 +27,7 @@ function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats'>('hero');
+  const [currentView, setCurrentView] = useState<'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes'>('hero');
   const [session, setSession] = useState<Session | null>(null);
   const weekDays = generateWeek(selectedDate);
 
@@ -53,6 +54,7 @@ function App() {
       setSession(session);
       if (session) {
         useStore.getState().fetchData();
+        useStore.getState().fetchNotes();
         if (currentView === 'hero') setCurrentView('dashboard');
       }
     });
@@ -63,6 +65,7 @@ function App() {
       setSession(session);
       if (session) {
         useStore.getState().fetchData();
+        useStore.getState().fetchNotes();
         if (currentView === 'hero') setCurrentView('dashboard');
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && notificationsEnabled) subscribeToPush();
       } else {
@@ -287,14 +290,15 @@ function App() {
           </div>
         </div>
 
-        {(currentView === 'hero' || currentView === 'sobre') ? (
+        {(currentView === 'hero' || (currentView === 'sobre' && !session)) ? (
           <div className="flex items-center gap-4">
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               <button
                 onClick={() => setCurrentView('sobre')}
-                className={`cursor-pointer transition-colors uppercase tracking-wider text-xs font-bold ${currentView === 'sobre' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'sobre' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
               >
+                <Mountain size={16} />
                 Sobre
               </button>
               <button
@@ -340,8 +344,9 @@ function App() {
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               <button
                 onClick={() => setCurrentView('sobre')}
-                className="cursor-pointer transition-colors uppercase tracking-wider text-xs font-bold text-text-tertiary hover:text-text-primary"
+                className="cursor-pointer transition-colors flex items-center gap-2 text-text-tertiary hover:text-text-primary"
               >
+                <Mountain size={16} />
                 Sobre
               </button>
               <button
@@ -367,6 +372,13 @@ function App() {
               >
                 <BarChart2 size={16} />
                 Estatísticas
+              </button>
+              <button
+                onClick={() => setCurrentView('notes')}
+                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+              >
+                <FileText size={16} />
+                Notas
               </button>
               <button
                 onClick={() => {
@@ -433,7 +445,7 @@ function App() {
             </button>
           </div>
 
-          {(currentView === 'hero' || currentView === 'sobre') ? (
+          {(currentView === 'hero' || (currentView === 'sobre' && !session)) ? (
             <nav className="flex flex-col gap-4 text-lg font-medium">
               <button
                 onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
@@ -494,6 +506,13 @@ function App() {
               >
                 <BarChart2 size={24} />
                 Estatísticas
+              </button>
+              <button
+                onClick={() => { setCurrentView('notes'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'notes' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <FileText size={24} />
+                Notas
               </button>
             </nav>
           )}
@@ -669,6 +688,8 @@ function App() {
             </div>
           ) : currentView === 'stats' ? (
             <StatsView />
+          ) : currentView === 'notes' ? (
+            <NotesView />
           ) : (
             <CalendarView
               selectedDate={selectedDate}

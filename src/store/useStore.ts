@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Category, Routine, TaskInstance, TaskStatus } from '../types';
+import type { Category, Note, Routine, TaskInstance, TaskStatus } from '../types';
 
 interface StoreState {
   categories: Category[];
@@ -29,6 +29,12 @@ interface StoreState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   deleteNotificationsByIds: (ids: string[]) => void;
+
+  notes: Note[];
+  fetchNotes: () => Promise<void>;
+  createNote: () => Promise<string>;
+  updateNote: (id: string, updates: { title?: string; content?: string }) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
 }
 
 const getUserId = async () => {
@@ -42,6 +48,7 @@ export const useStore = create<StoreState>((set, get) => ({
   routines: [],
   taskInstances: [],
   appNotifications: JSON.parse(localStorage.getItem('app_notifications') || '[]'),
+  notes: [],
 
   fetchData: async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -528,6 +535,46 @@ export const useStore = create<StoreState>((set, get) => ({
     });
   },
 
+  fetchNotes: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+    set({ notes: (data || []).map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      title: r.title as string,
+      content: r.content as string,
+      createdAt: new Date(r.created_at as string).getTime(),
+      updatedAt: new Date(r.updated_at as string).getTime(),
+    })) });
+  },
+
+  createNote: async (): Promise<string> => {
+    const userId = await getUserId();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const newNote = { id, title: 'Sem título', content: '', createdAt: Date.now(), updatedAt: Date.now() };
+    set(state => ({ notes: [newNote, ...state.notes] }));
+    await supabase.from('notes').insert({ id, user_id: userId, title: 'Sem título', content: '', created_at: now, updated_at: now });
+    return id;
+  },
+
+  updateNote: async (id: string, updates: { title?: string; content?: string }) => {
+    const now = Date.now();
+    set(state => ({
+      notes: state.notes.map(n => n.id === id ? { ...n, ...updates, updatedAt: now } : n)
+    }));
+    await supabase.from('notes').update({ ...updates, updated_at: new Date(now).toISOString() }).eq('id', id);
+  },
+
+  deleteNote: async (id: string) => {
+    set(state => ({ notes: state.notes.filter(n => n.id !== id) }));
+    await supabase.from('notes').delete().eq('id', id);
+  },
+
 }));
 
 async function syncTaskInstance(task: TaskInstance, userId: string) {
@@ -543,3 +590,4 @@ async function syncTaskInstance(task: TaskInstance, userId: string) {
     completed_at: task.completedAt ? new Date(task.completedAt).toISOString() : null,
   });
 }
+
