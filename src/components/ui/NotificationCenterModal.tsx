@@ -221,7 +221,7 @@ export function NotificationCenterModal({
                       : <Square size={16} />}
                   </button>
 
-                  {/* Content — clicar aqui marca como lida (+ navega se tiver tarefa) */}
+                  {/* Content, clicar aqui marca como lida (+ navega se tiver tarefa) */}
                   <div
                     className={`flex-1 min-w-0 ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
                     onClick={() => handleCardClick(notif.id, notif.routineId, notif.dateStr)}

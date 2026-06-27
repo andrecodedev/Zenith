@@ -61,7 +61,7 @@ export async function subscribeToPush(): Promise<boolean> {
         return true;
       }
 
-      // Endpoint pertence a outro user ou sumiu do banco — forçar unsubscribe
+      // Endpoint pertence a outro user ou sumiu do banco, forçar unsubscribe
       // para gerar endpoint novo (sem isso, o upsert bateria na RLS do outro user)
       await subscription.unsubscribe();
       console.log('[push] subscription antiga removida, gerando nova para user:', user.id);

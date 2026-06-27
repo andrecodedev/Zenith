@@ -296,7 +296,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             <div className="col-span-1">
               <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
                 Instituição / Escola
-                <InfoTooltip>Plataforma ou escola do curso (ex: Udemy, Rocketseat). Opcional — aparece junto com o nome: <strong>[Udemy - React Avançado]</strong>.</InfoTooltip>
+                <InfoTooltip>Plataforma ou escola do curso (ex: Udemy, Rocketseat). Opcional, aparece junto com o nome: <strong>[Udemy - React Avançado]</strong>.</InfoTooltip>
               </label>
               <input 
                 type="text" 
@@ -336,7 +336,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
               <div>
                 <h4 className="text-sm font-bold text-text-primary flex items-center gap-2 mb-1">
                   <Sparkles size={16} className="text-text-primary" /> Auto-Agendamento Inteligente
-                  <InfoTooltip>Quando ativado, a IA analisa suas tarefas existentes e distribui as aulas nos melhores horários livres, evitando sobreposição e garantindo tempo de descanso. Ignora "Dias de Estudo" e "Aulas por dia" — a IA decide.</InfoTooltip>
+                  <InfoTooltip>Quando ativado, a IA analisa suas tarefas existentes e distribui as aulas nos melhores horários livres, evitando sobreposição e garantindo tempo de descanso. Ignora "Dias de Estudo" e "Aulas por dia", a IA decide.</InfoTooltip>
                 </h4>
                 <p className="text-xs text-text-tertiary max-w-[400px]">
                   A IA analisa suas tarefas atuais e sugere os melhores horários para as aulas, garantindo tempo de descanso.
@@ -355,7 +355,7 @@ export function CourseBreakerModal({ isOpen, onClose }: CourseBreakerModalProps)
             </div>
           </div>
 
-          {/* Quiz de Preferências — visível só com smart schedule ativo */}
+          {/* Quiz de Preferências, visível só com smart schedule ativo */}
           <div className={`transition-all duration-300 overflow-hidden ${isSmartSchedule ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
             <div className="bg-bg-primary border border-border-base rounded-lg p-4 space-y-4">
               <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Contexto do curso para a IA</p>

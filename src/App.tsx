@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -17,19 +17,87 @@ import { NotificationCenterModal } from './components/ui/NotificationCenterModal
 import { BulkEditorModal } from './components/ui/BulkEditorModal';
 import { SobreView } from './components/ui/SobreView';
 import { NotesView } from './components/ui/NotesView';
+import { FinanceView } from './components/ui/FinanceView';
+import { InvestmentView } from './components/ui/InvestmentView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 import { Bell } from 'lucide-react';
 
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments';
+
+function FinanceDropdown({ currentView, setCurrentView }: {
+  currentView: AppView;
+  setCurrentView: (v: 'finance' | 'investments') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isActive = currentView === 'finance' || currentView === 'investments';
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+      >
+        <Landmark size={16} />
+        Finanças
+        <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden z-50">
+          <button
+            onClick={() => { setCurrentView('finance'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'finance' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <Landmark size={14} />
+            Controle Financeiro
+          </button>
+          <div className="h-px bg-border-base/40" />
+          <button
+            onClick={() => { setCurrentView('investments'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'investments' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <PieChart size={14} />
+            Investimentos
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes'>('hero');
+  const PERSISTENT_VIEWS: AppView[] = ['dashboard', 'calendar', 'stats', 'notes', 'finance', 'investments'];
+  const [currentView, setCurrentView] = useState<AppView>('hero');
+  const currentViewRef = useRef<AppView>('hero');
   const [session, setSession] = useState<Session | null>(null);
   const weekDays = generateWeek(selectedDate);
+
+  useEffect(() => {
+    currentViewRef.current = currentView;
+    if (PERSISTENT_VIEWS.includes(currentView)) {
+      localStorage.setItem('zenith_view', currentView);
+    }
+  }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const restoreView = () => {
+    const saved = localStorage.getItem('zenith_view') as AppView | null;
+    return saved && PERSISTENT_VIEWS.includes(saved) ? saved : 'dashboard';
+  };
 
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('theme') === 'light';
@@ -55,7 +123,9 @@ function App() {
       if (session) {
         useStore.getState().fetchData();
         useStore.getState().fetchNotes();
-        if (currentView === 'hero') setCurrentView('dashboard');
+        if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
+          setCurrentView(restoreView());
+        }
       }
     });
 
@@ -64,12 +134,17 @@ function App() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (session) {
-        useStore.getState().fetchData();
-        useStore.getState().fetchNotes();
-        if (currentView === 'hero') setCurrentView('dashboard');
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && notificationsEnabled) subscribeToPush();
+        if (event === 'SIGNED_IN') {
+          useStore.getState().fetchData();
+          useStore.getState().fetchNotes();
+          if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
+            setCurrentView(restoreView());
+          }
+          if (notificationsEnabled) subscribeToPush();
+        }
       } else {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
+        localStorage.removeItem('zenith_view');
         setCurrentView('hero');
       }
     });
@@ -140,7 +215,7 @@ function App() {
 
   useEffect(() => {
     registerServiceWorker().then(() => {
-      // subscribeToPush é chamado pelo onAuthStateChange no SIGNED_IN — não duplicar aqui
+      // subscribeToPush é chamado pelo onAuthStateChange no SIGNED_IN. não duplicar aqui
     });
 
     const handleMessage = (event: MessageEvent) => {
@@ -380,6 +455,7 @@ function App() {
                 <FileText size={16} />
                 Notas
               </button>
+              <FinanceDropdown currentView={currentView} setCurrentView={setCurrentView} />
               <button
                 onClick={() => {
                   setIsNotificationCenterOpen(true);
@@ -513,6 +589,20 @@ function App() {
               >
                 <FileText size={24} />
                 Notas
+              </button>
+              <button
+                onClick={() => { setCurrentView('finance'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'finance' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <Landmark size={24} />
+                Finanças
+              </button>
+              <button
+                onClick={() => { setCurrentView('investments'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'investments' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <PieChart size={24} />
+                Investimentos
               </button>
             </nav>
           )}
@@ -690,6 +780,10 @@ function App() {
             <StatsView />
           ) : currentView === 'notes' ? (
             <NotesView />
+          ) : currentView === 'finance' ? (
+            <FinanceView />
+          ) : currentView === 'investments' ? (
+            <InvestmentView />
           ) : (
             <CalendarView
               selectedDate={selectedDate}

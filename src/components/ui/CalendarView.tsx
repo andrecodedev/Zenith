@@ -296,7 +296,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
               </div>
             </div>
 
-        {/* All Day Section — só tarefas sem horário E sem times[] */}
+        {/* All Day Section. só tarefas sem horário E sem times[] */}
         {currentDays.some(({ dateStr }) => routines.some(r => isTaskDueToday(r, dateStr) && !r.time && !r.times?.length)) && (
           <div className={`flex border-b border-border-base shrink-0 ${viewMode === 'day' ? 'w-full' : 'w-full min-w-[1800px]'}`}>
             <div className="w-16 shrink-0 border-r border-border-base bg-bg-primary flex flex-col justify-center items-center text-[10px] text-text-tertiary font-medium">
@@ -361,7 +361,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
               </div>
             )}
 
-            {/* Day Columns — pool unificado, estilo Google Calendar */}
+            {/* Day Columns. pool unificado, estilo Google Calendar */}
             {currentDays.map(({ dateStr }) => {
               // Pool único: eventos com horário + slots de múltiplos horários
               const allEvs = [
@@ -459,7 +459,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
                     );
                   })}
 
-                  {/* Pill de overflow — compacto, posicionado no início do overflow */}
+                  {/* Pill de overflow. compacto, posicionado no início do overflow */}
                   {overflowClusters.map((cl, ci) => (
                     <div
                       key={`overflow-${ci}`}
@@ -486,7 +486,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
         )}
       </div>
 
-      {/* Modal de overflow — lista todos os eventos colapsados no horário */}
+      {/* Modal de overflow. lista todos os eventos colapsados no horário */}
       {overflowGroup && (
         <div
           className="fixed inset-0 z-100 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"

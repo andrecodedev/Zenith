@@ -52,7 +52,7 @@ export function useStats(referenceDate?: string): Stats {
       return Math.round(daysWithTasks.reduce((acc, d) => acc + d.pct, 0) / daysWithTasks.length);
     })();
 
-    // Current streak — always from today, ignores referenceDate
+    // Current streak, always from today, ignores referenceDate
     let currentStreak = 0;
     for (let i = 0; i <= 365; i++) {
       const dateStr = format(subDays(parseISO(today), i), 'yyyy-MM-dd');
@@ -66,7 +66,7 @@ export function useStats(referenceDate?: string): Stats {
       }
     }
 
-    // Best streak — from all completed dates
+    // Best streak, from all completed dates
     const completedDates = Array.from(
       new Set(taskInstances.filter(t => t.completed).map(t => t.date))
     ).sort();

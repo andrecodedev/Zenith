@@ -15,7 +15,7 @@ interface TaskModalProps {
 }
 
 const TEMPLATES = [
-  { label: 'Beber água', title: 'Beber água', description: 'Hidratação diária — meta de 2L.', recurrence: 'multiple_times', times: ['08:00', '11:00', '14:00', '17:00', '20:00'] },
+  { label: 'Beber água', title: 'Beber água', description: 'Hidratação diária, meta de 2L.', recurrence: 'multiple_times', times: ['08:00', '11:00', '14:00', '17:00', '20:00'] },
   { label: 'Escovar os dentes', title: 'Escovar os dentes', description: '', recurrence: 'multiple_times', times: ['07:00', '13:00', '22:00'] },
   { label: 'Tomar vitamina', title: 'Tomar vitamina', description: '', recurrence: 'daily', time: '08:00' },
   { label: 'Tomar remédio', title: 'Tomar remédio', description: '', recurrence: 'multiple_times', times: ['08:00', '20:00'] },
@@ -459,7 +459,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
               Título da Tarefa
-              <InfoTooltip>Nome da tarefa exibido na lista do dia. Seja objetivo — ex: "Estudar React Hooks" em vez de "Estudar".</InfoTooltip>
+              <InfoTooltip>Nome da tarefa exibido na lista do dia. Seja objetivo, ex: "Estudar React Hooks" em vez de "Estudar".</InfoTooltip>
             </label>
             <input
               type="text"
@@ -562,7 +562,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           <div className="relative">
             <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
               Repetição
-              <InfoTooltip>Define com que frequência esta tarefa aparece na sua agenda. "Horários Específicos" cria sub-itens independentes por horário — ideal para metas como beber água ou tomar remédio.</InfoTooltip>
+              <InfoTooltip>Define com que frequência esta tarefa aparece na sua agenda. "Horários Específicos" cria sub-itens independentes por horário, ideal para metas como beber água ou tomar remédio.</InfoTooltip>
             </label>
               <button
                 ref={dropdownBtnRef}
@@ -609,7 +609,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
           >
             <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary cursor-pointer">
               Múltiplos horários por dia
-              <InfoTooltip>Ativa repetição por horários dentro do mesmo dia — ex: tomar remédio às 08:00 e 20:00. Os dias de repetição são definidos no campo "Repetição" acima.</InfoTooltip>
+              <InfoTooltip>Ativa repetição por horários dentro do mesmo dia, ex: tomar remédio às 08:00 e 20:00. Os dias de repetição são definidos no campo "Repetição" acima.</InfoTooltip>
             </label>
             <div className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${useMultipleTimes ? 'bg-blue-500' : 'bg-elements border border-border-gray'}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${useMultipleTimes ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
@@ -622,7 +622,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               <div className="flex items-center justify-between mb-2">
                 <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
                   Horários do dia
-                  <InfoTooltip>Cada horário vira um sub-item independente com progresso próprio. Adicione quantos quiser — ex: 3 horários = "1/3 completos".</InfoTooltip>
+                  <InfoTooltip>Cada horário vira um sub-item independente com progresso próprio. Adicione quantos quiser, ex: 3 horários = "1/3 completos".</InfoTooltip>
                 </label>
                 <button type="button" onClick={addTimeSlot}
                   className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-sm bg-elements border border-border-base hover:bg-elements-hover cursor-pointer transition-all text-text-secondary hover:text-text-primary">
@@ -649,7 +649,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
                 ))}
               </div>
               <p className="text-xs text-text-tertiary mt-2">
-                {times.filter(t => t.length === 5).length} horário(s) configurado(s) — repetem conforme a frequência selecionada acima.
+                {times.filter(t => t.length === 5).length} horário(s) configurado(s), repetem conforme a frequência selecionada acima.
               </p>
             </div>
           )}
@@ -694,7 +694,7 @@ export function TaskModal({ isOpen, onClose, initialData }: TaskModalProps) {
               <div>
                 <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
                   Horário de Fim
-                  <InfoTooltip>Horário de conclusão previsto. Aparece como tag na tarefa — ex: "08:00 - 09:00". Apenas informativo.</InfoTooltip>
+                  <InfoTooltip>Horário de conclusão previsto. Aparece como tag na tarefa, ex: "08:00 - 09:00". Apenas informativo.</InfoTooltip>
                 </label>
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
                   className="w-full bg-bg-primary border border-border-base rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-border-gray focus:ring-1 focus:ring-border-gray transition-all cursor-pointer scheme-dark"

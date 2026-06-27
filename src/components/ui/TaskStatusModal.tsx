@@ -206,7 +206,7 @@ export function TaskStatusModal({ routine, dateStr, isOpen, onClose, timeStr }: 
             <div>
               <label className="flex items-center gap-1.5 text-sm font-medium text-text-secondary mb-2">
                 Observações
-                <InfoTooltip>Anotações sobre este status — aparecem no painel expandido da tarefa. Use para justificativas, links ou contexto.</InfoTooltip>
+                <InfoTooltip>Anotações sobre este status, aparecem no painel expandido da tarefa. Use para justificativas, links ou contexto.</InfoTooltip>
               </label>
               <textarea 
                 value={note}

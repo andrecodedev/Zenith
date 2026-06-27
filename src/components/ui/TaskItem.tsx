@@ -185,7 +185,7 @@ export function TaskItem({ routine, category, dateStr, taskInstance, onToggle, o
               )}
             </div>
 
-            {/* Barra de progresso — só para multiple_times */}
+            {/* Barra de progresso, só para multiple_times */}
             {isMultipleTimes && totalCount > 0 && (
               <div className="mt-2 h-1.5 rounded-full bg-bg-primary overflow-hidden w-full max-w-[160px]">
                 <div

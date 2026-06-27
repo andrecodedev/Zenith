@@ -158,7 +158,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 Explorar sem conta
               </button>
               <p className="text-center text-[11px] text-text-tertiary leading-snug -mt-1">
-                Ambiente de demonstração — dados resetados periodicamente
+                Ambiente de demonstração, dados resetados periodicamente
               </p>
             </>
           )}

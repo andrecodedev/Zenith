@@ -1,0 +1,1224 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Plus, Trash2, Target, ChevronDown, ChevronUp, Pencil, Eye, RefreshCw, X } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { PieChart, Pie, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import type { TransactionData, AssetType } from './TransactionModal';
+import { TransactionModal } from './TransactionModal';
+
+// ── Interfaces ─────────────────────────────────────────────────────────────────
+interface ICategory {
+  id: string; name: string; idealPercent: number; currentPercent: number; color: string; sortOrder: number;
+}
+interface IGoal {
+  id: string; categoryId: string; label: string; targetAmount: number; priority: number;
+}
+interface IWatchlistItem {
+  id: string; categoryId: string; ticker: string;
+  name: string; price: number; changePercent: number;
+}
+interface ITransaction {
+  id: string; ticker: string; categoryId: string;
+  type: 'buy' | 'sell'; date: string;
+  quantity: number; price: number; otherCosts: number;
+  assetType?: AssetType; meta?: any;
+}
+interface IHolding {
+  ticker: string; categoryId: string;
+  qty: number; avgPrice: number; totalInvested: number;
+}
+interface PConfig {
+  investPatrimonio: number;
+  patrimonio: number; aportar: number;
+  caixaPercent: number; investPercent: number; despFixasPercent: number; despVariaveisPercent: number;
+}
+interface GoalInfo { label: string; targetAmount: number; currentAmount: number; priority: number; }
+interface DistRow {
+  label: string; currentPct: number; onCurrentPctCh?: (v: number) => void;
+  idealPct: number; onIdealCh: (v: number) => void; goal?: GoalInfo;
+}
+type PriceData = { price: number; changePercent: number; name: string; fetchedAt: number };
+type PriceCache = Record<string, PriceData>;
+
+// ── Constants & storage ────────────────────────────────────────────────────────
+const INVEST_PAT_KEY = 'zenith_invest_patrimonio';
+const GOALS_KEY = 'zenith_invest_goals';
+const WATCHLIST_KEY = 'zenith_invest_watchlist';
+const PRICE_CACHE_KEY = 'zenith_price_cache';
+const CACHE_TTL = 30 * 60 * 1000;
+
+const loadGoals = (): IGoal[] => { try { return JSON.parse(localStorage.getItem(GOALS_KEY) || '[]'); } catch { return []; } };
+const persistGoals = (g: IGoal[]) => localStorage.setItem(GOALS_KEY, JSON.stringify(g));
+const loadWatchlist = (): IWatchlistItem[] => { try { return JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]'); } catch { return []; } };
+const persistWatchlist = (w: IWatchlistItem[]) => localStorage.setItem(WATCHLIST_KEY, JSON.stringify(w));
+const loadPriceCache = (): PriceCache => { try { return JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || '{}'); } catch { return {}; } };
+const persistPriceCache = (c: PriceCache) => localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(c));
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const fmt = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtP = (n: number) => `${n.toFixed(2)}%`;
+const parseFmt = (s: string): number => {
+  let c = s.replace(/R\$\s?|%/g, '').trim();
+  if (c.includes(',')) c = c.replace(/\./g, '').replace(',', '.');
+  else c = c.replace(/\./g, '');
+  return Math.abs(parseFloat(c) || 0);
+};
+
+
+const fetchQuote = async (ticker: string): Promise<{ name: string; price: number; changePercent: number } | null> => {
+  try {
+    const token = import.meta.env.VITE_BRAPI_TOKEN || '';
+    const res = await fetch(`https://brapi.dev/api/quote/${ticker}${token ? `?token=${token}` : ''}`);
+    const json = await res.json();
+    const r = json.results?.[0];
+    if (!r) return null;
+    return { name: (r.shortName || r.longName || ticker) as string, price: (r.regularMarketPrice || 0) as number, changePercent: (r.regularMarketChangePercent || 0) as number };
+  } catch { return null; }
+};
+
+const fetchPrices = async (tickers: string[], cache: PriceCache): Promise<PriceCache> => {
+  const now = Date.now();
+  const stale = tickers.filter(t => !cache[t] || now - cache[t].fetchedAt > CACHE_TTL);
+  if (!stale.length) return cache;
+  const chunks: string[][] = [];
+  for (let i = 0; i < stale.length; i += 20) chunks.push(stale.slice(i, i + 20));
+  const next = { ...cache };
+  const token = import.meta.env.VITE_BRAPI_TOKEN || '';
+  await Promise.all(chunks.map(async chunk => {
+    try {
+      const res = await fetch(`https://brapi.dev/api/quote/${chunk.join(',')}${token ? `?token=${token}` : ''}`);
+      const json = await res.json();
+      for (const r of (json.results || [])) {
+        next[r.ticker] = { price: r.regularMarketPrice || 0, changePercent: r.regularMarketChangePercent || 0, name: r.shortName || r.longName || r.ticker, fetchedAt: now };
+      }
+    } catch { /* ignore */ }
+  }));
+  return next;
+};
+
+const calcHoldings = (transactions: ITransaction[]): IHolding[] => {
+  const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+  const map = new Map<string, IHolding>();
+  for (const t of sorted) {
+    const cur = map.get(t.ticker) || { ticker: t.ticker, categoryId: t.categoryId, qty: 0, avgPrice: 0, totalInvested: 0 };
+    if (t.type === 'buy') {
+      const cost = t.quantity * t.price + t.otherCosts;
+      const newQty = cur.qty + t.quantity;
+      const newAvg = newQty > 0 ? (cur.qty * cur.avgPrice + cost) / newQty : 0;
+      map.set(t.ticker, { ...cur, qty: newQty, avgPrice: newAvg, totalInvested: cur.totalInvested + cost });
+    } else {
+      const newQty = cur.qty - t.quantity;
+      if (newQty < 0.0001) map.delete(t.ticker);
+      else map.set(t.ticker, { ...cur, qty: newQty });
+    }
+  }
+  return Array.from(map.values());
+};
+
+const mapCat = (r: Record<string, unknown>): ICategory => ({
+  id: r.id as string, name: r.name as string,
+  idealPercent: Number(r.ideal_percent) || 0,
+  currentPercent: Number(r.current_value) || 0,
+  color: (r.color as string) || '#6366f1',
+  sortOrder: Number(r.sort_order) || 0,
+});
+const mapTransaction = (r: Record<string, unknown>): ITransaction => ({
+  id: r.id as string, ticker: r.ticker as string,
+  categoryId: (r.category_id as string) || '',
+  type: r.type as 'buy' | 'sell', date: r.date as string,
+  quantity: Number(r.quantity) || 0, price: Number(r.price) || 0,
+  otherCosts: Number(r.other_costs) || 0,
+  assetType: r.asset_type as AssetType | undefined,
+  meta: r.meta,
+});
+
+const DEFAULT_CATEGORIES = [
+  { name: 'Ações',        idealPercent: 20, color: '#ef4444' },
+  { name: 'Exterior',     idealPercent: 20, color: '#3b82f6' },
+  { name: 'ETFs',         idealPercent: 5,  color: '#06b6d4' },
+  { name: 'FIIs',         idealPercent: 25, color: '#f97316' },
+  { name: 'Renda Fixa',   idealPercent: 25, color: '#22c55e' },
+  { name: 'Criptomoedas', idealPercent: 5,  color: '#a855f7' },
+];
+
+// ── Editable cell ──────────────────────────────────────────────────────────────
+function Editable({ value, onSave, right = false, placeholder = '' }: {
+  value: string; onSave: (v: string) => void; right?: boolean; placeholder?: string;
+}) {
+  const [ed, setEd] = useState(false);
+  const [d, setD] = useState(value);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (ed) { setD(value); ref.current?.focus(); ref.current?.select(); } }, [ed, value]);
+  const done = () => { setEd(false); if (d !== value) onSave(d); };
+  if (ed) return (
+    <input ref={ref} value={d} onChange={e => setD(e.target.value)} onBlur={done}
+      onKeyDown={e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') setEd(false); }}
+      className={`bg-transparent outline-none w-full text-sm font-mono ${right ? 'text-right' : ''}`} />
+  );
+  return (
+    <span onClick={() => setEd(true)}
+      className={`cursor-text block text-sm font-mono ${right ? 'text-right' : ''} ${!value ? 'text-text-tertiary/30' : ''}`}>
+      {value || placeholder || ' '}
+    </span>
+  );
+}
+
+// ── Distribution table ─────────────────────────────────────────────────────────
+function DistTable({ title, accentColor, patrimonio, aportar, onPatrimonioCh, onAportarCh, rows, rebalance = false }: {
+  title: string; accentColor: string;
+  patrimonio: number; aportar: number;
+  onPatrimonioCh: (v: number) => void; onAportarCh: (v: number) => void;
+  rows: DistRow[]; rebalance?: boolean;
+}) {
+  const sumIdeal = rows.reduce((s, r) => s + r.idealPct, 0);
+  const sumCurrentPct = rows.reduce((s, r) => s + r.currentPct, 0);
+  const activeGoals = rows.filter(r => r.goal && r.goal.currentAmount < r.goal.targetAmount);
+  const totalGoalPriority = Math.min(100, activeGoals.reduce((s, r) => s + (r.goal?.priority ?? 0), 0));
+
+  let rowsFinal: (DistRow & { quantoColoco: number })[];
+
+  if (rebalance && activeGoals.length > 0 && totalGoalPriority > 0 && aportar > 0) {
+    const goalAporte = (totalGoalPriority / 100) * aportar;
+    const goalMap = new Map<string, number>();
+    let usedForGoals = 0;
+    for (const r of activeGoals) {
+      const share = (r.goal!.priority / totalGoalPriority) * goalAporte;
+      const shortfall = r.goal!.targetAmount - r.goal!.currentAmount;
+      const alloc = Math.min(share, shortfall);
+      goalMap.set(r.label, alloc);
+      usedForGoals += alloc;
+    }
+    const remainingAporte = aportar - usedForGoals;
+    rowsFinal = rows.map(row => {
+      if (goalMap.has(row.label)) return { ...row, quantoColoco: goalMap.get(row.label)! };
+      const targetAmt = (row.idealPct / 100) * (patrimonio + remainingAporte);
+      const currentAmt = (row.currentPct / 100) * patrimonio;
+      return { ...row, quantoColoco: Math.max(0, targetAmt - currentAmt) };
+    });
+    const totalNGQC = rowsFinal.filter(r => !goalMap.has(r.label)).reduce((s, r) => s + r.quantoColoco, 0);
+    if (totalNGQC > remainingAporte && totalNGQC > 0) {
+      const scale = remainingAporte / totalNGQC;
+      rowsFinal = rowsFinal.map(r => goalMap.has(r.label) ? r : { ...r, quantoColoco: r.quantoColoco * scale });
+    }
+  } else if (rebalance) {
+    rowsFinal = rows.map(row => {
+      const targetAmt = (row.idealPct / 100) * (patrimonio + aportar);
+      const currentAmt = (row.currentPct / 100) * patrimonio;
+      return { ...row, quantoColoco: Math.max(0, targetAmt - currentAmt) };
+    });
+    const totalQC = rowsFinal.reduce((s, r) => s + r.quantoColoco, 0);
+    if (totalQC > aportar && totalQC > 0) {
+      const scale = aportar / totalQC;
+      rowsFinal = rowsFinal.map(r => ({ ...r, quantoColoco: r.quantoColoco * scale }));
+    }
+  } else {
+    rowsFinal = rows.map(row => ({ ...row, quantoColoco: sumIdeal > 0 ? aportar * (row.idealPct / sumIdeal) : 0 }));
+  }
+
+  return (
+    <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border-base/30" style={{ background: `${accentColor}18` }}>
+        <span className="text-sm font-bold" style={{ color: accentColor }}>{title}</span>
+      </div>
+      <div className="grid grid-cols-2 divide-x divide-border-base/30 border-b border-border-base/30">
+        <div className="px-4 py-2.5">
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">Patrimônio atual</p>
+          <Editable value={patrimonio > 0 ? fmt(patrimonio) : ''} onSave={v => onPatrimonioCh(parseFmt(v))} right placeholder="Clique para editar" />
+        </div>
+        <div className="px-4 py-2.5">
+          <p className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">Quanto vou aportar</p>
+          <Editable value={aportar > 0 ? fmt(aportar) : ''} onSave={v => onAportarCh(parseFmt(v))} right placeholder="Clique para editar" />
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[360px]">
+          <thead>
+            <tr className="border-b border-border-base/30 text-[10px] text-text-tertiary font-normal uppercase tracking-wider">
+              <th className="px-4 py-1.5 text-left font-normal">Categoria</th>
+              <th className="px-3 py-1.5 text-right font-normal w-20">% Atual</th>
+              <th className="px-3 py-1.5 text-right font-normal w-24">% Ideal</th>
+              <th className="px-3 py-1.5 text-right font-normal">Quanto Coloco</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-base/20">
+            {rowsFinal.map(row => {
+              const hasActiveGoal = row.goal && row.goal.currentAmount < row.goal.targetAmount;
+              return (
+                <tr key={row.label} className="hover:bg-white/2">
+                  <td className="px-4 py-2 text-sm text-text-primary">
+                    <div className="flex items-center gap-1.5">
+                      {row.label}
+                      {hasActiveGoal && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                          <Target size={8} /> META
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-right w-20">
+                    {row.onCurrentPctCh ? (
+                      <Editable value={fmtP(row.currentPct)} onSave={v => row.onCurrentPctCh!(parseFmt(v))} right />
+                    ) : (
+                      <span className="text-sm font-mono text-text-secondary">{fmtP(row.currentPct)}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right w-24">
+                    <Editable value={fmtP(row.idealPct)} onSave={v => row.onIdealCh(parseFmt(v))} right />
+                  </td>
+                  <td className={`px-3 py-2 text-right text-sm font-mono ${row.quantoColoco > 0 ? (hasActiveGoal ? 'text-amber-400' : 'text-emerald-400') : 'text-text-tertiary/40'}`}>
+                    {fmt(row.quantoColoco)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="border-t border-border-base/40 bg-white/2">
+              <td className="px-4 py-2 text-[10px] text-text-tertiary uppercase tracking-wider">Total</td>
+              <td className="px-3 py-2 text-right text-xs font-mono text-text-secondary">{rebalance ? fmtP(sumCurrentPct) : ''}</td>
+              <td className="px-3 py-2 text-right text-xs font-mono text-text-secondary">{fmtP(sumIdeal)}</td>
+              <td className="px-3 py-2 text-right text-xs font-mono text-text-secondary">{fmt(aportar)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Currency input ─────────────────────────────────────────────────────────────
+function CurrencyInput({ value, onChange, placeholder }: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    if (!digits) { onChange(''); return; }
+    onChange('R$ ' + parseInt(digits, 10).toLocaleString('pt-BR'));
+  };
+  return (
+    <input value={value} onChange={handleChange} placeholder={placeholder} inputMode="numeric"
+      className="w-full bg-bg-primary border border-border-base rounded-lg px-3 py-2 text-sm text-text-primary outline-none font-mono placeholder:text-text-tertiary/40 focus:border-border-gray transition-colors" />
+  );
+}
+
+// ── Custom category dropdown ───────────────────────────────────────────────────
+function CategoryDropdown({ categories, value, onChange }: {
+  categories: ICategory[]; value: string; onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = categories.find(c => c.id === value);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-2.5 bg-bg-primary border border-border-base rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:border-border-gray transition-colors">
+        {selected && <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: selected.color }} />}
+        <span className="flex-1 text-left">{selected?.name ?? 'Selecionar'}</span>
+        <ChevronDown size={14} className={`text-text-tertiary transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
+          {categories.map(c => (
+            <button key={c.id} type="button" onClick={() => { onChange(c.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors cursor-pointer text-left ${c.id === value ? 'bg-elements text-text-primary' : 'text-text-secondary hover:bg-elements/60'}`}>
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Goal form modal ────────────────────────────────────────────────────────────
+function GoalForm({ categories, initial, onSave, onClose }: {
+  categories: ICategory[]; initial?: IGoal;
+  onSave: (g: Omit<IGoal, 'id'>) => void; onClose: () => void;
+}) {
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? categories[0]?.id ?? '');
+  const [label, setLabel] = useState(initial?.label ?? '');
+  const [targetStr, setTargetStr] = useState(initial ? 'R$ ' + initial.targetAmount.toLocaleString('pt-BR') : '');
+  const [priority, setPriority] = useState(initial?.priority ?? 50);
+  const isEdit = !!initial;
+  const submit = () => {
+    const targetAmount = parseFmt(targetStr);
+    if (!categoryId || !label.trim() || targetAmount <= 0) return;
+    onSave({ categoryId, label: label.trim(), targetAmount, priority });
+    onClose();
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-bg-secondary border border-border-base rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-base">
+          <span className="text-sm font-bold text-text-primary">{isEdit ? 'Editar Meta' : 'Nova Meta'}</span>
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors cursor-pointer text-lg leading-none">×</button>
+        </div>
+        <div className="px-5 py-4 flex flex-col gap-4">
+          <div>
+            <label className="block text-[10px] text-text-tertiary uppercase tracking-wider mb-1.5">Categoria</label>
+            <CategoryDropdown categories={categories} value={categoryId} onChange={setCategoryId} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-text-tertiary uppercase tracking-wider mb-1.5">Nome da meta</label>
+            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Ex: Reserva de Emergência"
+              className="w-full bg-bg-primary border border-border-base rounded-lg px-3 py-2 text-sm text-text-primary outline-none placeholder:text-text-tertiary/40 focus:border-border-gray transition-colors"
+              onKeyDown={e => e.key === 'Enter' && submit()} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-text-tertiary uppercase tracking-wider mb-1.5">Valor alvo</label>
+            <CurrencyInput value={targetStr} onChange={setTargetStr} placeholder="R$ 15.000" />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] text-text-tertiary uppercase tracking-wider">Prioridade do aporte</label>
+              <span className={`text-sm font-bold font-mono ${priority === 100 ? 'text-red-400' : priority >= 70 ? 'text-amber-400' : 'text-emerald-400'}`}>{priority}%</span>
+            </div>
+            <input type="range" min={0} max={100} step={5} value={priority} onChange={e => setPriority(Number(e.target.value))} className="w-full accent-amber-400 cursor-pointer" />
+            <div className="flex justify-between text-[9px] text-text-tertiary/50 mt-1"><span>Baixa</span><span>Média</span><span>Suprema</span></div>
+            {priority === 100 && <p className="text-[10px] text-red-400/80 mt-1.5">Prioridade suprema, 100% do aporte irá para esta meta.</p>}
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border-base">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-text-tertiary hover:text-text-primary cursor-pointer transition-colors">Cancelar</button>
+          <button onClick={submit} className="px-4 py-2 text-sm font-semibold bg-amber-500 text-black rounded-lg hover:bg-amber-400 cursor-pointer transition-colors">{isEdit ? 'Salvar' : 'Criar Meta'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Goal card ──────────────────────────────────────────────────────────────────
+function GoalCard({ goal, category, currentAmount, onDelete, onEdit, onUpdatePriority }: {
+  goal: IGoal; category: ICategory | undefined; currentAmount: number;
+  onDelete: () => void; onEdit: () => void; onUpdatePriority: (p: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const progress = goal.targetAmount > 0 ? Math.min(100, (currentAmount / goal.targetAmount) * 100) : 0;
+  const remaining = Math.max(0, goal.targetAmount - currentAmount);
+  const done = remaining <= 0;
+  return (
+    <div className={`bg-bg-secondary border rounded-xl overflow-hidden ${done ? 'border-emerald-500/40' : 'border-amber-500/25'}`}>
+      <div className={`flex items-center gap-2 px-4 py-3 ${done ? 'bg-emerald-500/10' : 'bg-amber-500/8'}`}>
+        <Target size={13} className={done ? 'text-emerald-400' : 'text-amber-400'} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-text-primary truncate">{goal.label}</p>
+          <p className="text-[10px] text-text-tertiary">{category?.name ?? ''} · Meta: {fmt(goal.targetAmount)}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {done && <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider bg-emerald-500/15 px-2 py-0.5 rounded">Concluída!</span>}
+          <button onClick={onEdit} className="text-text-tertiary/30 hover:text-amber-400 cursor-pointer transition-colors"><Pencil size={12} /></button>
+          <button onClick={() => setOpen(v => !v)} className="text-text-tertiary/50 hover:text-text-tertiary cursor-pointer transition-colors">
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          <button onClick={onDelete} className="text-text-tertiary/30 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={12} /></button>
+        </div>
+      </div>
+      <div className="px-4 py-3 border-t border-border-base/20">
+        <div className="flex items-center justify-between text-xs mb-1.5">
+          <span className="font-mono text-text-secondary">{fmt(currentAmount)}</span>
+          <span className="font-mono text-text-tertiary">{fmt(goal.targetAmount)}</span>
+        </div>
+        <div className="h-2 bg-bg-primary rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${progress}%` }} />
+        </div>
+        <div className="flex items-center justify-between mt-1.5">
+          <span className={`text-[10px] font-semibold ${done ? 'text-emerald-400' : 'text-amber-400'}`}>{progress.toFixed(1)}%</span>
+          {!done && <span className="text-[10px] text-text-tertiary">Faltam {fmt(remaining)}</span>}
+        </div>
+      </div>
+      {open && (
+        <div className="px-4 py-3 border-t border-border-base/20">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Prioridade do aporte</span>
+            <span className={`text-sm font-bold font-mono ${goal.priority === 100 ? 'text-red-400' : goal.priority >= 70 ? 'text-amber-400' : 'text-emerald-400'}`}>{goal.priority}%</span>
+          </div>
+          <input type="range" min={0} max={100} step={5} value={goal.priority} onChange={e => onUpdatePriority(Number(e.target.value))} className="w-full accent-amber-400 cursor-pointer" />
+          <p className="text-[10px] text-text-tertiary/60 mt-1.5">
+            {goal.priority === 100 ? 'Prioridade suprema, todo o aporte vai para esta meta.' : `${goal.priority}% do aporte é direcionado para esta meta.`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Goals section ──────────────────────────────────────────────────────────────
+function GoalsSection({ goals, categories, investPatrimonio, onAdd, onDelete, onUpdate }: {
+  goals: IGoal[]; categories: ICategory[]; investPatrimonio: number;
+  onAdd: (g: Omit<IGoal, 'id'>) => void; onDelete: (id: string) => void; onUpdate: (id: string, updates: Partial<IGoal>) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<IGoal | null>(null);
+  const getCatCurrentAmount = (categoryId: string) => {
+    const cat = categories.find(c => c.id === categoryId);
+    return cat ? (cat.currentPercent / 100) * investPatrimonio : 0;
+  };
+  const totalPriority = Math.min(100, goals.reduce((s, g) => {
+    const currentAmount = getCatCurrentAmount(g.categoryId);
+    return currentAmount < g.targetAmount ? s + g.priority : s;
+  }, 0));
+  return (
+    <div className="shrink-0">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs text-text-tertiary uppercase tracking-wider">Metas de Investimento</h2>
+          {goals.length > 0 && totalPriority > 0 && (
+            <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">{totalPriority}% do aporte direcionado</span>
+          )}
+        </div>
+        <button onClick={() => setShowForm(true)} className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 cursor-pointer transition-colors font-semibold">
+          <Plus size={12} strokeWidth={2.5} /> Nova Meta
+        </button>
+      </div>
+      {goals.length === 0 ? (
+        <div className="bg-bg-secondary border border-dashed border-border-base/40 rounded-xl px-4 py-6 text-center">
+          <Target size={20} className="text-text-tertiary/30 mx-auto mb-2" />
+          <p className="text-sm text-text-tertiary/50">Nenhuma meta definida ainda.</p>
+          <p className="text-xs text-text-tertiary/30 mt-0.5">Crie uma meta para priorizar categorias no aporte.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {goals.map(g => (
+            <GoalCard key={g.id} goal={g} category={categories.find(c => c.id === g.categoryId)}
+              currentAmount={getCatCurrentAmount(g.categoryId)}
+              onDelete={() => onDelete(g.id)} onEdit={() => setEditingGoal(g)}
+              onUpdatePriority={p => onUpdate(g.id, { priority: p })} />
+          ))}
+        </div>
+      )}
+      {showForm && <GoalForm categories={categories} onSave={onAdd} onClose={() => setShowForm(false)} />}
+      {editingGoal && (
+        <GoalForm categories={categories} initial={editingGoal}
+          onSave={data => onUpdate(editingGoal.id, data)} onClose={() => setEditingGoal(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── Add Transaction Modal ──────────────────────────────────────────────────────
+// Transaction modal imported from TransactionModal.tsx
+
+// ── Portfolio Summary cards ────────────────────────────────────────────────────
+function PortfolioSummary({ holdings, prices, totalCost }: {
+  holdings: IHolding[]; prices: PriceCache; totalCost: number;
+}) {
+  const totalValue = holdings.reduce((s, h) => s + h.qty * (prices[h.ticker]?.price || 0), 0);
+  const lucro = totalValue - totalCost;
+  const varPct = totalCost > 0 ? (lucro / totalCost) * 100 : 0;
+
+  const cards = [
+    { label: 'Patrimônio Atual', value: fmt(totalValue), color: '#6366f1' },
+    { label: 'Custo Total', value: fmt(totalCost), color: '#94a3b8' },
+    { label: 'Lucro/Prej.', value: (lucro >= 0 ? '+' : '') + fmt(lucro), color: lucro >= 0 ? '#22c55e' : '#ef4444' },
+    { label: 'Rentabilidade', value: (varPct >= 0 ? '+' : '') + varPct.toFixed(2) + '%', color: varPct >= 0 ? '#22c55e' : '#ef4444' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {cards.map(c => (
+        <div key={c.label} className="bg-bg-secondary border border-border-base rounded-xl px-4 py-3">
+          <p className="text-[9px] text-text-tertiary uppercase tracking-wider mb-1">{c.label}</p>
+          <p className="text-sm font-bold font-mono" style={{ color: c.color }}>{c.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Portfolio Chart ────────────────────────────────────────────────────────────
+function PortfolioChart({ categories, holdings, prices }: {
+  categories: ICategory[]; holdings: IHolding[]; prices: PriceCache;
+}) {
+  const data = categories.map(c => {
+    const value = holdings.filter(h => h.categoryId === c.id).reduce((s, h) => s + h.qty * (prices[h.ticker]?.price || 0), 0);
+    return { name: c.name, value, fill: c.color };
+  }).filter(d => d.value > 0);
+
+  if (data.length === 0) return null;
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  return (
+    <div className="bg-bg-secondary border border-border-base rounded-xl px-4 py-4">
+      <h3 className="text-xs text-text-tertiary uppercase tracking-wider mb-3">Alocação por Categoria</h3>
+      <div className="flex items-center gap-6 flex-wrap">
+        <div className="shrink-0">
+          <PieChart width={150} height={150}>
+            <Pie data={data} cx={75} cy={75} innerRadius={45} outerRadius={70} dataKey="value" stroke="none" />
+          </PieChart>
+        </div>
+        <div className="flex-1 grid grid-cols-1 gap-1.5 min-w-[160px]">
+          {data.map(d => (
+            <div key={d.name} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: d.fill }} />
+              <span className="text-xs text-text-secondary flex-1 truncate">{d.name}</span>
+              <span className="text-xs font-mono font-bold text-text-primary">{(d.value / total * 100).toFixed(1)}%</span>
+              <span className="text-xs font-mono text-text-tertiary">{fmt(d.value)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Evolution Chart ────────────────────────────────────────────────────────────
+function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]; prices: PriceCache }) {
+  const data = useMemo(() => {
+    if (transactions.length === 0) return [];
+    
+    // Sort transactions by date
+    const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+    
+    const timeline: { date: string; custoAcumulado: number; valorAtivos: number }[] = [];
+    const holdMap = new Map<string, { qty: number; totalInvested: number }>();
+    
+    let currentCusto = 0;
+    
+    for (const t of sorted) {
+      const cur = holdMap.get(t.ticker) || { qty: 0, totalInvested: 0 };
+      
+      if (t.type === 'buy') {
+        const cost = t.quantity * t.price + t.otherCosts;
+        currentCusto += cost;
+        holdMap.set(t.ticker, { qty: cur.qty + t.quantity, totalInvested: cur.totalInvested + cost });
+      } else {
+        // We'll approximate cost reduction (avg price reduction)
+        const avg = cur.qty > 0 ? cur.totalInvested / cur.qty : 0;
+        const costReduction = avg * t.quantity;
+        currentCusto -= costReduction;
+        holdMap.set(t.ticker, { qty: Math.max(0, cur.qty - t.quantity), totalInvested: Math.max(0, cur.totalInvested - costReduction) });
+      }
+      
+      // Calculate current value based on the most recent prices (which is an approximation since we don't have historical prices, but gives an idea of accumulated wealth)
+      let currentValor = 0;
+      holdMap.forEach((val, ticker) => {
+        const currentPrice = prices[ticker]?.price || 0;
+        currentValor += val.qty * (currentPrice > 0 ? currentPrice : (val.totalInvested / val.qty || 0)); // fallback to avg cost if no price
+      });
+      
+      timeline.push({
+        date: new Date(t.date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+        custoAcumulado: currentCusto,
+        valorAtivos: currentValor
+      });
+    }
+    
+    // Deduplicate by date keeping the last entry per month/year
+    const deduped: typeof timeline = [];
+    timeline.forEach(t => {
+      if (deduped.length > 0 && deduped[deduped.length - 1].date === t.date) {
+        deduped[deduped.length - 1] = t;
+      } else {
+        deduped.push(t);
+      }
+    });
+    
+    return deduped;
+  }, [transactions, prices]);
+
+  if (data.length === 0) return null;
+
+  return (
+    <div className="bg-bg-secondary border border-border-base rounded-xl px-4 py-4 flex flex-col h-full">
+      <h3 className="text-xs text-text-tertiary uppercase tracking-wider mb-3">Evolução Patrimonial</h3>
+      <div className="flex-1 min-h-[160px] -ml-4 mt-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorCusto" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} />
+            <YAxis hide domain={['auto', 'auto']} />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#111318', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '12px' }}
+              itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+              formatter={(value: any) => fmt(Number(value))}
+              labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+            />
+            <Area type="monotone" dataKey="custoAcumulado" name="Custo" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorCusto)" />
+            <Area type="monotone" dataKey="valorAtivos" name="Patrimônio" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorValor)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ── Category Section (Meus Ativos per category) ───────────────────────────────
+function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate, onDeleteTicker, onAddTransaction }: {
+  cat: ICategory; holdings: IHolding[]; prices: PriceCache;
+  totalPortfolioValue: number;
+  onUpdate: (id: string, u: Partial<ICategory>) => void;
+  onDeleteTicker: (ticker: string) => void;
+  onAddTransaction: (ticker?: string, categoryId?: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+
+  const rows = holdings.map(h => {
+    const pd = prices[h.ticker];
+    const currentPrice = pd?.price || 0;
+    const changePercent = pd?.changePercent || 0;
+    const name = pd?.name || h.ticker;
+    const saldo = h.qty * currentPrice;
+    const variacaoPct = h.avgPrice > 0 && currentPrice > 0 ? (currentPrice / h.avgPrice - 1) * 100 : null;
+    const pctCarteira = totalPortfolioValue > 0 && saldo > 0 ? saldo / totalPortfolioValue * 100 : null;
+    return { ...h, name, currentPrice, changePercent, saldo, variacaoPct, pctCarteira };
+  });
+
+  const totalValue = rows.reduce((s, r) => s + r.saldo, 0);
+  const saldoComVar = rows.filter(r => r.variacaoPct !== null).reduce((s, r) => s + r.saldo, 0);
+  const weightedVar = saldoComVar > 0 ? rows.filter(r => r.variacaoPct !== null).reduce((s, r) => s + r.variacaoPct! * r.saldo, 0) / saldoComVar : null;
+  const pctCart = totalPortfolioValue > 0 && totalValue > 0 ? totalValue / totalPortfolioValue * 100 : null;
+
+  return (
+    <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 border-b border-border-base/30 cursor-pointer select-none"
+        style={{ background: `${cat.color}12` }} onClick={() => setCollapsed(v => !v)}>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
+          <span className="text-sm font-bold text-text-primary">{cat.name}</span>
+          {collapsed ? <ChevronDown size={12} className="text-text-tertiary/50" /> : <ChevronUp size={12} className="text-text-tertiary/50" />}
+        </div>
+        <div className="flex items-center gap-5 text-right" onClick={e => e.stopPropagation()}>
+          <div>
+            <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Ativos</div>
+            <div className="text-xs font-bold font-mono text-text-primary">{rows.length}</div>
+          </div>
+          {totalValue > 0 && (
+            <div>
+              <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Valor Total</div>
+              <div className="text-xs font-bold font-mono text-text-primary">{fmt(totalValue)}</div>
+            </div>
+          )}
+          {weightedVar !== null && (
+            <div>
+              <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Variação</div>
+              <div className={`text-xs font-bold font-mono ${weightedVar >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {weightedVar >= 0 ? '+' : ''}{weightedVar.toFixed(2)}%
+              </div>
+            </div>
+          )}
+          <div>
+            <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">% Cart / Ideal</div>
+            <div className="text-xs font-bold font-mono text-text-primary flex items-center gap-1">
+              <span>{pctCart !== null ? pctCart.toFixed(1) + '%' : '—'}</span>
+              <span className="text-text-tertiary/40">/</span>
+              <span className="w-14">
+                <Editable value={fmtP(cat.idealPercent)} onSave={v => onUpdate(cat.id, { idealPercent: parseFmt(v) })} right />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {!collapsed && (
+        <>
+          {/* Em Carteira */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs min-w-[580px]">
+              <thead>
+                <tr className="border-b border-border-base/20">
+                  <th className="text-left px-4 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Ativo</th>
+                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Qtd</th>
+                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Preço Médio</th>
+                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Preço Atual</th>
+                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Variação</th>
+                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Saldo</th>
+                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">% Cart</th>
+                  <th className="w-14 px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr key={r.ticker} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
+                    <td className="px-4 py-2">
+                      <div className="font-mono font-bold text-text-primary">{r.ticker}</div>
+                      {r.name !== r.ticker && <div className="text-[9px] text-text-tertiary truncate max-w-[90px]">{r.name}</div>}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.qty > 0 ? r.qty : '-'}</td>
+                    <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.avgPrice > 0 ? fmt(r.avgPrice) : '-'}</td>
+                    <td className="px-3 py-2 text-right font-mono text-text-primary">{r.currentPrice > 0 ? fmt(r.currentPrice) : <span className="text-text-tertiary/40">-</span>}</td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {r.variacaoPct !== null
+                        ? <span className={`font-semibold ${r.variacaoPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{r.variacaoPct >= 0 ? '+' : ''}{r.variacaoPct.toFixed(2)}%</span>
+                        : <span className="text-text-tertiary/40">-</span>}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono text-text-primary">{r.saldo > 0 ? fmt(r.saldo) : <span className="text-text-tertiary/40">-</span>}</td>
+                    <td className="px-3 py-2 text-right font-mono text-text-tertiary">{r.pctCarteira !== null ? r.pctCarteira.toFixed(2) + '%' : <span className="text-text-tertiary/40">-</span>}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => onAddTransaction(r.ticker, cat.id)} title="Novo lançamento"
+                          className="text-text-tertiary/50 hover:text-indigo-400 cursor-pointer transition-colors"><Plus size={10} strokeWidth={2.5} /></button>
+                        <button onClick={() => { if (confirm(`Excluir todos os lançamentos de ${r.ticker}?`)) onDeleteTicker(r.ticker); }}
+                          className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={10} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 && (
+                  <tr><td colSpan={8} className="px-4 py-5 text-center text-xs text-text-tertiary/40">Nenhum ativo em carteira · Adicione um lançamento para começar</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-4 py-2.5 border-b border-border-base/20">
+            <button onClick={() => onAddTransaction(undefined, cat.id)}
+              className="text-xs text-text-tertiary/40 hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1">
+              <Plus size={11} strokeWidth={2.5} /> Adicionar Lançamento
+            </button>
+          </div>
+
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Watchlist Section (Na Mira for Planejamento tab) ─────────────────────────
+function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatchlist, onRefreshWatchlist }: {
+  categories: ICategory[]; watchlist: IWatchlistItem[];
+  onAddWatchlist: (catId: string, ticker: string) => Promise<void>;
+  onDeleteWatchlist: (id: string) => void;
+  onRefreshWatchlist: (id: string) => Promise<void>;
+}) {
+  const [addingCatId, setAddingCatId] = useState<string | null>(null);
+  const [watchInput, setWatchInput] = useState('');
+  const [watchLoading, setWatchLoading] = useState(false);
+  const [refreshingWatch, setRefreshingWatch] = useState<string | null>(null);
+
+  const submitWatch = async (catId: string) => {
+    if (!watchInput.trim()) { setAddingCatId(null); return; }
+    setWatchLoading(true);
+    await onAddWatchlist(catId, watchInput.trim().toUpperCase());
+    setWatchInput(''); setAddingCatId(null); setWatchLoading(false);
+  };
+  const handleRefreshWatch = async (id: string) => {
+    setRefreshingWatch(id);
+    await onRefreshWatchlist(id);
+    setRefreshingWatch(null);
+  };
+
+  if (watchlist.length === 0 && addingCatId === null) {
+    return (
+      <div className="bg-bg-secondary border border-border-base rounded-xl p-4 shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs text-text-tertiary uppercase tracking-wider">Ativos na Mira</h2>
+        </div>
+        <div className="flex gap-2 flex-wrap mt-2">
+          {categories.map(cat => (
+             <button key={cat.id} onClick={() => setAddingCatId(cat.id)}
+               className="text-xs text-text-tertiary hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1 border border-border-base/50 rounded px-2 py-1">
+               <Plus size={11} /> Adicionar em {cat.name}
+             </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden shrink-0">
+      <div className="px-4 py-3 border-b border-border-base/30">
+        <h2 className="text-xs font-semibold text-text-primary uppercase tracking-wider flex items-center gap-2">
+          <Eye size={12} className="text-text-tertiary" /> Ativos na Mira
+        </h2>
+      </div>
+      
+      {categories.map(cat => {
+        const catWatchlist = watchlist.filter(w => w.categoryId === cat.id);
+        return (
+          <div key={cat.id} className="border-b border-border-base/10 last:border-0">
+            <div className="px-4 py-2 bg-elements/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
+              <span className="text-xs font-semibold text-text-secondary">{cat.name}</span>
+            </div>
+            
+            {catWatchlist.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[380px]">
+                  <thead>
+                    <tr className="border-b border-border-base/10">
+                      <th className="text-left px-4 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Ticker</th>
+                      <th className="text-left px-3 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Nome</th>
+                      <th className="text-right px-3 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Preço Atual</th>
+                      <th className="text-right px-3 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Variação Dia</th>
+                      <th className="w-16 px-3 py-1.5"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {catWatchlist.map(w => (
+                      <tr key={w.id} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
+                        <td className="px-4 py-1.5 font-mono font-bold text-text-primary">{w.ticker}</td>
+                        <td className="px-3 py-1.5 text-text-tertiary truncate max-w-[140px]">{w.name !== w.ticker ? w.name : ''}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-text-secondary">{w.price > 0 ? fmt(w.price) : '-'}</td>
+                        <td className="px-3 py-1.5 text-right font-mono">
+                          {w.price > 0
+                            ? <span className={`font-semibold ${w.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{w.changePercent >= 0 ? '+' : ''}{w.changePercent.toFixed(2)}%</span>
+                            : <span className="text-text-tertiary/40">-</span>}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleRefreshWatch(w.id)}
+                              className={`text-text-tertiary/50 hover:text-text-tertiary transition-colors cursor-pointer ${refreshingWatch === w.id ? 'animate-spin' : ''}`}>
+                              <RefreshCw size={9} />
+                            </button>
+                            <button onClick={() => onDeleteWatchlist(w.id)} className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={9} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            
+            <div className="px-4 py-2.5">
+              {addingCatId === cat.id ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input type="text" placeholder="Ex: PETR4" value={watchInput} onChange={e => setWatchInput(e.target.value.toUpperCase())}
+                      onKeyDown={e => { if (e.key === 'Enter') submitWatch(cat.id); else if (e.key === 'Escape') setAddingCatId(null); }}
+                      autoFocus className="bg-bg-primary border border-border-base rounded px-2 py-1 text-xs w-28 uppercase focus:outline-none focus:border-indigo-500" />
+                    <button onClick={() => submitWatch(cat.id)} disabled={watchLoading || !watchInput.trim()}
+                      className="bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-1 rounded text-[10px] font-semibold cursor-pointer disabled:opacity-50">
+                      {watchLoading ? 'Buscando...' : 'Salvar'}
+                    </button>
+                    <button onClick={() => setAddingCatId(null)} className="text-text-tertiary hover:text-text-primary px-1 cursor-pointer"><X size={12} /></button>
+                  </div>
+                  <span className="text-[9px] text-text-tertiary/50">O ticker deve existir na B3 (ex: BBDC4) ou Cripto (ex: BTC-USD).</span>
+                </div>
+              ) : (
+                <button onClick={() => setAddingCatId(cat.id)}
+                  className="text-xs text-text-tertiary/40 hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1">
+                  <Plus size={11} strokeWidth={2.5} /> Adicionar Interesse
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Main View ──────────────────────────────────────────────────────────────────
+export function InvestmentView() {
+  const [categories, setCategories] = useState<ICategory[]>([]);
+  const [transactions, setTransactions] = useState<ITransaction[]>([]);
+  const [goals, setGoals] = useState<IGoal[]>(loadGoals);
+  const [watchlist, setWatchlist] = useState<IWatchlistItem[]>(loadWatchlist);
+  const [priceCache, setPriceCache] = useState<PriceCache>(loadPriceCache);
+  const [config, setConfig] = useState<PConfig>({
+    investPatrimonio: Number(localStorage.getItem(INVEST_PAT_KEY)) || 0,
+    patrimonio: 0, aportar: 0,
+    caixaPercent: 25, investPercent: 50, despFixasPercent: 12.5, despVariaveisPercent: 12.5,
+  });
+  const [loading, setLoading] = useState(true);
+  const [loadingPrices, setLoadingPrices] = useState(false);
+  const [addModal, setAddModal] = useState<{ ticker?: string; categoryId?: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'resumo' | 'planejamento'>('resumo');
+  const [userId, setUserId] = useState<string | null>(null);
+  const seededRef = useRef(false);
+  const priceCacheRef = useRef(priceCache);
+  priceCacheRef.current = priceCache;
+
+  // Derived state
+  const holdings = useMemo(() => calcHoldings(transactions), [transactions]);
+  const totalCost = useMemo(() => holdings.reduce((s, h) => s + h.totalInvested, 0), [holdings]);
+  const totalValue = useMemo(
+    () => holdings.reduce((s, h) => s + h.qty * (priceCache[h.ticker]?.price || 0), 0),
+    [holdings, priceCache]
+  );
+  const enrichedCategories = useMemo(() => categories.map(c => {
+    const catValue = holdings.filter(h => h.categoryId === c.id).reduce((s, h) => s + h.qty * (priceCache[h.ticker]?.price || 0), 0);
+    const currentPercent = totalValue > 0 ? catValue / totalValue * 100 : 0;
+    return { ...c, currentPercent };
+  }), [categories, holdings, priceCache, totalValue]);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      setUserId(user.id);
+
+      const [{ data: cats }, { data: txData }, { data: cfgData }] = await Promise.all([
+        supabase.from('investment_categories').select('*').eq('user_id', user.id).order('sort_order'),
+        supabase.from('investment_transactions').select('*').eq('user_id', user.id).order('date'),
+        supabase.from('portfolio_config').select('*').eq('user_id', user.id).maybeSingle(),
+      ]);
+
+      if (cats && cats.length > 0) {
+        setCategories(cats.map(mapCat));
+      } else if (!seededRef.current) {
+        seededRef.current = true;
+        const defaults = DEFAULT_CATEGORIES.map((d, i) => ({
+          id: crypto.randomUUID(), user_id: user.id,
+          name: d.name, ideal_percent: d.idealPercent, current_value: 0,
+          color: d.color, sort_order: i,
+        }));
+        await supabase.from('investment_categories').insert(defaults);
+        setCategories(defaults.map((d, i) => ({
+          id: d.id, name: d.name, idealPercent: DEFAULT_CATEGORIES[i].idealPercent,
+          currentPercent: 0, color: d.color, sortOrder: i,
+        })));
+      }
+
+      if (txData && txData.length > 0) setTransactions(txData.map(mapTransaction));
+
+      if (cfgData) {
+        setConfig(prev => ({
+          ...prev,
+          patrimonio: Number(cfgData.patrimonio) || 0,
+          aportar: Number(cfgData.aportar) || 0,
+          caixaPercent: Number(cfgData.caixa_percent) || 25,
+          investPercent: Number(cfgData.invest_percent) || 50,
+          despFixasPercent: Number(cfgData.desp_fixas_percent) || 12.5,
+          despVariaveisPercent: Number(cfgData.desp_variaveis_percent) || 12.5,
+        }));
+      }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  // Fetch prices whenever the set of tickers changes
+  useEffect(() => {
+    const tickers = holdings.map(h => h.ticker);
+    if (tickers.length === 0) return;
+    setLoadingPrices(true);
+    fetchPrices(tickers, priceCacheRef.current).then(cache => {
+      setPriceCache(cache);
+      persistPriceCache(cache);
+      setLoadingPrices(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdings]);
+
+  const saveConfig = useCallback(async (updates: Partial<PConfig>) => {
+    setConfig(prev => {
+      const next = { ...prev, ...updates };
+      if (updates.investPatrimonio !== undefined) {
+        localStorage.setItem(INVEST_PAT_KEY, String(updates.investPatrimonio));
+      } else if (userId) {
+        supabase.from('portfolio_config').upsert({
+          user_id: userId,
+          patrimonio: next.patrimonio, aportar: next.aportar,
+          caixa_percent: next.caixaPercent, invest_percent: next.investPercent,
+          desp_fixas_percent: next.despFixasPercent, desp_variaveis_percent: next.despVariaveisPercent,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' }).then(() => {});
+      }
+      return next;
+    });
+  }, [userId]);
+
+  const updateCat = useCallback(async (id: string, updates: Partial<ICategory>) => {
+    setCategories(p => p.map(c => c.id === id ? { ...c, ...updates } : c));
+    const db: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (updates.idealPercent !== undefined) db.ideal_percent = updates.idealPercent;
+    if (updates.currentPercent !== undefined) db.current_value = updates.currentPercent;
+    await supabase.from('investment_categories').update(db).eq('id', id);
+  }, []);
+
+  const addTransaction = useCallback(async (data: TransactionData) => {
+    if (!userId) return;
+    const id = crypto.randomUUID();
+    setTransactions(prev => [...prev, { ...data, id }]);
+    await supabase.from('investment_transactions').insert({
+      id, user_id: userId, ticker: data.ticker,
+      category_id: data.categoryId || null,
+      type: data.type, date: data.date,
+      quantity: data.quantity, price: data.price, other_costs: data.otherCosts,
+      asset_type: data.assetType, meta: data.meta,
+    });
+  }, [userId]);
+
+  const deleteTransactionsByTicker = useCallback(async (ticker: string) => {
+    setTransactions(prev => prev.filter(t => t.ticker !== ticker));
+    if (userId) await supabase.from('investment_transactions').delete().eq('user_id', userId).eq('ticker', ticker);
+  }, [userId]);
+
+  const addGoal = useCallback((g: Omit<IGoal, 'id'>) => {
+    const next = [...goals, { ...g, id: crypto.randomUUID() }];
+    setGoals(next); persistGoals(next);
+  }, [goals]);
+
+  const deleteGoal = useCallback((id: string) => {
+    const next = goals.filter(g => g.id !== id);
+    setGoals(next); persistGoals(next);
+  }, [goals]);
+
+  const updateGoal = useCallback((id: string, updates: Partial<IGoal>) => {
+    const next = goals.map(g => g.id === id ? { ...g, ...updates } : g);
+    setGoals(next); persistGoals(next);
+  }, [goals]);
+
+  const addWatchlistItem = useCallback(async (categoryId: string, ticker: string) => {
+    const quote = await fetchQuote(ticker);
+    const item: IWatchlistItem = { id: crypto.randomUUID(), categoryId, ticker, name: quote?.name || ticker, price: quote?.price || 0, changePercent: quote?.changePercent || 0 };
+    setWatchlist(prev => { const next = [...prev, item]; persistWatchlist(next); return next; });
+  }, []);
+
+  const deleteWatchlistItem = useCallback((id: string) => {
+    setWatchlist(prev => { const next = prev.filter(w => w.id !== id); persistWatchlist(next); return next; });
+  }, []);
+
+  const refreshWatchlistItem = useCallback(async (id: string) => {
+    const item = watchlist.find(w => w.id === id);
+    if (!item) return;
+    const quote = await fetchQuote(item.ticker);
+    if (!quote) return;
+    setWatchlist(prev => { const next = prev.map(w => w.id === id ? { ...w, name: quote.name, price: quote.price, changePercent: quote.changePercent } : w); persistWatchlist(next); return next; });
+  }, [watchlist]);
+
+  const investPatrimonio = totalValue > 0 ? totalValue : config.investPatrimonio;
+
+  const investRows: DistRow[] = enrichedCategories.map(c => {
+    const goal = goals.find(g => g.categoryId === c.id);
+    const catValue = holdings.filter(h => h.categoryId === c.id).reduce((s, h) => s + h.qty * (priceCache[h.ticker]?.price || 0), 0);
+    return {
+      label: c.name,
+      currentPct: c.currentPercent,
+      idealPct: c.idealPercent,
+      onIdealCh: (v: number) => updateCat(c.id, { idealPercent: v }),
+      goal: goal ? { label: goal.label, targetAmount: goal.targetAmount, currentAmount: catValue, priority: goal.priority } : undefined,
+    };
+  });
+
+  const totalMoneyPat = config.patrimonio + investPatrimonio;
+  const moneyRows: DistRow[] = [
+    { label: 'Valor em Caixa (no banco)', currentPct: totalMoneyPat > 0 ? config.patrimonio / totalMoneyPat * 100 : 0, idealPct: config.caixaPercent, onIdealCh: v => saveConfig({ caixaPercent: v }) },
+    { label: 'Investimentos', currentPct: totalMoneyPat > 0 ? investPatrimonio / totalMoneyPat * 100 : 0, idealPct: config.investPercent, onIdealCh: v => saveConfig({ investPercent: v }) },
+    { label: 'Despesas Fixas', currentPct: 0, idealPct: config.despFixasPercent, onIdealCh: v => saveConfig({ despFixasPercent: v }) },
+    { label: 'Despesas Variáveis', currentPct: 0, idealPct: config.despVariaveisPercent, onIdealCh: v => saveConfig({ despVariaveisPercent: v }) },
+  ];
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-base shrink-0">
+        <div className="flex items-center gap-6">
+          <span className="text-sm font-semibold text-text-primary hidden sm:block">Controle de Investimentos</span>
+          <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base">
+            <button
+              onClick={() => setActiveTab('resumo')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'resumo' ? 'bg-indigo-500/20 text-indigo-400 shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+            >
+              Resumo (Investidor10)
+            </button>
+            <button
+              onClick={() => setActiveTab('planejamento')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'planejamento' ? 'bg-indigo-500/20 text-indigo-400 shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+            >
+              Planejamento (Planilha)
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {loadingPrices && <span className="text-text-tertiary/50 text-xs animate-pulse">Atualizando cotações...</span>}
+          {loading && <span className="text-text-tertiary text-xs animate-pulse">Carregando...</span>}
+          <button onClick={() => setAddModal({})}
+            className="flex items-center gap-1.5 text-xs bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded-lg cursor-pointer transition-colors font-semibold">
+            <Plus size={12} strokeWidth={2.5} /> Lançamento
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+        {activeTab === 'resumo' ? (
+          <>
+            <PortfolioSummary holdings={holdings} prices={priceCache} totalCost={totalCost} />
+
+            {holdings.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <EvolutionChart transactions={transactions} prices={priceCache} />
+                <PortfolioChart categories={categories} holdings={holdings} prices={priceCache} />
+              </div>
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs text-text-tertiary uppercase tracking-wider">Meus Ativos</h2>
+                <button onClick={() => setAddModal({})}
+                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer transition-colors font-semibold">
+                  <Plus size={12} strokeWidth={2.5} /> Adicionar Lançamento
+                </button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {[...categories].sort((a, b) => a.sortOrder - b.sortOrder).map(cat => (
+                  <CategorySection key={cat.id} cat={cat}
+                    holdings={holdings.filter(h => h.categoryId === cat.id)}
+                    prices={priceCache}
+                    totalPortfolioValue={totalValue}
+                    onUpdate={updateCat}
+                    onDeleteTicker={deleteTransactionsByTicker}
+                    onAddTransaction={(ticker, categoryId) => setAddModal({ ticker, categoryId: categoryId ?? cat.id })}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
+              <DistTable
+                title="Distribuição de Investimentos" accentColor="#6366f1"
+                patrimonio={investPatrimonio} aportar={config.aportar}
+                onPatrimonioCh={v => saveConfig({ investPatrimonio: v })}
+                onAportarCh={v => saveConfig({ aportar: v })}
+                rows={investRows} rebalance
+              />
+              <DistTable
+                title="Distribuição de Dinheiro" accentColor="#10b981"
+                patrimonio={config.patrimonio} aportar={config.aportar}
+                onPatrimonioCh={v => saveConfig({ patrimonio: v })}
+                onAportarCh={v => saveConfig({ aportar: v })}
+                rows={moneyRows}
+              />
+            </div>
+
+            <GoalsSection
+              goals={goals} categories={enrichedCategories}
+              investPatrimonio={investPatrimonio}
+              onAdd={addGoal} onDelete={deleteGoal} onUpdate={updateGoal}
+            />
+            
+            <WatchlistSection
+              categories={categories} watchlist={watchlist}
+              onAddWatchlist={addWatchlistItem}
+              onDeleteWatchlist={deleteWatchlistItem}
+              onRefreshWatchlist={refreshWatchlistItem}
+            />
+          </>
+        )}
+      </div>
+
+      {addModal !== null && (
+        <TransactionModal
+          categories={categories}
+          initialTicker={addModal.ticker}
+          initialCategoryId={addModal.categoryId ?? categories[0]?.id}
+          onSave={addTransaction}
+          onClose={() => setAddModal(null)}
+        />
+      )}
+    </div>
+  );
+}

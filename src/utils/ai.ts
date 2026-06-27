@@ -54,7 +54,7 @@ function extractJsonArray(text: string): any[] {
     } catch {}
   }
 
-  // 2. Truncated array (output token limit hit — response has [ but no closing ])
+  // 2. Truncated array (output token limit hit, response has [ but no closing ])
   const openIdx = text.indexOf('[');
   if (openIdx !== -1) {
     const lastObj = text.lastIndexOf('},');
@@ -63,7 +63,7 @@ function extractJsonArray(text: string): any[] {
         const partial = text.slice(openIdx, lastObj + 1) + ']';
         const parsed = JSON.parse(partial);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          console.warn(`[AI] Resposta truncada — recuperados ${parsed.length} itens parciais`);
+          console.warn(`[AI] Resposta truncada, recuperados ${parsed.length} itens parciais`);
           return parsed;
         }
       } catch {}
@@ -109,7 +109,7 @@ async function callGroq(prompt: string, temperature: number, signal?: AbortSigna
       temperature,
       max_tokens: 8192,
       messages: [
-        { role: 'system', content: 'You are a JSON API. Respond with raw JSON only — no explanations, no markdown, no preamble, no prose.' },
+        { role: 'system', content: 'You are a JSON API. Respond with raw JSON only, no explanations, no markdown, no preamble, no prose.' },
         { role: 'user', content: prompt },
       ],
     }),
