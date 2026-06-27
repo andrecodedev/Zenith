@@ -27,6 +27,60 @@ import { Bell } from 'lucide-react';
 
 type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments';
 
+function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isActive = currentView === 'dashboard' || currentView === 'calendar' || currentView === 'stats';
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+      >
+        <LayoutDashboard size={16} />
+        Rotina
+        <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden z-50">
+          <button
+            onClick={() => { setSelectedDate(today); setCurrentView('dashboard'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'dashboard' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <LayoutDashboard size={14} />
+            Meu Dia
+          </button>
+          <div className="h-px bg-border-base/40" />
+          <button
+            onClick={() => { setCurrentView('calendar'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'calendar' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <Calendar size={14} />
+            Calendário
+          </button>
+          <div className="h-px bg-border-base/40" />
+          <button
+            onClick={() => { setCurrentView('stats'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'stats' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <BarChart2 size={14} />
+            Estatísticas
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FinanceDropdown({ currentView, setCurrentView }: {
   currentView: AppView;
   setCurrentView: (v: 'finance' | 'investments') => void;
@@ -424,30 +478,7 @@ function App() {
                 <Mountain size={16} />
                 Sobre
               </button>
-              <button
-                onClick={() => {
-                  setSelectedDate(today);
-                  setCurrentView('dashboard');
-                }}
-                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'dashboard' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
-              >
-                <LayoutDashboard size={16} />
-                Meu Dia
-              </button>
-              <button
-                onClick={() => setCurrentView('calendar')}
-                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'calendar' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
-              >
-                <Calendar size={16} />
-                Calendário
-              </button>
-              <button
-                onClick={() => setCurrentView('stats')}
-                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'stats' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
-              >
-                <BarChart2 size={16} />
-                Estatísticas
-              </button>
+              <RoutineDropdown currentView={currentView} setCurrentView={setCurrentView} setSelectedDate={setSelectedDate} today={today} />
               <button
                 onClick={() => setCurrentView('notes')}
                 className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}

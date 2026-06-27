@@ -60,7 +60,7 @@ const fmt = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', curren
 const todayStr = new Date().toISOString().slice(0, 10);
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
-const inputCls = 'w-full bg-[#1A1D23] border border-border-base/40 hover:border-border-gray/60 rounded-lg px-3 py-2.5 text-sm text-text-primary outline-none placeholder:text-text-tertiary/40 focus:border-indigo-500/50 transition-colors';
+const inputCls = 'w-full bg-bg-primary border border-border-base/40 hover:border-border-gray/60 rounded-lg px-3 py-2.5 text-sm text-text-primary outline-none placeholder:text-text-tertiary/40 focus:border-neutral-500/50 transition-colors';
 
 function Field({ label, optional, children }: { label: string; optional?: boolean; children: React.ReactNode }) {
   return (
@@ -78,13 +78,36 @@ function StyledSelect({ value, onChange, options }: {
   value: string; onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selectedLabel = options.find(o => o.value === value)?.label || 'Selecionar';
+
   return (
-    <div className="relative">
-      <select value={value} onChange={e => onChange(e.target.value)}
-        className={`${inputCls} appearance-none cursor-pointer pr-8`}>
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className={`flex items-center justify-between ${inputCls} text-left cursor-pointer`}>
+        <span className="text-text-primary">{selectedLabel}</span>
+        <ChevronDown size={14} className="text-text-tertiary" />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-bg-primary border border-border-base rounded-lg shadow-xl overflow-hidden flex flex-col max-h-60">
+          <div className="overflow-y-auto flex-1 p-1">
+            {options.map(o => (
+              <button key={o.value} type="button" onClick={() => { onChange(o.value); setOpen(false); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-elements hover:text-text-primary rounded-md transition-colors cursor-pointer ${value === o.value ? 'bg-elements/50 text-text-primary' : 'text-text-secondary'}`}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -120,12 +143,12 @@ function AssetSearchDropdown({ value, onChange }: { value: string; onChange: (v:
         <ChevronDown size={14} className="text-text-tertiary" />
       </button>
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#1A1D23] border border-border-base rounded-lg shadow-xl overflow-hidden flex flex-col max-h-60">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-bg-primary border border-border-base rounded-lg shadow-xl overflow-hidden flex flex-col max-h-60">
           <div className="p-2 border-b border-border-base/40">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
               <input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ativo..."
-                className="w-full bg-[#111318] rounded-md pl-8 pr-3 py-1.5 text-xs text-text-primary outline-none focus:border-indigo-500/50 border border-transparent transition-colors" />
+                className="w-full bg-bg-secondary rounded-md pl-8 pr-3 py-1.5 text-xs text-text-primary outline-none focus:border-neutral-500/50 border border-transparent transition-colors" />
             </div>
           </div>
           <div className="overflow-y-auto flex-1 p-1">
@@ -137,7 +160,7 @@ function AssetSearchDropdown({ value, onChange }: { value: string; onChange: (v:
             )) : (
               <div className="px-3 py-2 text-xs text-text-tertiary text-center">
                 Se não achar, pode digitar o código exato
-                <button onClick={() => { onChange(search.toUpperCase()); setOpen(false); }} className="block w-full mt-2 py-1.5 bg-indigo-500/20 text-indigo-400 rounded hover:bg-indigo-500/30">Usar "{search.toUpperCase()}"</button>
+                <button onClick={() => { onChange(search.toUpperCase()); setOpen(false); }} className="block w-full mt-2 py-1.5 bg-white/10 text-text-primary rounded hover:bg-white/30">Usar "{search.toUpperCase()}"</button>
               </div>
             )}
           </div>
@@ -152,7 +175,7 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
     <div className="flex items-center justify-between py-1">
       <span className="text-sm text-text-secondary">{label}</span>
       <button type="button" onClick={() => onChange(!value)}
-        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${value ? 'bg-indigo-500' : 'bg-elements'}`}>
+        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${value ? 'bg-white' : 'bg-elements'}`}>
         <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${value ? 'left-6' : 'left-1'}`} />
       </button>
     </div>
@@ -264,12 +287,12 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-[#111318] border border-border-base/30 rounded-xl w-full max-w-[480px] shadow-2xl flex flex-col max-h-[92vh]">
+      <div className="bg-bg-secondary border border-border-base/30 rounded-xl w-full max-w-[480px] shadow-2xl flex flex-col max-h-[92vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 shrink-0">
-          <span className="text-lg font-bold text-white tracking-tight">Adicionar Lançamento</span>
-          <button onClick={onClose} className="text-text-tertiary hover:text-white cursor-pointer transition-colors p-1 -mr-1">
+          <span className="text-lg font-bold text-text-primary tracking-tight">Adicionar Lançamento</span>
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary cursor-pointer transition-colors p-1 -mr-1">
             <X size={20} />
           </button>
         </div>
@@ -277,12 +300,12 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
         <div className="flex-1 overflow-y-auto hide-scrollbar">
           {/* Tabs Compra / Venda */}
           <div className="px-6 flex">
-            <div className="flex w-full bg-[#1A1D23] rounded-lg p-1">
+            <div className="flex w-full bg-bg-primary rounded-lg p-1">
               {(['buy', 'sell'] as const).map(t => (
                 <button key={t} type="button" onClick={() => setTxType(t)}
                   className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all cursor-pointer ${
                     txType === t
-                      ? 'bg-[#252A33] text-white shadow-sm'
+                      ? 'bg-[#252A33] text-text-primary shadow-sm'
                       : 'text-text-tertiary hover:text-text-secondary'
                   }`}>
                   {t === 'buy' ? 'Compra' : 'Venda'}
@@ -378,9 +401,9 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
                     placeholder="0,00" className={inputCls} />
                 </Field>
                 {cotasNum > 0 && (
-                  <div className="bg-[#1A1D23] rounded-lg px-4 py-3 flex items-center justify-between border border-border-base/20">
+                  <div className="bg-bg-primary rounded-lg px-4 py-3 flex items-center justify-between border border-border-base/20">
                     <span className="text-xs text-text-tertiary">Quantidade de cotas</span>
-                    <span className="text-sm font-semibold text-white">{cotasNum.toFixed(8)}</span>
+                    <span className="text-sm font-semibold text-text-primary">{cotasNum.toFixed(8)}</span>
                   </div>
                 )}
               </>
@@ -421,9 +444,9 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
             )}
 
             {/* Valor total */}
-            <div className={`mt-2 rounded-lg px-4 py-3.5 flex items-center justify-between border shadow-sm ${txType === 'buy' ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+            <div className={`mt-2 rounded-lg px-4 py-3.5 flex items-center justify-between border shadow-sm ${txType === 'buy' ? 'bg-elements/10 border-elements/10' : 'bg-red-500/10 border-red-500/20'}`}>
               <span className="text-sm font-medium text-text-secondary">Valor total</span>
-              <span className={`text-xl font-bold tracking-tight ${txType === 'buy' ? 'text-indigo-400' : 'text-red-400'}`}>
+              <span className={`text-xl font-bold tracking-tight ${txType === 'buy' ? 'text-text-primary' : 'text-red-400'}`}>
                 {fmt(total)}
               </span>
             </div>
@@ -432,12 +455,12 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-5 border-t border-border-base/40 shrink-0 bg-[#1A1D23]/50 rounded-b-xl">
-          <button onClick={onClose} className="px-2 py-2 text-sm font-medium text-text-tertiary hover:text-white cursor-pointer transition-colors">
+        <div className="flex items-center justify-between px-6 py-5 border-t border-border-base/40 shrink-0 bg-bg-primary/50 rounded-b-xl">
+          <button onClick={onClose} className="px-2 py-2 text-sm font-medium text-text-tertiary hover:text-text-primary cursor-pointer transition-colors">
             Cancelar
           </button>
           <button onClick={submit} disabled={!isValid || saving}
-            className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed ${txType === 'buy' ? 'bg-indigo-500 hover:bg-indigo-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+            className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed ${txType === 'buy' ? 'bg-text-primary hover:opacity-80 text-bg-primary' : 'bg-red-500 hover:bg-red-600 text-[#ffffff]'}`}>
             {saving ? 'Salvando...' : 'Adicionar Lançamento'}
           </button>
         </div>

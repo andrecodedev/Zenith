@@ -59,35 +59,35 @@ const parseDateStr = (s: string): number => {
 const CFG: Record<EntryType, { label: string; showDate: boolean; showPaid: boolean; hdr: string; tot: string; add: string; row: string; rowHover: string }> = {
   income: {
     label: 'Renda', showDate: false, showPaid: false,
-    hdr: 'bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-300',
-    tot: 'bg-emerald-500/5 text-emerald-400',
+    hdr: 'bg-bg-secondary border-b border-neutral-600/60 text-emerald-400',
+    tot: 'bg-bg-secondary text-emerald-400',
     add: 'text-emerald-400 hover:text-emerald-300',
-    row: 'border-emerald-500/15',
-    rowHover: 'hover:bg-emerald-500/5',
+    row: 'border-border-base',
+    rowHover: 'hover:bg-elements/20',
   },
   fixed: {
     label: 'Despesas Fixas', showDate: true, showPaid: true,
-    hdr: 'bg-rose-500/10 border-b border-rose-500/20 text-rose-300',
-    tot: 'bg-rose-500/5 text-rose-400',
+    hdr: 'bg-bg-secondary border-b border-neutral-600/60 text-rose-400',
+    tot: 'bg-bg-secondary text-rose-400',
     add: 'text-rose-400 hover:text-rose-300',
-    row: 'border-rose-500/15',
-    rowHover: 'hover:bg-rose-500/5',
+    row: 'border-border-base',
+    rowHover: 'hover:bg-elements/20',
   },
   variable: {
     label: 'Despesas Variáveis', showDate: true, showPaid: true,
-    hdr: 'bg-amber-500/10 border-b border-amber-500/20 text-amber-300',
-    tot: 'bg-amber-500/5 text-amber-400',
+    hdr: 'bg-bg-secondary border-b border-neutral-600/60 text-amber-400',
+    tot: 'bg-bg-secondary text-amber-400',
     add: 'text-amber-400 hover:text-amber-300',
-    row: 'border-amber-500/15',
-    rowHover: 'hover:bg-amber-500/5',
+    row: 'border-border-base',
+    rowHover: 'hover:bg-elements/20',
   },
   investment: {
     label: 'Investimentos', showDate: true, showPaid: false,
-    hdr: 'bg-violet-500/10 border-b border-violet-500/20 text-violet-300',
-    tot: 'bg-violet-500/5 text-violet-400',
+    hdr: 'bg-bg-secondary border-b border-neutral-600/60 text-violet-400',
+    tot: 'bg-bg-secondary text-violet-400',
     add: 'text-violet-400 hover:text-violet-300',
-    row: 'border-violet-500/15',
-    rowHover: 'hover:bg-violet-500/5',
+    row: 'border-border-base',
+    rowHover: 'hover:bg-elements/20',
   },
 };
 
@@ -327,35 +327,39 @@ function EntryRow({ entry, cfg, onUpdate, onDelete }: {
 }) {
   const paidCls = entry.paid ? 'line-through text-green-400' : '';
   return (
-    <div className={`group flex items-center gap-2 px-3 py-1.5 ${cfg.rowHover} border-b ${cfg.row} last:border-b-0 transition-colors text-text-primary`}>
+    <tr className={`group ${cfg.rowHover} transition-colors text-text-primary hover:bg-white/5`}>
       {cfg.showPaid && (
-        <button type="button" onClick={() => onUpdate(entry.id, { paid: !entry.paid })}
-          className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-all cursor-pointer ${
-            entry.paid ? 'bg-green-500/20 border-green-400/60 text-green-400' : 'border-border-gray hover:border-text-tertiary'
-          }`}>
-          {entry.paid && <Check size={9} strokeWidth={3} />}
-        </button>
+        <td className="px-3 py-2.5 w-10 text-center border border-border-base">
+          <button type="button" onClick={() => onUpdate(entry.id, { paid: !entry.paid })}
+            className={`mx-auto shrink-0 w-4 h-4 rounded flex items-center justify-center transition-all cursor-pointer ${
+              entry.paid ? 'bg-green-500/20 text-green-400' : 'border border-border-gray hover:border-text-tertiary'
+            }`}>
+            {entry.paid && <Check size={9} strokeWidth={3} />}
+          </button>
+        </td>
       )}
-      <div className={`flex-1 min-w-0 ${paidCls}`}>
+      <td className={`px-3 py-2.5 min-w-[120px] border border-border-base ${paidCls}`}>
         <Editable value={entry.name} onSave={v => onUpdate(entry.id, { name: v })} placeholder="Descrição" />
-      </div>
+      </td>
       {cfg.showDate && (
-        <div className={`w-14 shrink-0 hidden sm:block ${entry.paid ? 'line-through text-green-400/60' : 'text-text-tertiary'}`}>
+        <td className={`px-3 py-2.5 w-24 hidden sm:table-cell border border-border-base ${entry.paid ? 'line-through text-green-400/60' : 'text-text-tertiary'}`}>
           <DateEditable value={entry.dateStr} onSave={v => onUpdate(entry.id, { dateStr: v })} />
-        </div>
+        </td>
       )}
-      <div className={`w-20 sm:w-28 shrink-0 ${paidCls}`}>
+      <td className={`px-3 py-2.5 w-24 sm:w-32 border border-border-base ${paidCls}`}>
         <Editable
           value={entry.amount > 0 ? fmt(entry.amount) : ''}
           onSave={v => onUpdate(entry.id, { amount: parseAmt(v) })}
           placeholder="R$ 0,00" right
         />
-      </div>
-      <button type="button" onClick={() => onDelete(entry.id)}
-        className="shrink-0 w-5 h-5 flex items-center justify-center text-transparent group-hover:text-text-tertiary/50 hover:text-red-400! transition-all cursor-pointer">
-        <Trash2 size={11} />
-      </button>
-    </div>
+      </td>
+      <td className="px-3 py-2.5 w-10 border border-border-base">
+        <button type="button" onClick={() => onDelete(entry.id)}
+          className="mx-auto shrink-0 w-5 h-5 flex items-center justify-center text-transparent group-hover:text-text-tertiary/50 hover:text-red-400 transition-all cursor-pointer">
+          <Trash2 size={11} />
+        </button>
+      </td>
+    </tr>
   );
 }
 
@@ -371,25 +375,31 @@ function Section({ type, entries, onAdd, onUpdate, onDelete }: {
     ? [...entries].sort((a, b) => parseDateStr(a.dateStr) - parseDateStr(b.dateStr))
     : entries;
   return (
-    <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
+    <div className="bg-bg-secondary border border-border-base rounded-xl flex flex-col overflow-hidden h-full">
       <div className={`flex items-center justify-between px-4 py-2.5 ${cfg.hdr}`}>
         <span className="text-sm font-bold">{cfg.label}</span>
         <span className="text-xs font-mono font-semibold">{fmt(total)}</span>
       </div>
-      <div className="flex items-center gap-2 px-3 py-1 text-[10px] uppercase tracking-widest text-text-tertiary/50 border-b border-border-base/30">
-        {cfg.showPaid && <span className="w-4 shrink-0" />}
-        <span className="flex-1">Descrição</span>
-        {cfg.showDate && <span className="w-14 shrink-0 hidden sm:block">Data</span>}
-        <span className="w-20 sm:w-28 shrink-0 text-right">Valor</span>
-        <span className="w-5 shrink-0" />
+      <div className="overflow-x-auto min-h-[48px] max-h-[300px] sm:max-h-[500px] overflow-y-auto">
+        <table className="w-full text-left border-collapse border border-border-base">
+          <thead>
+            <tr className="bg-[#1f1f1f]">
+              {cfg.showPaid && <th className="px-3 py-1.5 w-10 border border-border-base"></th>}
+              <th className="px-3 py-2.5 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Descrição</th>
+              {cfg.showDate && <th className="px-3 py-2.5 w-24 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal hidden sm:table-cell border border-border-base">Data</th>}
+              <th className="px-3 py-2.5 w-24 sm:w-32 text-right text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Valor</th>
+              <th className="px-3 py-2.5 w-10 border border-border-base"></th>
+            </tr>
+          </thead>
+          <tbody className="bg-[#1a1a1a]">
+            {sorted.length === 0
+              ? <tr><td colSpan={5} className="text-center text-text-tertiary/40 text-xs py-3 border border-border-base">-</td></tr>
+              : sorted.map(e => <EntryRow key={e.id} entry={e} cfg={cfg} onUpdate={onUpdate} onDelete={onDelete} />)
+            }
+          </tbody>
+        </table>
       </div>
-      <div className="min-h-[32px] max-h-52 sm:max-h-none overflow-y-auto">
-        {sorted.length === 0
-          ? <p className="text-center text-text-tertiary/40 text-xs py-3">,</p>
-          : sorted.map(e => <EntryRow key={e.id} entry={e} cfg={cfg} onUpdate={onUpdate} onDelete={onDelete} />)
-        }
-      </div>
-      <div className={`flex items-center justify-between px-4 py-2 border-t border-border-base/30 ${cfg.tot}`}>
+      <div className={`flex items-center justify-between px-4 py-2 mt-auto border-t border-border-base ${cfg.tot}`}>
         <button type="button" onClick={() => onAdd(type)}
           className={`flex items-center gap-1 text-xs cursor-pointer transition-colors ${cfg.add}`}>
           <Plus size={11} strokeWidth={2.5} /> Adicionar
@@ -418,8 +428,8 @@ function Summary({ entries }: { entries: FinanceEntry[] }) {
   ];
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border-base/50 bg-sky-500/10 flex items-center justify-between">
-        <span className="text-sm font-bold text-sky-300">Resumo do Mês</span>
+      <div className="px-4 py-2.5 border-b border-neutral-600/60 flex items-center justify-between">
+        <span className="text-sm font-bold text-text-primary">Resumo do Mês</span>
         <span className={`text-sm font-mono font-bold ${sobra >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{fmt(sobra)}</span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-border-base/20">

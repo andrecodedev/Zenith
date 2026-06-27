@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, Trash2, Target, ChevronDown, ChevronUp, Pencil, Eye, RefreshCw, X } from 'lucide-react';
+import { Plus, Trash2, Target, ChevronDown, ChevronUp, Pencil, RefreshCw, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PieChart, Pie, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import type { TransactionData, AssetType } from './TransactionModal';
@@ -174,12 +174,12 @@ function Editable({ value, onSave, right = false, placeholder = '' }: {
 }
 
 // ── Distribution table ─────────────────────────────────────────────────────────
-function DistTable({ title, accentColor, patrimonio, aportar, onPatrimonioCh, onAportarCh, rows, rebalance = false }: {
-  title: string; accentColor: string;
-  patrimonio: number; aportar: number;
+function DistTable({ title, patrimonio, aportar, onPatrimonioCh, onAportarCh, rows, rebalance = false }: {
+  title: string;   patrimonio: number; aportar: number;
   onPatrimonioCh: (v: number) => void; onAportarCh: (v: number) => void;
   rows: DistRow[]; rebalance?: boolean;
 }) {
+  const [collapsed, setCollapsed] = useState(true);
   const sumIdeal = rows.reduce((s, r) => s + r.idealPct, 0);
   const sumCurrentPct = rows.reduce((s, r) => s + r.currentPct, 0);
   const activeGoals = rows.filter(r => r.goal && r.goal.currentAmount < r.goal.targetAmount);
@@ -227,71 +227,78 @@ function DistTable({ title, accentColor, patrimonio, aportar, onPatrimonioCh, on
 
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-border-base/30" style={{ background: `${accentColor}18` }}>
-        <span className="text-sm font-bold" style={{ color: accentColor }}>{title}</span>
+      <div onClick={() => setCollapsed(!collapsed)} className="px-4 py-3 border-b border-border-base bg-bg-secondary flex items-center justify-between cursor-pointer hover:bg-elements/10 transition-colors">
+        <span className="text-lg font-bold text-text-primary">{title}</span>
+        {collapsed ? <ChevronDown size={14} className="text-text-tertiary" /> : <ChevronUp size={14} className="text-text-tertiary" />}
       </div>
-      <div className="grid grid-cols-2 divide-x divide-border-base/30 border-b border-border-base/30">
-        <div className="px-4 py-2.5">
-          <p className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">Patrimônio atual</p>
-          <Editable value={patrimonio > 0 ? fmt(patrimonio) : ''} onSave={v => onPatrimonioCh(parseFmt(v))} right placeholder="Clique para editar" />
-        </div>
-        <div className="px-4 py-2.5">
-          <p className="text-[10px] text-text-tertiary uppercase tracking-wider mb-1">Quanto vou aportar</p>
-          <Editable value={aportar > 0 ? fmt(aportar) : ''} onSave={v => onAportarCh(parseFmt(v))} right placeholder="Clique para editar" />
-        </div>
-      </div>
+      {!collapsed && (
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[360px]">
+        <table className="w-full min-w-[360px] border-collapse">
           <thead>
-            <tr className="border-b border-border-base/30 text-[10px] text-text-tertiary font-normal uppercase tracking-wider">
-              <th className="px-4 py-1.5 text-left font-normal">Categoria</th>
-              <th className="px-3 py-1.5 text-right font-normal w-20">% Atual</th>
-              <th className="px-3 py-1.5 text-right font-normal w-24">% Ideal</th>
-              <th className="px-3 py-1.5 text-right font-normal">Quanto Coloco</th>
+            <tr className="bg-elements/20">
+              <th colSpan={2} className="px-4 py-2.5 text-left font-normal border border-border-base">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Patrimônio atual</span>
+                  <Editable value={patrimonio > 0 ? fmt(patrimonio) : ''} onSave={v => onPatrimonioCh(parseFmt(v))} right placeholder="Editar" />
+                </div>
+              </th>
+              <th colSpan={2} className="px-4 py-2.5 text-left font-normal border border-border-base">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider">Quanto vou aportar</span>
+                  <Editable value={aportar > 0 ? fmt(aportar) : ''} onSave={v => onAportarCh(parseFmt(v))} right placeholder="Editar" />
+                </div>
+              </th>
+            </tr>
+            <tr className="text-[10px] font-semibold text-text-tertiary uppercase tracking-wider bg-bg-secondary">
+              <th className="px-4 py-2 text-left font-normal border border-border-base">Categoria</th>
+              <th className="px-3 py-2 text-right font-normal w-20 border border-border-base">% Atual</th>
+              <th className="px-3 py-2 text-right font-normal w-24 border border-border-base">% Ideal</th>
+              <th className="px-3 py-2 text-right font-normal border border-border-base">Quanto Coloco</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border-base/20">
+          <tbody className="bg-bg-primary">
             {rowsFinal.map(row => {
               const hasActiveGoal = row.goal && row.goal.currentAmount < row.goal.targetAmount;
               return (
-                <tr key={row.label} className="hover:bg-white/2">
-                  <td className="px-4 py-2 text-sm text-text-primary">
+                <tr key={row.label} className="hover:bg-elements/10 transition-colors">
+                  <td className="px-4 py-2.5 text-sm text-text-primary border border-border-base">
                     <div className="flex items-center gap-1.5">
                       {row.label}
                       {hasActiveGoal && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                          <Target size={8} /> META
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-elements/10 text-text-primary border border-border-base">
+                          META
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-right w-20">
+                  <td className="px-3 py-2.5 text-right w-20 border border-border-base">
                     {row.onCurrentPctCh ? (
                       <Editable value={fmtP(row.currentPct)} onSave={v => row.onCurrentPctCh!(parseFmt(v))} right />
                     ) : (
                       <span className="text-sm font-mono text-text-secondary">{fmtP(row.currentPct)}</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right w-24">
+                  <td className="px-3 py-2.5 text-right w-24 border border-border-base">
                     <Editable value={fmtP(row.idealPct)} onSave={v => row.onIdealCh(parseFmt(v))} right />
                   </td>
-                  <td className={`px-3 py-2 text-right text-sm font-mono ${row.quantoColoco > 0 ? (hasActiveGoal ? 'text-amber-400' : 'text-emerald-400') : 'text-text-tertiary/40'}`}>
+                  <td className={`px-3 py-2.5 text-right text-sm font-mono border border-border-base ${row.quantoColoco > 0 ? (hasActiveGoal ? 'text-text-primary' : 'text-emerald-400') : 'text-text-tertiary/40'}`}>
                     {fmt(row.quantoColoco)}
                   </td>
                 </tr>
               );
             })}
           </tbody>
-          <tfoot>
-            <tr className="border-t border-border-base/40 bg-white/2">
-              <td className="px-4 py-2 text-[10px] text-text-tertiary uppercase tracking-wider">Total</td>
-              <td className="px-3 py-2 text-right text-xs font-mono text-text-secondary">{rebalance ? fmtP(sumCurrentPct) : ''}</td>
-              <td className="px-3 py-2 text-right text-xs font-mono text-text-secondary">{fmtP(sumIdeal)}</td>
-              <td className="px-3 py-2 text-right text-xs font-mono text-text-secondary">{fmt(aportar)}</td>
+          <tfoot className="bg-bg-secondary">
+            <tr>
+              <td className="px-4 py-2.5 text-[10px] text-text-tertiary uppercase tracking-wider border border-border-base">Total</td>
+              <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{rebalance ? fmtP(sumCurrentPct) : ''}</td>
+              <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{fmtP(sumIdeal)}</td>
+              <td className="px-3 py-2.5 text-right text-xs font-mono text-text-secondary border border-border-base">{fmt(aportar)}</td>
             </tr>
           </tfoot>
         </table>
       </div>
+      )}
     </div>
   );
 }
@@ -389,16 +396,16 @@ function GoalForm({ categories, initial, onSave, onClose }: {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[10px] text-text-tertiary uppercase tracking-wider">Prioridade do aporte</label>
-              <span className={`text-sm font-bold font-mono ${priority === 100 ? 'text-red-400' : priority >= 70 ? 'text-amber-400' : 'text-emerald-400'}`}>{priority}%</span>
+              <span className={`text-sm font-bold font-mono ${priority === 100 ? 'text-red-400' : priority >= 70 ? 'text-text-primary' : 'text-emerald-400'}`}>{priority}%</span>
             </div>
-            <input type="range" min={0} max={100} step={5} value={priority} onChange={e => setPriority(Number(e.target.value))} className="w-full accent-amber-400 cursor-pointer" />
+            <input type="range" min={0} max={100} step={5} value={priority} onChange={e => setPriority(Number(e.target.value))} className="w-full accent-neutral-500 cursor-pointer" />
             <div className="flex justify-between text-[9px] text-text-tertiary/50 mt-1"><span>Baixa</span><span>Média</span><span>Suprema</span></div>
             {priority === 100 && <p className="text-[10px] text-red-400/80 mt-1.5">Prioridade suprema, 100% do aporte irá para esta meta.</p>}
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border-base">
           <button onClick={onClose} className="px-4 py-2 text-sm text-text-tertiary hover:text-text-primary cursor-pointer transition-colors">Cancelar</button>
-          <button onClick={submit} className="px-4 py-2 text-sm font-semibold bg-amber-500 text-black rounded-lg hover:bg-amber-400 cursor-pointer transition-colors">{isEdit ? 'Salvar' : 'Criar Meta'}</button>
+          <button onClick={submit} className="px-4 py-2 text-sm font-semibold bg-text-primary text-bg-primary rounded-lg hover:opacity-80 cursor-pointer transition-colors">{isEdit ? 'Salvar' : 'Criar Meta'}</button>
         </div>
       </div>
     </div>
@@ -415,16 +422,15 @@ function GoalCard({ goal, category, currentAmount, onDelete, onEdit, onUpdatePri
   const remaining = Math.max(0, goal.targetAmount - currentAmount);
   const done = remaining <= 0;
   return (
-    <div className={`bg-bg-secondary border rounded-xl overflow-hidden ${done ? 'border-emerald-500/40' : 'border-amber-500/25'}`}>
-      <div className={`flex items-center gap-2 px-4 py-3 ${done ? 'bg-emerald-500/10' : 'bg-amber-500/8'}`}>
-        <Target size={13} className={done ? 'text-emerald-400' : 'text-amber-400'} />
+    <div className={`bg-bg-secondary border rounded-xl overflow-hidden ${done ? 'border-emerald-500/40' : 'border-border-base'}`}>
+      <div className={`flex items-center gap-2 px-4 py-3 ${done ? 'bg-emerald-500/10' : 'bg-elements/5'}`}>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-text-primary truncate">{goal.label}</p>
           <p className="text-[10px] text-text-tertiary">{category?.name ?? ''} · Meta: {fmt(goal.targetAmount)}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {done && <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider bg-emerald-500/15 px-2 py-0.5 rounded">Concluída!</span>}
-          <button onClick={onEdit} className="text-text-tertiary/30 hover:text-amber-400 cursor-pointer transition-colors"><Pencil size={12} /></button>
+          <button onClick={onEdit} className="text-text-tertiary/30 hover:text-text-primary cursor-pointer transition-colors"><Pencil size={12} /></button>
           <button onClick={() => setOpen(v => !v)} className="text-text-tertiary/50 hover:text-text-tertiary cursor-pointer transition-colors">
             {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
@@ -437,10 +443,10 @@ function GoalCard({ goal, category, currentAmount, onDelete, onEdit, onUpdatePri
           <span className="font-mono text-text-tertiary">{fmt(goal.targetAmount)}</span>
         </div>
         <div className="h-2 bg-bg-primary rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${progress}%` }} />
+          <div className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-emerald-500' : 'bg-text-primary'}`} style={{ width: `${progress}%` }} />
         </div>
         <div className="flex items-center justify-between mt-1.5">
-          <span className={`text-[10px] font-semibold ${done ? 'text-emerald-400' : 'text-amber-400'}`}>{progress.toFixed(1)}%</span>
+          <span className={`text-[10px] font-semibold ${done ? 'text-emerald-400' : 'text-text-primary'}`}>{progress.toFixed(1)}%</span>
           {!done && <span className="text-[10px] text-text-tertiary">Faltam {fmt(remaining)}</span>}
         </div>
       </div>
@@ -448,9 +454,9 @@ function GoalCard({ goal, category, currentAmount, onDelete, onEdit, onUpdatePri
         <div className="px-4 py-3 border-t border-border-base/20">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] text-text-tertiary uppercase tracking-wider">Prioridade do aporte</span>
-            <span className={`text-sm font-bold font-mono ${goal.priority === 100 ? 'text-red-400' : goal.priority >= 70 ? 'text-amber-400' : 'text-emerald-400'}`}>{goal.priority}%</span>
+            <span className={`text-sm font-bold font-mono ${goal.priority === 100 ? 'text-red-400' : goal.priority >= 70 ? 'text-text-primary' : 'text-emerald-400'}`}>{goal.priority}%</span>
           </div>
-          <input type="range" min={0} max={100} step={5} value={goal.priority} onChange={e => onUpdatePriority(Number(e.target.value))} className="w-full accent-amber-400 cursor-pointer" />
+          <input type="range" min={0} max={100} step={5} value={goal.priority} onChange={e => onUpdatePriority(Number(e.target.value))} className="w-full accent-neutral-500 cursor-pointer" />
           <p className="text-[10px] text-text-tertiary/60 mt-1.5">
             {goal.priority === 100 ? 'Prioridade suprema, todo o aporte vai para esta meta.' : `${goal.priority}% do aporte é direcionado para esta meta.`}
           </p>
@@ -479,20 +485,20 @@ function GoalsSection({ goals, categories, investPatrimonio, onAdd, onDelete, on
     <div className="shrink-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-xs text-text-tertiary uppercase tracking-wider">Metas de Investimento</h2>
+          <h2 className="text-lg font-bold text-text-primary">Metas de Investimento</h2>
           {goals.length > 0 && totalPriority > 0 && (
-            <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">{totalPriority}% do aporte direcionado</span>
+            <span className="text-[10px] font-bold text-text-primary bg-elements/10 border border-border-base px-2 py-0.5 rounded uppercase tracking-wider">{totalPriority}% do aporte direcionado</span>
           )}
         </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 cursor-pointer transition-colors font-semibold">
+        <button onClick={() => setShowForm(true)} className="flex items-center gap-1 text-xs text-text-primary hover:text-text-primary cursor-pointer transition-colors font-semibold">
           <Plus size={12} strokeWidth={2.5} /> Nova Meta
         </button>
       </div>
       {goals.length === 0 ? (
         <div className="bg-bg-secondary border border-dashed border-border-base/40 rounded-xl px-4 py-6 text-center">
           <Target size={20} className="text-text-tertiary/30 mx-auto mb-2" />
-          <p className="text-sm text-text-tertiary/50">Nenhuma meta definida ainda.</p>
-          <p className="text-xs text-text-tertiary/30 mt-0.5">Crie uma meta para priorizar categorias no aporte.</p>
+          <p className="text-xs text-text-tertiary font-medium">Nenhuma meta definida ainda.</p>
+          <p className="text-[11px] text-text-tertiary/50 mt-1">Crie uma meta para priorizar categorias no aporte.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -525,18 +531,18 @@ function PortfolioSummary({ holdings, prices, totalCost }: {
   const varPct = totalCost > 0 ? (lucro / totalCost) * 100 : 0;
 
   const cards = [
-    { label: 'Patrimônio Atual', value: fmt(totalValue), color: '#6366f1' },
-    { label: 'Custo Total', value: fmt(totalCost), color: '#94a3b8' },
-    { label: 'Lucro/Prej.', value: (lucro >= 0 ? '+' : '') + fmt(lucro), color: lucro >= 0 ? '#22c55e' : '#ef4444' },
-    { label: 'Rentabilidade', value: (varPct >= 0 ? '+' : '') + varPct.toFixed(2) + '%', color: varPct >= 0 ? '#22c55e' : '#ef4444' },
+    { label: 'Patrimônio Atual', value: fmt(totalValue), colorClass: 'text-indigo-400' },
+    { label: 'Custo Total', value: fmt(totalCost), colorClass: 'text-text-secondary' },
+    { label: 'Lucro / Prej.', value: (lucro >= 0 ? '+' : '') + fmt(lucro), colorClass: lucro >= 0 ? 'text-emerald-400' : 'text-red-400' },
+    { label: 'Rentabilidade', value: (varPct >= 0 ? '+' : '') + varPct.toFixed(2) + '%', colorClass: varPct >= 0 ? 'text-emerald-400' : 'text-red-400' },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
       {cards.map(c => (
-        <div key={c.label} className="bg-bg-secondary border border-border-base rounded-xl px-4 py-3">
-          <p className="text-[9px] text-text-tertiary uppercase tracking-wider mb-1">{c.label}</p>
-          <p className="text-sm font-bold font-mono" style={{ color: c.color }}>{c.value}</p>
+        <div key={c.label} className="bg-bg-secondary border border-border-base rounded-2xl px-5 py-4 shadow-sm flex flex-col justify-center">
+          <p className="text-xs font-medium text-text-tertiary mb-1.5">{c.label}</p>
+          <p className={`text-xl font-bold font-mono tracking-tight ${c.colorClass}`}>{c.value}</p>
         </div>
       ))}
     </div>
@@ -557,7 +563,7 @@ function PortfolioChart({ categories, holdings, prices }: {
 
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl px-4 py-4">
-      <h3 className="text-xs text-text-tertiary uppercase tracking-wider mb-3">Alocação por Categoria</h3>
+      <h3 className="text-lg font-bold text-text-primary mb-3">Alocação por Categoria</h3>
       <div className="flex items-center gap-6 flex-wrap">
         <div className="shrink-0">
           <PieChart width={150} height={150}>
@@ -638,7 +644,7 @@ function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]
 
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl px-4 py-4 flex flex-col h-full">
-      <h3 className="text-xs text-text-tertiary uppercase tracking-wider mb-3">Evolução Patrimonial</h3>
+      <h3 className="text-lg font-bold text-text-primary mb-3">Evolução Patrimonial</h3>
       <div className="flex-1 min-h-[160px] -ml-4 mt-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
@@ -677,7 +683,7 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
   onDeleteTicker: (ticker: string) => void;
   onAddTransaction: (ticker?: string, categoryId?: string) => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
 
   const rows = holdings.map(h => {
@@ -700,11 +706,10 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 border-b border-border-base/30 cursor-pointer select-none"
-        style={{ background: `${cat.color}12` }} onClick={() => setCollapsed(v => !v)}>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 border-b border-border-base/30 cursor-pointer select-none bg-bg-secondary hover:bg-elements/10 transition-colors"
+        onClick={() => setCollapsed(v => !v)}>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: cat.color }} />
-          <span className="text-sm font-bold text-text-primary">{cat.name}</span>
+          <span className="text-sm font-bold" style={{ color: cat.color }}>{cat.name}</span>
           {collapsed ? <ChevronDown size={12} className="text-text-tertiary/50" /> : <ChevronUp size={12} className="text-text-tertiary/50" />}
         </div>
         <div className="flex items-center gap-5 text-right" onClick={e => e.stopPropagation()}>
@@ -743,30 +748,30 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
         <>
           {/* Em Carteira */}
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[580px]">
+            <table className="w-full text-xs border border-border-base border-collapse min-w-[580px]">
               <thead>
-                <tr className="border-b border-border-base/20">
-                  <th className="text-left px-4 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Ativo</th>
-                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Qtd</th>
-                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Preço Médio</th>
-                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Preço Atual</th>
-                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Variação</th>
-                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">Saldo</th>
-                  <th className="text-right px-3 py-2 text-[9px] text-text-tertiary/50 uppercase font-normal tracking-wider">% Cart</th>
-                  <th className="w-14 px-3 py-2"></th>
+                <tr className="bg-bg-secondary">
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Ativo</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Qtd</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Preço Médio</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Preço Atual</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Variação</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Saldo</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">% Cart</th>
+                  <th className="w-14 px-3 py-2.5 border border-border-base"></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(r => (
-                  <tr key={r.ticker} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
-                    <td className="px-4 py-2">
+                  <tr key={r.ticker} className="hover:bg-elements/10 transition-colors group">
+                    <td className="px-4 py-2.5 border border-border-base">
                       <div className="flex items-center gap-2">
                         {r.logoUrl ? (
-                          <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+                          <div className="w-8 h-8 rounded-md bg-elements/10 flex items-center justify-center overflow-hidden shrink-0 border border-border-base/50">
                             <img src={r.logoUrl} alt={r.ticker} className="w-6 h-6 object-contain" />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-md bg-elements flex items-center justify-center text-[10px] font-bold text-text-secondary shrink-0 border border-border-base/50">
+                          <div className="w-8 h-8 rounded-md bg-elements flex items-center justify-center text-[10px] font-bold text-text-secondary shrink-0">
                             {r.ticker.substring(0, 2)}
                           </div>
                         )}
@@ -776,17 +781,17 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.qty > 0 ? r.qty : '-'}</td>
-                    <td className="px-3 py-2 text-right font-mono text-text-secondary">{r.avgPrice > 0 ? fmt(r.avgPrice) : '-'}</td>
-                    <td className="px-3 py-2 text-right font-mono text-text-primary">{r.currentPrice > 0 ? fmt(r.currentPrice) : <span className="text-text-tertiary/40">-</span>}</td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    <td className="px-3 py-2.5 text-right font-mono text-text-secondary border border-border-base">{r.qty > 0 ? r.qty : '-'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-text-secondary border border-border-base">{r.avgPrice > 0 ? fmt(r.avgPrice) : '-'}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-text-primary border border-border-base">{r.currentPrice > 0 ? fmt(r.currentPrice) : <span className="text-text-tertiary/40">-</span>}</td>
+                    <td className="px-3 py-2.5 text-right font-mono border border-border-base">
                       {r.variacaoPct !== null
                         ? <span className={`font-semibold ${r.variacaoPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{r.variacaoPct >= 0 ? '+' : ''}{r.variacaoPct.toFixed(2)}%</span>
                         : <span className="text-text-tertiary/40">-</span>}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono text-text-primary">{r.saldo > 0 ? fmt(r.saldo) : <span className="text-text-tertiary/40">-</span>}</td>
-                    <td className="px-3 py-2 text-right font-mono text-text-tertiary">{r.pctCarteira !== null ? r.pctCarteira.toFixed(2) + '%' : <span className="text-text-tertiary/40">-</span>}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5 text-right font-mono text-text-primary border border-border-base">{r.saldo > 0 ? fmt(r.saldo) : <span className="text-text-tertiary/40">-</span>}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-text-tertiary border border-border-base">{r.pctCarteira !== null ? r.pctCarteira.toFixed(2) + '%' : <span className="text-text-tertiary/40">-</span>}</td>
+                    <td className="px-3 py-2.5 border border-border-base">
                       <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => onAddTransaction(r.ticker, cat.id)} title="Novo lançamento"
                           className="text-text-tertiary/50 hover:text-indigo-400 cursor-pointer transition-colors"><Plus size={10} strokeWidth={2.5} /></button>
@@ -797,7 +802,7 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                   </tr>
                 ))}
                 {rows.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-5 text-center text-xs text-text-tertiary/40">Nenhum ativo em carteira · Adicione um lançamento para começar</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-5 text-center text-xs text-text-tertiary/40 border border-border-base">Nenhum ativo em carteira · Adicione um lançamento para começar</td></tr>
                 )}
               </tbody>
             </table>
@@ -805,7 +810,7 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
 
           <div className="px-4 py-2.5 border-b border-border-base/20">
             <button onClick={() => onAddTransaction(undefined, cat.id)}
-              className="text-xs text-text-tertiary/40 hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1">
+              className="text-xs text-text-tertiary/40 hover:text-text-primary cursor-pointer transition-colors flex items-center gap-1">
               <Plus size={11} strokeWidth={2.5} /> Adicionar Lançamento
             </button>
           </div>
@@ -817,12 +822,20 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
 }
 
 // ── Watchlist Section (Na Mira for Planejamento tab) ─────────────────────────
-function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatchlist, onRefreshWatchlist }: {
+function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatchlist, onRefreshWatchlist, onEditWatchlistTicker }: {
   categories: ICategory[]; watchlist: IWatchlistItem[];
   onAddWatchlist: (catId: string, ticker: string) => Promise<void>;
   onDeleteWatchlist: (id: string) => void;
   onRefreshWatchlist: (id: string) => Promise<void>;
+  onEditWatchlistTicker: (id: string, newTicker: string) => void;
 }) {
+  const [tableCollapsed, setTableCollapsed] = useState(true);
+  const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    categories.forEach(c => initial[c.id] = true);
+    return initial;
+  });
+  const toggleCat = (id: string) => setCollapsedCats(prev => ({ ...prev, [id]: !prev[id] }));
   const [addingCatId, setAddingCatId] = useState<string | null>(null);
   const [watchInput, setWatchInput] = useState('');
   const [watchLoading, setWatchLoading] = useState(false);
@@ -844,12 +857,12 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
     return (
       <div className="bg-bg-secondary border border-border-base rounded-xl p-4 shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs text-text-tertiary uppercase tracking-wider">Ativos na Mira</h2>
+          <h2 className="text-lg font-bold text-text-primary">Ativos na Mira</h2>
         </div>
         <div className="flex gap-2 flex-wrap mt-2">
           {categories.map(cat => (
              <button key={cat.id} onClick={() => setAddingCatId(cat.id)}
-               className="text-xs text-text-tertiary hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1 border border-border-base/50 rounded px-2 py-1">
+               className="text-xs text-text-tertiary hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1 rounded px-2 py-1">
                <Plus size={11} /> Adicionar em {cat.name}
              </button>
           ))}
@@ -860,64 +873,72 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
 
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden shrink-0">
-      <div className="px-4 py-3 border-b border-border-base/30">
-        <h2 className="text-xs font-semibold text-text-primary uppercase tracking-wider flex items-center gap-2">
-          <Eye size={12} className="text-text-tertiary" /> Ativos na Mira
-        </h2>
+      <div onClick={() => setTableCollapsed(!tableCollapsed)} className="px-4 py-3 border-b border-border-base bg-bg-secondary flex items-center justify-between cursor-pointer hover:bg-elements/10 transition-colors">
+        <span className="text-lg font-bold text-text-primary">Ativos na Mira</span>
+        {tableCollapsed ? <ChevronDown size={14} className="text-text-tertiary" /> : <ChevronUp size={14} className="text-text-tertiary" />}
       </div>
+      {!tableCollapsed && (<div>
       
       {categories.map(cat => {
         const catWatchlist = watchlist.filter(w => w.categoryId === cat.id);
         return (
           <div key={cat.id} className="border-b border-border-base/10 last:border-0">
-            <div className="px-4 py-2 bg-elements/10 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />
-              <span className="text-xs font-semibold text-text-secondary">{cat.name}</span>
+            <div onClick={() => toggleCat(cat.id)} className="px-4 py-2 bg-elements/10 flex items-center justify-between cursor-pointer hover:bg-elements/20 transition-colors">
+              <span className="text-sm font-bold" style={{ color: cat.color }}>{cat.name}</span>
+              {collapsedCats[cat.id] ? <ChevronDown size={12} className="text-text-tertiary/50" /> : <ChevronUp size={12} className="text-text-tertiary/50" />}
             </div>
-            
-            {catWatchlist.length > 0 && (
+            {!collapsedCats[cat.id] && catWatchlist.length > 0 && (
               <div className="overflow-x-auto">
-                <table className="w-full text-xs min-w-[380px]">
+                <table className="w-full text-xs border border-border-base border-collapse min-w-[380px]">
                   <thead>
-                    <tr className="border-b border-border-base/10">
-                      <th className="text-left px-4 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Ticker</th>
-                      <th className="text-left px-3 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Nome</th>
-                      <th className="text-right px-3 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Preço Atual</th>
-                      <th className="text-right px-3 py-1.5 text-[9px] text-text-tertiary/40 uppercase font-normal tracking-wider">Variação Dia</th>
-                      <th className="w-16 px-3 py-1.5"></th>
+                    <tr className="bg-bg-secondary">
+                      <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Ticker</th>
+                      <th className="text-left px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Nome</th>
+                      <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Preço Atual</th>
+                      <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Variação Dia</th>
+                      <th className="w-20 px-3 py-2.5 text-right text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Ações</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="bg-bg-primary">
                     {catWatchlist.map(w => (
-                      <tr key={w.id} className="border-b border-border-base/10 hover:bg-elements/20 transition-colors group">
-                        <td className="px-4 py-1.5 font-mono font-bold text-text-primary">
+                      <tr key={w.id} className="hover:bg-elements/10 transition-colors group">
+                        <td className="px-4 py-2.5 font-mono font-bold text-text-primary border border-border-base">
                           <div className="flex items-center gap-2">
                             {w.logoUrl ? (
-                              <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center overflow-hidden shrink-0 border border-white/10">
+                              <div className="w-8 h-8 rounded-md bg-elements/10 flex items-center justify-center overflow-hidden shrink-0 border border-border-base/50">
                                 <img src={w.logoUrl} alt={w.ticker} className="w-6 h-6 object-contain" />
                               </div>
                             ) : (
-                              <div className="w-8 h-8 rounded-md bg-elements flex items-center justify-center text-[10px] font-bold text-text-secondary shrink-0 border border-border-base/50">
+                              <div className="w-8 h-8 rounded-md bg-elements flex items-center justify-center text-[10px] font-bold text-text-secondary shrink-0">
                                 {w.ticker.substring(0, 2)}
                               </div>
                             )}
                             <span>{w.ticker}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-1.5 text-text-tertiary truncate max-w-[140px]">{w.name}</td>
-                        <td className="px-3 py-1.5 text-right font-mono text-text-secondary">{w.price > 0 ? fmt(w.price) : '-'}</td>
-                        <td className="px-3 py-1.5 text-right font-mono">
+                        <td className="px-3 py-2.5 text-text-tertiary truncate max-w-[140px] border border-border-base">{w.name}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-text-secondary border border-border-base">{w.price > 0 ? fmt(w.price) : '-'}</td>
+                        <td className="px-3 py-2.5 text-right font-mono border border-border-base">
                           {w.price > 0
                             ? <span className={`font-semibold ${w.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{w.changePercent >= 0 ? '+' : ''}{w.changePercent.toFixed(2)}%</span>
                             : <span className="text-text-tertiary/40">-</span>}
                         </td>
-                        <td className="px-3 py-1.5">
-                          <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleRefreshWatch(w.id)}
-                              className={`text-text-tertiary/50 hover:text-text-tertiary transition-colors cursor-pointer ${refreshingWatch === w.id ? 'animate-spin' : ''}`}>
-                              <RefreshCw size={9} />
+                        <td className="px-3 py-2.5 border border-border-base">
+                          <div className="flex items-center justify-end gap-3 transition-opacity">
+                            <button onClick={() => {
+                                const newTicker = window.prompt('Editar ticker do ativo:', w.ticker);
+                                if (newTicker && newTicker.trim() !== '') onEditWatchlistTicker(w.id, newTicker.trim().toUpperCase());
+                              }}
+                              className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer" title="Editar ticker">
+                              <Pencil size={14} />
                             </button>
-                            <button onClick={() => onDeleteWatchlist(w.id)} className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={9} /></button>
+                            <button onClick={() => handleRefreshWatch(w.id)}
+                              className={`text-text-secondary hover:text-text-primary transition-colors cursor-pointer ${refreshingWatch === w.id ? 'animate-spin' : ''}`} title="Atualizar preço">
+                              <RefreshCw size={14} />
+                            </button>
+                            <button onClick={() => onDeleteWatchlist(w.id)} className="text-text-secondary hover:text-red-400 cursor-pointer transition-colors" title="Excluir">
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -927,31 +948,34 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
               </div>
             )}
             
-            <div className="px-4 py-2.5">
-              {addingCatId === cat.id ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <input type="text" placeholder="Ex: PETR4" value={watchInput} onChange={e => setWatchInput(e.target.value.toUpperCase())}
-                      onKeyDown={e => { if (e.key === 'Enter') submitWatch(cat.id); else if (e.key === 'Escape') setAddingCatId(null); }}
-                      autoFocus className="bg-bg-primary border border-border-base rounded px-2 py-1 text-xs w-28 uppercase focus:outline-none focus:border-indigo-500" />
-                    <button onClick={() => submitWatch(cat.id)} disabled={watchLoading || !watchInput.trim()}
-                      className="bg-indigo-500 hover:bg-indigo-400 text-white px-2 py-1 rounded text-[10px] font-semibold cursor-pointer disabled:opacity-50">
-                      {watchLoading ? 'Buscando...' : 'Salvar'}
-                    </button>
-                    <button onClick={() => setAddingCatId(null)} className="text-text-tertiary hover:text-text-primary px-1 cursor-pointer"><X size={12} /></button>
+            {!collapsedCats[cat.id] && (
+              <div className="px-4 py-2.5">
+                {addingCatId === cat.id ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <input type="text" placeholder="Ex: PETR4" value={watchInput} onChange={e => setWatchInput(e.target.value.toUpperCase())}
+                        onKeyDown={e => { if (e.key === 'Enter') submitWatch(cat.id); else if (e.key === 'Escape') setAddingCatId(null); }}
+                        autoFocus className="bg-bg-primary border border-border-base rounded px-2 py-1 text-xs w-28 uppercase focus:outline-none focus:border-neutral-500" />
+                      <button onClick={() => submitWatch(cat.id)} disabled={watchLoading || !watchInput.trim()}
+                        className="bg-text-primary hover:bg-text-primary/90 text-bg-primary px-2 py-1 rounded text-[10px] font-semibold cursor-pointer disabled:opacity-50">
+                        {watchLoading ? 'Buscando...' : 'Salvar'}
+                      </button>
+                      <button onClick={() => setAddingCatId(null)} className="text-text-tertiary hover:text-text-primary px-1 cursor-pointer"><X size={12} /></button>
+                    </div>
+                    <span className="text-[9px] text-text-tertiary/50">O ticker deve existir na B3 (ex: BBDC4) ou Cripto (ex: BTC-USD).</span>
                   </div>
-                  <span className="text-[9px] text-text-tertiary/50">O ticker deve existir na B3 (ex: BBDC4) ou Cripto (ex: BTC-USD).</span>
-                </div>
-              ) : (
-                <button onClick={() => setAddingCatId(cat.id)}
-                  className="text-xs text-text-tertiary/40 hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1">
-                  <Plus size={11} strokeWidth={2.5} /> Adicionar Interesse
-                </button>
-              )}
-            </div>
+                ) : (
+                  <button onClick={() => setAddingCatId(cat.id)}
+                    className="text-xs text-text-tertiary/40 hover:text-text-primary cursor-pointer transition-colors flex items-center gap-1">
+                    <Plus size={11} strokeWidth={2.5} /> Adicionar Interesse
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
+      </div>)}
     </div>
   );
 }
@@ -1109,6 +1133,23 @@ export function InvestmentView() {
     setGoals(next); persistGoals(next);
   }, [goals]);
 
+  const editWatchlistTicker = useCallback(async (id: string, newTicker: string) => {
+    setWatchlist(prev => {
+      const next = prev.map(w => w.id === id ? { ...w, ticker: newTicker } : w);
+      persistWatchlist(next);
+      return next;
+    });
+    
+    const quote = await fetchQuote(newTicker);
+    if (quote) {
+      setWatchlist(prev => {
+        const next = prev.map(w => w.id === id ? { ...w, name: quote.name, price: quote.price, changePercent: quote.changePercent, logoUrl: quote.logoUrl } : w);
+        persistWatchlist(next);
+        return next;
+      });
+    }
+  }, []);
+
   const addWatchlistItem = useCallback(async (categoryId: string, ticker: string) => {
     const quote = await fetchQuote(ticker);
     const item: IWatchlistItem = { id: crypto.randomUUID(), categoryId, ticker, name: quote?.name || ticker, price: quote?.price || 0, changePercent: quote?.changePercent || 0, logoUrl: quote?.logoUrl };
@@ -1153,29 +1194,26 @@ export function InvestmentView() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border-base shrink-0">
         <div className="flex items-center gap-6">
-          <span className="text-sm font-semibold text-text-primary hidden sm:block">Controle de Investimentos</span>
+          <span className="text-xl font-bold text-text-primary hidden sm:block">Controle de Investimentos</span>
           <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base">
             <button
               onClick={() => setActiveTab('resumo')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'resumo' ? 'bg-indigo-500/20 text-indigo-400 shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'resumo' ? 'bg-text-primary text-bg-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
             >
-              Resumo (Investidor10)
+              Resumo
             </button>
             <button
               onClick={() => setActiveTab('planejamento')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'planejamento' ? 'bg-indigo-500/20 text-indigo-400 shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'planejamento' ? 'bg-text-primary text-bg-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}
             >
-              Planejamento (Planilha)
+              Planejamento
             </button>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {loadingPrices && <span className="text-text-tertiary/50 text-xs animate-pulse">Atualizando cotações...</span>}
           {loading && <span className="text-text-tertiary text-xs animate-pulse">Carregando...</span>}
-          <button onClick={() => setAddModal({})}
-            className="flex items-center gap-1.5 text-xs bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded-lg cursor-pointer transition-colors font-semibold">
-            <Plus size={12} strokeWidth={2.5} /> Lançamento
-          </button>
+
         </div>
       </div>
 
@@ -1193,9 +1231,9 @@ export function InvestmentView() {
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs text-text-tertiary uppercase tracking-wider">Meus Ativos</h2>
+                <h2 className="text-lg font-bold text-text-primary">Meus Ativos</h2>
                 <button onClick={() => setAddModal({})}
-                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer transition-colors font-semibold">
+                  className="flex items-center gap-1 text-xs text-text-primary hover:text-text-primary cursor-pointer transition-colors font-semibold">
                   <Plus size={12} strokeWidth={2.5} /> Adicionar Lançamento
                 </button>
               </div>
@@ -1215,16 +1253,16 @@ export function InvestmentView() {
           </>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
+            <div className="flex flex-col gap-4 shrink-0">
               <DistTable
-                title="Distribuição de Investimentos" accentColor="#6366f1"
+                title="Distribuição de Investimentos" 
                 patrimonio={investPatrimonio} aportar={config.aportar}
                 onPatrimonioCh={v => saveConfig({ investPatrimonio: v })}
                 onAportarCh={v => saveConfig({ aportar: v })}
                 rows={investRows} rebalance
               />
               <DistTable
-                title="Distribuição de Dinheiro" accentColor="#10b981"
+                title="Distribuição de Dinheiro" 
                 patrimonio={config.patrimonio} aportar={config.aportar}
                 onPatrimonioCh={v => saveConfig({ patrimonio: v })}
                 onAportarCh={v => saveConfig({ aportar: v })}
@@ -1243,6 +1281,7 @@ export function InvestmentView() {
               onAddWatchlist={addWatchlistItem}
               onDeleteWatchlist={deleteWatchlistItem}
               onRefreshWatchlist={refreshWatchlistItem}
+              onEditWatchlistTicker={editWatchlistTicker}
             />
           </>
         )}
