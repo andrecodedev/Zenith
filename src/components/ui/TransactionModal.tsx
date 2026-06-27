@@ -9,7 +9,7 @@ export type AssetType =
 export interface TransactionData {
   ticker: string;
   categoryId: string;
-  type: 'buy' | 'sell';
+  type: 'buy' | 'sell' | 'dividend';
   date: string;
   quantity: number;
   price: number;
@@ -175,7 +175,7 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
     <div className="flex items-center justify-between py-1">
       <span className="text-sm text-text-secondary">{label}</span>
       <button type="button" onClick={() => onChange(!value)}
-        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${value ? 'bg-white' : 'bg-elements'}`}>
+        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${value ? 'bg-emerald-500' : 'bg-elements'}`}>
         <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${value ? 'left-6' : 'left-1'}`} />
       </button>
     </div>
@@ -191,7 +191,7 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
   onSave: (data: TransactionData) => Promise<void>;
   onClose: () => void;
 }) {
-  const [txType, setTxType] = useState<'buy' | 'sell'>('buy');
+  const [txType, setTxType] = useState<'buy' | 'sell' | 'dividend'>('buy');
   const [assetType, setAssetType] = useState<AssetType>(initialAssetType ?? 'acoes');
   const [categoryId, setCategoryId] = useState(initialCategoryId ?? categories[0]?.id ?? '');
   const [saving, setSaving] = useState(false);
@@ -301,14 +301,14 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
           {/* Tabs Compra / Venda */}
           <div className="px-6 flex">
             <div className="flex w-full bg-bg-primary rounded-lg p-1">
-              {(['buy', 'sell'] as const).map(t => (
+              {(['buy', 'sell', 'dividend'] as const).map(t => (
                 <button key={t} type="button" onClick={() => setTxType(t)}
                   className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all cursor-pointer ${
                     txType === t
                       ? 'bg-[#252A33] text-text-primary shadow-sm'
                       : 'text-text-tertiary hover:text-text-secondary'
                   }`}>
-                  {t === 'buy' ? 'Compra' : 'Venda'}
+                  {t === 'buy' ? 'Compra' : t === 'sell' ? 'Venda' : 'Provento'}
                 </button>
               ))}
             </div>
@@ -367,9 +367,11 @@ export function TransactionModal({ categories, initialTicker, initialCategoryId,
                   <Field label="Data da transação">
                     <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} style={{ colorScheme: 'dark' }} />
                   </Field>
-                  <Field label="Data de vencimento">
-                    <input type="date" value={vencimento} onChange={e => setVencimento(e.target.value)} className={inputCls} style={{ colorScheme: 'dark' }} />
-                  </Field>
+                  {!liquidezDiaria && (
+                    <Field label="Data de vencimento">
+                      <input type="date" value={vencimento} onChange={e => setVencimento(e.target.value)} className={inputCls} style={{ colorScheme: 'dark' }} />
+                    </Field>
+                  )}
                 </div>
               </>
             )}

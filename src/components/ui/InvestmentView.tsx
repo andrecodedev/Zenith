@@ -18,7 +18,7 @@ interface IWatchlistItem {
 }
 interface ITransaction {
   id: string; ticker: string; categoryId: string;
-  type: 'buy' | 'sell'; date: string;
+  type: 'buy' | 'sell' | 'dividend'; date: string;
   quantity: number; price: number; otherCosts: number;
   assetType?: AssetType; meta?: any;
 }
@@ -116,7 +116,7 @@ const calcHoldings = (transactions: ITransaction[]): IHolding[] => {
       const newQty = cur.qty + t.quantity;
       const newAvg = newQty > 0 ? (cur.qty * cur.avgPrice + cost) / newQty : 0;
       map.set(t.ticker, { ...cur, qty: newQty, avgPrice: newAvg, totalInvested: cur.totalInvested + cost });
-    } else {
+    } else if (t.type === 'sell') {
       const newQty = cur.qty - t.quantity;
       if (newQty < 0.0001) map.delete(t.ticker);
       else map.set(t.ticker, { ...cur, qty: newQty });
@@ -135,7 +135,7 @@ const mapCat = (r: Record<string, unknown>): ICategory => ({
 const mapTransaction = (r: Record<string, unknown>): ITransaction => ({
   id: r.id as string, ticker: r.ticker as string,
   categoryId: (r.category_id as string) || '',
-  type: r.type as 'buy' | 'sell', date: r.date as string,
+  type: r.type as 'buy' | 'sell' | 'dividend', date: r.date as string,
   quantity: Number(r.quantity) || 0, price: Number(r.price) || 0,
   otherCosts: Number(r.other_costs) || 0,
   assetType: r.asset_type as AssetType | undefined,
@@ -523,22 +523,25 @@ function GoalsSection({ goals, categories, investPatrimonio, onAdd, onDelete, on
 // Transaction modal imported from TransactionModal.tsx
 
 // ── Portfolio Summary cards ────────────────────────────────────────────────────
-function PortfolioSummary({ holdings, prices, totalCost }: {
-  holdings: IHolding[]; prices: PriceCache; totalCost: number;
+function PortfolioSummary({ holdings, prices, totalCost, transactions }: {
+  holdings: IHolding[]; prices: PriceCache; totalCost: number; transactions: ITransaction[];
 }) {
-  const totalValue = holdings.reduce((s, h) => s + h.qty * (prices[h.ticker]?.price || 0), 0);
-  const lucro = totalValue - totalCost;
+  const totalValue = holdings.reduce((s, h) => s + h.qty * (prices[h.ticker]?.price || h.avgPrice || 0), 0);
+  const totalDividends = transactions.filter(t => t.type === 'dividend').reduce((s, t) => s + t.quantity * t.price, 0);
+  const lucroCapital = totalValue - totalCost;
+  const lucro = lucroCapital + totalDividends;
   const varPct = totalCost > 0 ? (lucro / totalCost) * 100 : 0;
 
   const cards = [
     { label: 'Patrimônio Atual', value: fmt(totalValue), colorClass: 'text-indigo-400' },
     { label: 'Custo Total', value: fmt(totalCost), colorClass: 'text-text-secondary' },
-    { label: 'Lucro / Prej.', value: (lucro >= 0 ? '+' : '') + fmt(lucro), colorClass: lucro >= 0 ? 'text-emerald-400' : 'text-red-400' },
+    { label: 'Proventos', value: fmt(totalDividends), colorClass: 'text-emerald-400' },
+    { label: 'Lucro Total', value: (lucro >= 0 ? '+' : '') + fmt(lucro), colorClass: lucro >= 0 ? 'text-emerald-400' : 'text-red-400' },
     { label: 'Rentabilidade', value: (varPct >= 0 ? '+' : '') + varPct.toFixed(2) + '%', colorClass: varPct >= 0 ? 'text-emerald-400' : 'text-red-400' },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
       {cards.map(c => (
         <div key={c.label} className="bg-bg-secondary border border-border-base rounded-2xl px-5 py-4 shadow-sm flex flex-col justify-center">
           <p className="text-xs font-medium text-text-tertiary mb-1.5">{c.label}</p>
@@ -676,11 +679,12 @@ function EvolutionChart({ transactions, prices }: { transactions: ITransaction[]
 }
 
 // ── Category Section (Meus Ativos per category) ───────────────────────────────
-function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate, onDeleteTicker, onAddTransaction }: {
+function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate, onDeleteTicker, onEditTicker, onAddTransaction }: {
   cat: ICategory; holdings: IHolding[]; prices: PriceCache;
   totalPortfolioValue: number;
   onUpdate: (id: string, u: Partial<ICategory>) => void;
   onDeleteTicker: (ticker: string) => void;
+  onEditTicker: (oldTicker: string, newTicker: string) => void;
   onAddTransaction: (ticker?: string, categoryId?: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(true);
@@ -688,7 +692,7 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
 
   const rows = holdings.map(h => {
     const pd = prices[h.ticker];
-    const currentPrice = pd?.price || 0;
+    const currentPrice = pd?.price || h.avgPrice || 0;
     const changePercent = pd?.changePercent || 0;
     const name = pd?.name || h.ticker;
     const logoUrl = pd?.logoUrl;
@@ -758,7 +762,7 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                   <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Variação</th>
                   <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Saldo</th>
                   <th className="text-right px-3 py-2.5 text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">% Cart</th>
-                  <th className="w-14 px-3 py-2.5 border border-border-base"></th>
+                  <th className="w-14 px-3 py-2.5 text-center text-[10px] font-semibold text-text-tertiary uppercase tracking-wider border border-border-base">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -792,9 +796,14 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                     <td className="px-3 py-2.5 text-right font-mono text-text-primary border border-border-base">{r.saldo > 0 ? fmt(r.saldo) : <span className="text-text-tertiary/40">-</span>}</td>
                     <td className="px-3 py-2.5 text-right font-mono text-text-tertiary border border-border-base">{r.pctCarteira !== null ? r.pctCarteira.toFixed(2) + '%' : <span className="text-text-tertiary/40">-</span>}</td>
                     <td className="px-3 py-2.5 border border-border-base">
-                      <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1.5 transition-opacity">
                         <button onClick={() => onAddTransaction(r.ticker, cat.id)} title="Novo lançamento"
                           className="text-text-tertiary/50 hover:text-indigo-400 cursor-pointer transition-colors"><Plus size={10} strokeWidth={2.5} /></button>
+                        <button onClick={() => {
+                          const nt = prompt(`Editar nome do ativo ${r.ticker}? (Isso atualizará todos os seus lançamentos)`, r.ticker);
+                          if (nt) onEditTicker(r.ticker, nt);
+                        }} title="Editar nome"
+                          className="text-text-tertiary/50 hover:text-emerald-400 cursor-pointer transition-colors"><Pencil size={10} /></button>
                         <button onClick={() => { if (confirm(`Excluir todos os lançamentos de ${r.ticker}?`)) onDeleteTicker(r.ticker); }}
                           className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={10} /></button>
                       </div>
@@ -1104,18 +1113,29 @@ export function InvestmentView() {
     if (!userId) return;
     const id = crypto.randomUUID();
     setTransactions(prev => [...prev, { ...data, id }]);
-    await supabase.from('investment_transactions').insert({
+    const { error } = await supabase.from('investment_transactions').insert({
       id, user_id: userId, ticker: data.ticker,
       category_id: data.categoryId || null,
       type: data.type, date: data.date,
       quantity: data.quantity, price: data.price, other_costs: data.otherCosts,
       asset_type: data.assetType, meta: data.meta,
     });
+    if (error) {
+      console.error('Supabase Insert Error:', error);
+      alert('Erro ao salvar no banco: ' + error.message);
+    }
   }, [userId]);
 
   const deleteTransactionsByTicker = useCallback(async (ticker: string) => {
     setTransactions(prev => prev.filter(t => t.ticker !== ticker));
     if (userId) await supabase.from('investment_transactions').delete().eq('user_id', userId).eq('ticker', ticker);
+  }, [userId]);
+
+  const renameTickerTransactions = useCallback(async (oldTicker: string, newTicker: string) => {
+    const nt = newTicker.trim().toUpperCase();
+    if (!nt || nt === oldTicker) return;
+    setTransactions(prev => prev.map(t => t.ticker === oldTicker ? { ...t, ticker: nt } : t));
+    if (userId) await supabase.from('investment_transactions').update({ ticker: nt }).eq('user_id', userId).eq('ticker', oldTicker);
   }, [userId]);
 
   const addGoal = useCallback((g: Omit<IGoal, 'id'>) => {
@@ -1220,7 +1240,7 @@ export function InvestmentView() {
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
         {activeTab === 'resumo' ? (
           <>
-            <PortfolioSummary holdings={holdings} prices={priceCache} totalCost={totalCost} />
+            <PortfolioSummary holdings={holdings} prices={priceCache} totalCost={totalCost} transactions={transactions} />
 
             {holdings.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1245,6 +1265,7 @@ export function InvestmentView() {
                     totalPortfolioValue={totalValue}
                     onUpdate={updateCat}
                     onDeleteTicker={deleteTransactionsByTicker}
+                    onEditTicker={renameTickerTransactions}
                     onAddTransaction={(ticker, categoryId) => setAddModal({ ticker, categoryId: categoryId ?? cat.id })}
                   />
                 ))}
