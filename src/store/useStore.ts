@@ -42,13 +42,13 @@ interface StoreState {
   musicHistory: any[];
   isPlayerExpanded: boolean;
   isPlayerMinimized: boolean;
-  musicTab: 'search' | 'history';
+  musicTab: 'search' | 'history' | 'batch';
   setPlayingVideo: (video: any | null) => void;
   setIsPlaying: (playing: boolean) => void;
   setMusicHistory: (history: any[]) => void;
   setIsPlayerExpanded: (expanded: boolean) => void;
   setIsPlayerMinimized: (minimized: boolean) => void;
-  setMusicTab: (tab: 'search' | 'history') => void;
+  setMusicTab: (tab: 'search' | 'history' | 'batch') => void;
 }
 
 const getUserId = async () => {
@@ -65,18 +65,32 @@ export const useStore = create<StoreState>((set, get) => ({
   notes: [],
 
   // Global Music Player State
-  playingVideo: null,
+  playingVideo: JSON.parse(localStorage.getItem('zenith_playing_video') || 'null'),
   isPlaying: false,
   musicHistory: [],
-  isPlayerExpanded: false,
-  isPlayerMinimized: false,
-  musicTab: 'search',
-  setPlayingVideo: (video) => set({ playingVideo: video }),
+  isPlayerExpanded: localStorage.getItem('zenith_player_expanded') === 'true',
+  isPlayerMinimized: localStorage.getItem('zenith_player_minimized') === 'true',
+  musicTab: (localStorage.getItem('zenith_music_tab') as any) || 'search',
+  
+  setPlayingVideo: (video) => {
+    if (video) localStorage.setItem('zenith_playing_video', JSON.stringify(video));
+    else localStorage.removeItem('zenith_playing_video');
+    set({ playingVideo: video });
+  },
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setMusicHistory: (history) => set({ musicHistory: history }),
-  setIsPlayerExpanded: (expanded) => set({ isPlayerExpanded: expanded }),
-  setIsPlayerMinimized: (minimized) => set({ isPlayerMinimized: minimized }),
-  setMusicTab: (tab) => set({ musicTab: tab }),
+  setIsPlayerExpanded: (expanded) => {
+    localStorage.setItem('zenith_player_expanded', String(expanded));
+    set({ isPlayerExpanded: expanded });
+  },
+  setIsPlayerMinimized: (minimized) => {
+    localStorage.setItem('zenith_player_minimized', String(minimized));
+    set({ isPlayerMinimized: minimized });
+  },
+  setMusicTab: (tab) => {
+    localStorage.setItem('zenith_music_tab', tab);
+    set({ musicTab: tab });
+  },
 
   fetchData: async () => {
     const { data: { user } } = await supabase.auth.getUser();

@@ -13,6 +13,11 @@ export function GlobalMusicPlayer({ onNavigate }: { onNavigate?: (view: string) 
   const [isShuffle, setIsShuffle] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const initialSeekDoneRef = useRef(false);
+
+  useEffect(() => {
+    initialSeekDoneRef.current = false;
+  }, [playingVideo?.id]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return '0:00';
@@ -269,8 +274,28 @@ export function GlobalMusicPlayer({ onNavigate }: { onNavigate?: (view: string) 
         loop={repeatMode === 'one'}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+        onTimeUpdate={() => {
+          const time = audioRef.current?.currentTime || 0;
+          setCurrentTime(time);
+          if (playingVideo) {
+            localStorage.setItem('zenith_music_time', JSON.stringify({ id: playingVideo.id, time }));
+          }
+        }}
+        onLoadedMetadata={() => {
+          setDuration(audioRef.current?.duration || 0);
+          if (!initialSeekDoneRef.current && playingVideo) {
+            const savedState = localStorage.getItem('zenith_music_time');
+            if (savedState) {
+              try {
+                const { id, time } = JSON.parse(savedState);
+                if (id === playingVideo.id && audioRef.current && time > 0) {
+                  audioRef.current.currentTime = time;
+                }
+              } catch (e) {}
+            }
+            initialSeekDoneRef.current = true;
+          }
+        }}
         onEnded={handleEnded}
         className="hidden"
       />

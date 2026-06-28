@@ -184,10 +184,12 @@ function ToolsDropdown({ currentView, setCurrentView }: {
 }
 
 function App() {
-  const { routines, categories, taskInstances } = useStore();
+  const { routines, categories, taskInstances, playingVideo, isPlayerExpanded, isPlayerMinimized } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<AppView>('hero');
+  const [currentView, setCurrentView] = useState<AppView>(() => {
+    return (localStorage.getItem('zenith_current_view') as AppView) || 'hero';
+  });
   const [headerVisible, setHeaderVisible] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
   const lastScrollY = useRef(0);
@@ -237,6 +239,7 @@ function App() {
 
   useEffect(() => {
     currentViewRef.current = currentView;
+    localStorage.setItem('zenith_current_view', currentView);
   }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -265,6 +268,10 @@ function App() {
         useStore.getState().fetchNotes();
         if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
           setCurrentView('hub');
+        }
+      } else {
+        if (currentViewRef.current !== 'sobre') {
+          setCurrentView('hero');
         }
       }
       setIsInitializing(false);
@@ -719,7 +726,7 @@ function App() {
               {session ? (
                 <>
                   <button
-                    onClick={() => { setCurrentView('dashboard'); setIsMobileMenuOpen(false); }}
+                    onClick={() => { setCurrentView('hub'); setIsMobileMenuOpen(false); }}
                     className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
                   >
                     <LayoutDashboard size={24} />
@@ -821,7 +828,9 @@ function App() {
           <p className="text-text-tertiary text-sm font-semibold tracking-wide animate-pulse">CARREGANDO ZENITH...</p>
         </div>
       ) : (
-        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'}`}>
+        <div 
+          className={`w-full mx-auto grow shrink-0 flex flex-col ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'}`}
+        >
 
           {!['hero', 'hub', 'sobre'].includes(currentView) && (
             <button
@@ -1020,6 +1029,15 @@ function App() {
           )}
         </div>
       )}
+      
+      {/* Spacer block para garantir que o scroll passe do player global */}
+      {playingVideo && (
+        <div 
+          className="w-full shrink-0" 
+          style={{ height: isPlayerMinimized ? '120px' : isPlayerExpanded ? '80vh' : '220px' }} 
+        />
+      )}
+      {!playingVideo && <div className="w-full shrink-0 h-8" />}
     </main>
 
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
