@@ -497,14 +497,6 @@ function App() {
     }
   }, [selectedDate, currentView]);
 
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-4 border-elements border-t-text-primary rounded-full animate-spin" />
-        <p className="text-text-tertiary text-sm font-semibold tracking-wide animate-pulse">CARREGANDO ZENITH...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden">
@@ -754,7 +746,13 @@ function App() {
 
     {/* Main Content */}
     <main id="main-scroll" className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-      <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'}`}>
+      {isInitializing ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <div className="w-10 h-10 border-4 border-elements border-t-text-primary rounded-full animate-spin" />
+          <p className="text-text-tertiary text-sm font-semibold tracking-wide animate-pulse">CARREGANDO ZENITH...</p>
+        </div>
+      ) : (
+        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'}`}>
 
           {!['hero', 'hub', 'sobre'].includes(currentView) && (
             <button
@@ -950,7 +948,8 @@ function App() {
             </div>
           )}
         </div>
-      </main>
+      )}
+    </main>
 
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <CourseBreakerModal isOpen={isCourseModalOpen} onClose={() => setIsCourseModalOpen(false)} />
