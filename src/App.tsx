@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -29,25 +29,19 @@ import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio_history';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isActive = currentView === 'dashboard' || currentView === 'calendar' || currentView === 'stats';
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
+  const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
-        onClick={() => setOpen(o => !o)}
         className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
       >
         <LayoutDashboard size={16} />
@@ -55,30 +49,23 @@ function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }
         <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden z-50">
-          <button
-            onClick={() => { setSelectedDate(today); setCurrentView('dashboard'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'dashboard' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <LayoutDashboard size={14} />
-            Meu Dia
-          </button>
-          <div className="h-px bg-border-base/40" />
-          <button
-            onClick={() => { setCurrentView('calendar'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'calendar' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <Calendar size={14} />
-            Calendário
-          </button>
-          <div className="h-px bg-border-base/40" />
-          <button
-            onClick={() => { setCurrentView('stats'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'stats' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <BarChart2 size={14} />
-            Estatísticas
-          </button>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
+          <div className="w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
+            <button onClick={() => { setSelectedDate(today); setCurrentView('dashboard'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'dashboard' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <LayoutDashboard size={14} />
+              Meu Dia
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('calendar'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'calendar' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <Calendar size={14} />
+              Calendário
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('stats'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'stats' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <BarChart2 size={14} />
+              Estatísticas
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -90,22 +77,15 @@ function FinanceDropdown({ currentView, setCurrentView }: {
   setCurrentView: (v: 'finance' | 'investments') => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isActive = currentView === 'finance' || currentView === 'investments';
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
+  const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
-        onClick={() => setOpen(o => !o)}
         className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
       >
         <Landmark size={16} />
@@ -113,22 +93,18 @@ function FinanceDropdown({ currentView, setCurrentView }: {
         <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden z-50">
-          <button
-            onClick={() => { setCurrentView('finance'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'finance' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <Landmark size={14} />
-            Controle Financeiro
-          </button>
-          <div className="h-px bg-border-base/40" />
-          <button
-            onClick={() => { setCurrentView('investments'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'investments' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <PieChart size={14} />
-            Investimentos
-          </button>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
+          <div className="w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
+            <button onClick={() => { setCurrentView('finance'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'finance' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <Landmark size={14} />
+              Controle Financeiro
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('investments'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'investments' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <PieChart size={14} />
+              Investimentos
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -140,22 +116,15 @@ function ToolsDropdown({ currentView, setCurrentView }: {
   setCurrentView: (v: 'notes' | 'music') => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isActive = currentView === 'notes' || currentView === 'music';
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
+  const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
-        onClick={() => setOpen(o => !o)}
         className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
       >
         <Wrench size={16} />
@@ -163,22 +132,57 @@ function ToolsDropdown({ currentView, setCurrentView }: {
         <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-top-2">
-          <button
-            onClick={() => { setCurrentView('notes'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <FileText size={14} />
-            Notas Integradas
-          </button>
-          <div className="h-px bg-border-base/40" />
-          <button
-            onClick={() => { setCurrentView('music'); setOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'music' ? 'text-text-primary' : 'text-text-tertiary'}`}
-          >
-            <Music size={14} />
-            Zenith Music
-          </button>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
+          <div className="w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
+            <button onClick={() => { setCurrentView('notes'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <FileText size={14} />
+              Notas Integradas
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('music'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'music' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <Music size={14} />
+              Zenith Music
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AIDropdown({ currentView, setCurrentView }: {
+  currentView: AppView;
+  setCurrentView: (v: AppView) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isActive = currentView === 'chat' || currentView === 'audio_history';
+
+  const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
+  const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
+
+  return (
+    <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      <button
+        className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+      >
+        <Sparkles size={16} />
+        IA
+        <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
+          <div className="w-52 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
+            <button onClick={() => { setCurrentView('chat'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'chat' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <Bot size={14} />
+              Zenith AI
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('audio_history' as AppView); setOpen(false); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer text-text-tertiary">
+              <Mic size={14} />
+              Histórico de Áudios
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -640,6 +644,12 @@ function App() {
         ) : (
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+              <RoutineDropdown currentView={currentView} setCurrentView={setCurrentView} setSelectedDate={setSelectedDate} today={today} />
+              <ToolsDropdown currentView={currentView} setCurrentView={setCurrentView as any} />
+              <FinanceDropdown currentView={currentView} setCurrentView={setCurrentView} />
+              <AIDropdown currentView={currentView} setCurrentView={setCurrentView} />
+              {/* Separador vertical */}
+              <div className="w-px h-4 bg-white/20" />
               <button
                 onClick={() => setCurrentView('sobre')}
                 className="cursor-pointer transition-colors flex items-center text-text-tertiary hover:text-text-primary"
@@ -647,9 +657,6 @@ function App() {
               >
                 <Mountain size={16} />
               </button>
-              <RoutineDropdown currentView={currentView} setCurrentView={setCurrentView} setSelectedDate={setSelectedDate} today={today} />
-              <ToolsDropdown currentView={currentView} setCurrentView={setCurrentView as any} />
-              <FinanceDropdown currentView={currentView} setCurrentView={setCurrentView} />
               <button
                 onClick={() => { setIsNotificationCenterOpen(true); }}
                 className="relative cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
@@ -817,6 +824,32 @@ function App() {
               >
                 <PieChart size={24} />
                 Investimentos
+              </button>
+
+              <div className="h-px bg-border-base/40 my-2" />
+              <div className="text-xs uppercase font-bold text-text-tertiary px-4 mb-2 tracking-widest">IA</div>
+              <button
+                onClick={() => { setCurrentView('chat'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'chat' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <Bot size={24} />
+                Zenith AI
+              </button>
+              <button
+                onClick={() => { setIsMobileMenuOpen(false); }}
+                className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
+              >
+                <Mic size={24} />
+                Histórico de Áudios
+              </button>
+
+              <div className="h-px bg-border-base/40 my-2" />
+              <button
+                onClick={() => { setShowLogoutConfirm(true); setIsMobileMenuOpen(false); }}
+                className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-red-400 active:bg-btn-bg"
+              >
+                <X size={24} />
+                Sair da Conta
               </button>
             </nav>
           )}
