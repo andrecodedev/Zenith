@@ -41,7 +41,7 @@ const features = [
 
 export function SobreView({ onBack, onStart }: SobreViewProps) {
   return (
-    <div className="relative min-h-screen w-full pb-24 pt-8">
+    <div className="relative min-h-screen w-full pt-8 flex flex-col">
 
       {/* Logo background watermark */}
       <div className="pointer-events-none select-none fixed bottom-0 right-0 w-[480px] h-[480px] opacity-[0.04] [html.light_&]:opacity-[0.06] translate-x-1/4 translate-y-1/4">
@@ -58,16 +58,16 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
       </button>
 
       {/* Manifesto */}
-      <div className="max-w-2xl mb-20">
-        <p className="text-xs uppercase tracking-[0.3em] text-text-tertiary mb-4">Por que o Zenith existe</p>
-        <h1 className="font-title font-bold text-4xl md:text-5xl text-text-primary leading-tight mb-8">
+      <div className="max-w-2xl mb-16 md:mb-20">
+        <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-text-tertiary mb-3 md:mb-4">Por que o Zenith existe</p>
+        <h1 className="font-title font-bold text-3xl sm:text-4xl md:text-5xl text-text-primary leading-tight mb-6 md:mb-8">
           Cansado de instalar<br />
           <span className="text-transparent bg-clip-text bg-linear-to-r from-white via-neutral-300 to-neutral-500 [html.light_&]:from-neutral-900 [html.light_&]:via-neutral-600 [html.light_&]:to-neutral-400">
             cinco apps pra fazer uma coisa.
           </span>
         </h1>
 
-        <div className="space-y-5 text-text-secondary text-base leading-relaxed">
+        <div className="space-y-4 md:space-y-5 text-text-secondary text-sm md:text-base leading-relaxed">
           <p>
             Agenda aqui. Notas ali. Cursos em outro lugar. Notificação de um lado, calendário de outro,
             e no meio disso tudo, <strong className="text-text-primary">propagandas, planos Premium e promessas de "gratuito"
@@ -97,7 +97,7 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
       </div>
 
       {/* Features */}
-      <div className="mb-20">
+      <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.3em] text-text-tertiary mb-8">O que tem dentro</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map(({ icon: Icon, title, desc, soon }) => (
@@ -123,12 +123,12 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
       </div>
 
       {/* CTA */}
-      <div className="border border-border-base rounded-2xl p-8 md:p-12 text-center bg-bg-secondary/30">
-        <p className="text-text-tertiary text-xs uppercase tracking-widest mb-4">Pronto para começar</p>
+      <div className="border border-border-base rounded-2xl p-6 sm:p-8 md:p-12 text-center bg-bg-secondary/30 mb-16">
+        <p className="text-text-tertiary text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4">Pronto para começar</p>
         <h2 className="font-title font-bold text-2xl md:text-3xl text-text-primary mb-3">
           Domine o seu tempo.
         </h2>
-        <p className="text-text-secondary text-sm mb-8 max-w-md mx-auto leading-relaxed">
+        <p className="text-text-secondary text-xs sm:text-sm mb-6 md:mb-8 max-w-md mx-auto leading-relaxed">
           Por enquanto, <strong className="text-text-primary">100% grátis.</strong> No futuro,
           um valor simbólico - transparente, proporcional ao custo real de servidor e banco de dados.
           Sem abuso. Sem plano premium que trava o básico. Esse é o diferencial do Zenith.

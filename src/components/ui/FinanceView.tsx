@@ -622,7 +622,7 @@ export function FinanceView() {
   return (
     <>
       <div className="flex flex-col">
-        <div className="sticky top-0 z-10 bg-bg-primary flex items-center justify-between px-4 py-3 border-b border-border-base">
+        <div className="bg-bg-primary flex items-center justify-between py-3 border-b border-border-base">
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setRefDate(d => subMonths(d, 1))}
               className="p-1.5 rounded-lg hover:bg-elements cursor-pointer text-text-tertiary hover:text-text-primary transition-colors">
@@ -636,15 +636,15 @@ export function FinanceView() {
               <ChevronRight size={16} />
             </button>
           </div>
-          <div className="flex items-center gap-3">
-            {loading && <span className="text-text-tertiary text-xs animate-pulse">Carregando...</span>}
+          <div className="flex flex-col items-end gap-1">
             <button type="button" onClick={() => setModalOpen(true)}
               className="whitespace-nowrap flex items-center gap-1.5 text-xs font-semibold bg-text-primary text-bg-primary px-3 py-1.5 rounded-lg hover:bg-text-secondary cursor-pointer transition-colors">
               <Plus size={12} strokeWidth={3} /> Nova Entrada
             </button>
+            {loading && <span className="text-text-tertiary text-[10px] animate-pulse">Carregando...</span>}
           </div>
         </div>
-        <div className="p-4 flex flex-col gap-4 pb-24">
+        <div className="flex flex-col gap-4">
           <Summary entries={entries} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="flex flex-col gap-4">

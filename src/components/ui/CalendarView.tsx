@@ -146,7 +146,7 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-bg-primary">
+    <div className="flex flex-col h-full min-h-0 bg-bg-primary px-4">
       <header className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-3xl font-bold font-title mb-1">{getTitle()}</h2>

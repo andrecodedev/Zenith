@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -136,7 +136,7 @@ function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const PERSISTENT_VIEWS: AppView[] = ['dashboard', 'calendar', 'stats', 'notes', 'finance', 'investments'];
+  const PERSISTENT_VIEWS: AppView[] = ['hub', 'dashboard', 'calendar', 'stats', 'notes', 'finance', 'investments'];
   const [currentView, setCurrentView] = useState<AppView>('hero');
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -174,7 +174,7 @@ function App() {
 
   const restoreView = () => {
     const saved = localStorage.getItem('zenith_view') as AppView | null;
-    return saved && PERSISTENT_VIEWS.includes(saved) ? saved : 'dashboard';
+    return saved && PERSISTENT_VIEWS.includes(saved) ? saved : 'hub';
   };
 
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -216,7 +216,7 @@ function App() {
           useStore.getState().fetchData();
           useStore.getState().fetchNotes();
           if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
-            setCurrentView(restoreView());
+            setCurrentView('hub');
           }
           if (notificationsEnabled) subscribeToPush();
         }
@@ -431,8 +431,16 @@ function App() {
 
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden">
-      {/* Floating Header */}
-      <header className={`absolute top-6 left-1/2 w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between z-50 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-300 ${headerVisible ? '-translate-x-1/2 translate-y-0 opacity-100' : '-translate-x-1/2 -translate-y-24 opacity-0 pointer-events-none'}`}>
+      
+      {/* Header Block - Absolute on Hero, Static elsewhere */}
+      <div 
+        className={`w-full flex justify-center transition-all duration-300 z-50 ${
+          currentView === 'hero' 
+            ? `absolute left-0 ${headerVisible ? 'top-6 translate-y-0 opacity-100' : 'top-6 -translate-y-24 opacity-0 pointer-events-none'}`
+            : `flex-shrink-0 ${headerVisible ? 'pt-6 pb-2 sm:pb-4 opacity-100' : 'h-0 overflow-hidden opacity-0 pointer-events-none m-0 p-0'}`
+        }`}
+      >
+        <header className="w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
@@ -562,8 +570,9 @@ function App() {
           </div>
         )}
       </header>
+    </div>
 
-      {/* Mobile Menu Overlay */}
+    {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[100] bg-bg-primary/95 backdrop-blur-md flex flex-col p-6 md:hidden">
           <div className="flex justify-between items-center mb-8">
@@ -666,9 +675,19 @@ function App() {
         </div>
       )}
 
-      {/* Main Content */}
-      <main className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'pt-28 px-6 overflow-y-auto'}`}>
-        <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
+    {/* Main Content */}
+    <main className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8'}`}>
+
+          {!['hero', 'hub', 'sobre'].includes(currentView) && (
+            <button
+              onClick={() => setCurrentView('hub')}
+              className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors text-sm mb-6 mt-6 cursor-pointer group w-fit"
+            >
+              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
+              Menu Principal
+            </button>
+          )}
 
           {currentView === 'hero' ? (
             <Hero onStart={() => session ? setCurrentView('hub') : setIsAuthModalOpen(true)} />
@@ -680,7 +699,7 @@ function App() {
           ) : currentView === 'hub' ? (
             <HubView onNavigate={(v) => setCurrentView(v)} />
           ) : currentView === 'dashboard' ? (
-            <div className="w-full flex flex-col pb-24">
+            <div className="w-full flex flex-col px-4">
 
               <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
@@ -803,7 +822,7 @@ function App() {
               />
 
               {/* Task List */}
-              <div className="space-y-3 flex flex-col">
+              <div className="space-y-3 flex flex-col mb-8">
                 {filteredRoutines.length === 0 ? (
                   <div className="text-center py-12 px-6 text-text-tertiary bg-bg-secondary/50 rounded-lg border border-border-base border-dashed">
                     {selectedRoutines.length === 0
@@ -836,19 +855,21 @@ function App() {
               </div>
             </div>
           ) : currentView === 'stats' ? (
-            <StatsView />
+            <div className="w-full flex-1 flex flex-col mb-8 px-4"><StatsView /></div>
           ) : currentView === 'notes' ? (
-            <NotesView />
+            <div className="w-full flex-1 flex flex-col mb-8 px-4"><NotesView /></div>
           ) : currentView === 'finance' ? (
-            <FinanceView />
+            <div className="w-full flex-1 flex flex-col mb-8 px-4"><FinanceView /></div>
           ) : currentView === 'investments' ? (
-            <InvestmentView />
+            <div className="w-full flex-1 flex flex-col mb-8 px-4"><InvestmentView /></div>
           ) : (
-            <CalendarView
-              selectedDate={selectedDate}
-              onNavigate={handleNavigateDays}
-              onSelectDate={setSelectedDate}
-            />
+            <div className="w-full flex-1 flex flex-col mb-8 px-4">
+              <CalendarView
+                selectedDate={selectedDate}
+                onNavigate={handleNavigateDays}
+                onSelectDate={setSelectedDate}
+              />
+            </div>
           )}
         </div>
       </main>

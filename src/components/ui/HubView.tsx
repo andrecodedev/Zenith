@@ -53,7 +53,7 @@ export function HubView({ onNavigate }: HubViewProps) {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col items-center">
       <div className="w-full max-w-5xl mx-auto space-y-12 py-8">
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-bg-secondary border border-border-base mb-2">
@@ -65,7 +65,7 @@ export function HubView({ onNavigate }: HubViewProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
           {options.map((opt) => (
             <button
               key={opt.id}
