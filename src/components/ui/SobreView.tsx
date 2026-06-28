@@ -41,7 +41,7 @@ const features = [
 
 export function SobreView({ onBack, onStart }: SobreViewProps) {
   return (
-    <div className="relative min-h-screen w-full pt-8 flex flex-col">
+    <div className="relative min-h-screen w-full pt-8 flex flex-col px-4">
 
       {/* Logo background watermark */}
       <div className="pointer-events-none select-none fixed bottom-0 right-0 w-[480px] h-[480px] opacity-[0.04] [html.light_&]:opacity-[0.06] translate-x-1/4 translate-y-1/4">
@@ -119,11 +119,9 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
               <p className="text-text-secondary text-xs leading-relaxed">{desc}</p>
             </div>
           ))}
-        </div>
-      </div>
 
-      {/* CTA */}
-      <div className="border border-border-base rounded-2xl p-6 sm:p-8 md:p-12 text-center bg-bg-secondary/30 mb-16">
+                {/* CTA */}
+      <div className="border border-border-base rounded-2xl p-6 sm:p-8 md:p-12 text-center bg-bg-secondary/30 mb-8">
         <p className="text-text-tertiary text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4">Pronto para começar</p>
         <h2 className="font-title font-bold text-2xl md:text-3xl text-text-primary mb-3">
           Domine o seu tempo.
@@ -140,6 +138,8 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
           Acessar Dashboard
           <ArrowRight size={14} className="transition-transform duration-500 group-hover:translate-x-1.5" />
         </button>
+      </div>
+        </div>
       </div>
     </div>
   );
