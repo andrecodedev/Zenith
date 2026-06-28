@@ -1700,7 +1700,7 @@ export function InvestmentView() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 overflow-x-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 overflow-x-auto mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
           <span className="text-xl font-bold text-text-primary">Controle de Investimentos</span>
           <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base">
