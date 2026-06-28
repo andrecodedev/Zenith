@@ -465,22 +465,22 @@ export function MusicDownloaderView() {
           <p className="text-text-secondary">Busque no YouTube e baixe em MP3/M4A sem anúncios.</p>
         </div>
         
-        <div className="flex bg-bg-secondary p-1 rounded-xl border border-border-base w-fit shrink-0 overflow-x-auto max-w-full">
+        <div className="flex bg-bg-secondary p-1 rounded-xl border border-border-base w-full md:w-fit shrink-0 overflow-x-auto hide-scrollbar">
           <button
             onClick={() => setMusicTab('search')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${musicTab === 'search' ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+            className={`flex-1 justify-center px-3 sm:px-6 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${musicTab === 'search' ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:text-text-primary'}`}
           >
             <Search size={16} /> Pesquisar
           </button>
           <button
             onClick={() => setMusicTab('batch')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${musicTab === 'batch' ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+            className={`flex-1 justify-center px-3 sm:px-6 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${musicTab === 'batch' ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:text-text-primary'}`}
           >
             <List size={16} /> Lote
           </button>
           <button
             onClick={() => setMusicTab('history')}
-            className={`px-4 sm:px-6 py-2 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap ${musicTab === 'history' ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+            className={`flex-1 justify-center px-3 sm:px-6 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center gap-1.5 sm:gap-2 whitespace-nowrap ${musicTab === 'history' ? 'bg-text-primary text-bg-primary' : 'text-text-tertiary hover:text-text-primary'}`}
           >
             <Music size={16} /> Minhas Músicas
           </button>
@@ -823,46 +823,53 @@ export function MusicDownloaderView() {
           ) : (
             <div className="flex flex-col gap-3">
               {filteredHistory.map((video) => (
-                <div key={video.id} className="bg-bg-secondary border border-border-base rounded-xl p-4 flex items-center gap-4 hover:border-neutral-500 transition-colors">
-                  <div className="w-16 h-16 md:w-24 md:h-16 shrink-0 rounded overflow-hidden bg-elements relative">
-                    <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                <div key={video.id} className="bg-bg-secondary border border-border-base rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:border-neutral-500 transition-colors">
+                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 w-full">
+                    <div className="w-16 h-16 md:w-24 md:h-16 shrink-0 rounded overflow-hidden bg-elements relative">
+                      <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-text-primary truncate text-sm mb-1">{video.title}</h4>
+                      <p className="text-xs text-text-tertiary truncate flex items-center gap-2">
+                        {video.channel} 
+                        {video.genre && <span className="bg-elements px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{video.genre}</span>}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-text-primary truncate text-sm mb-1">{video.title}</h4>
-                    <p className="text-xs text-text-tertiary truncate flex items-center gap-2">
-                      {video.channel} 
-                      {video.genre && <span className="bg-elements px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{video.genre}</span>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  
+                  <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto pt-3 sm:pt-0 border-t border-border-base sm:border-t-0 mt-1 sm:mt-0">
                     <button 
                       onClick={() => togglePlay(video)}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${playingVideo?.id === video.id ? 'bg-text-primary text-bg-primary' : 'bg-bg-primary border border-border-base text-text-primary hover:bg-elements'}`}
+                      className={`flex-1 sm:flex-none h-10 px-4 sm:px-0 sm:w-10 rounded-xl sm:rounded-full flex items-center justify-center transition-colors cursor-pointer ${playingVideo?.id === video.id ? 'bg-text-primary text-bg-primary' : 'bg-bg-primary border border-border-base text-text-primary hover:bg-elements'}`}
                       title="Ouvir Música"
                     >
                       {playingVideo?.id === video.id && isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                      <span className="sm:hidden ml-2 font-bold text-xs">Ouvir</span>
                     </button>
-                    <button 
-                      onClick={() => { setVideoToCategorize(video); setNewCategory(''); }}
-                      className="w-10 h-10 rounded-full flex items-center justify-center bg-bg-primary border border-border-base text-text-primary hover:bg-elements transition-colors cursor-pointer"
-                      title="Mudar Categoria / Gênero"
-                    >
-                      <Tag size={16} />
-                    </button>
-                    <button 
-                      onClick={() => { setSelectedVideo(video); setMusicTab('search'); }}
-                      className="w-10 h-10 rounded-full flex items-center justify-center bg-bg-primary border border-border-base text-text-primary hover:bg-elements transition-colors cursor-pointer"
-                      title="Baixar novamente"
-                    >
-                      <Download size={16} />
-                    </button>
-                    <button 
-                      onClick={() => setVideoToDelete(video)}
-                      className="w-10 h-10 rounded-full flex items-center justify-center bg-bg-primary border border-border-base text-text-tertiary hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer"
-                      title="Remover do histórico"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button 
+                        onClick={() => { setVideoToCategorize(video); setNewCategory(''); }}
+                        className="w-10 h-10 rounded-xl sm:rounded-full flex items-center justify-center bg-bg-primary border border-border-base text-text-primary hover:bg-elements transition-colors cursor-pointer"
+                        title="Mudar Categoria / Gênero"
+                      >
+                        <Tag size={16} />
+                      </button>
+                      <button 
+                        onClick={() => { setSelectedVideo(video); setMusicTab('search'); }}
+                        className="w-10 h-10 rounded-xl sm:rounded-full flex items-center justify-center bg-bg-primary border border-border-base text-text-primary hover:bg-elements transition-colors cursor-pointer"
+                        title="Baixar novamente"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button 
+                        onClick={() => setVideoToDelete(video)}
+                        className="w-10 h-10 rounded-xl sm:rounded-full flex items-center justify-center bg-bg-primary border border-border-base text-text-tertiary hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer"
+                        title="Remover do histórico"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
