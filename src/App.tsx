@@ -581,7 +581,7 @@ function App() {
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
-          onClick={() => setCurrentView('hero')}
+          onClick={() => setCurrentView(session ? 'hub' : 'hero')}
         >
           <div className="w-8 h-8 flex items-center justify-center">
             <img src="/logo.png" alt="Zenith Logo" className="w-full h-full object-contain transition-all duration-300 [html.light_&]:invert" />
@@ -642,18 +642,16 @@ function App() {
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               <button
                 onClick={() => setCurrentView('sobre')}
-                className="cursor-pointer transition-colors flex items-center gap-2 text-text-tertiary hover:text-text-primary"
+                className="cursor-pointer transition-colors flex items-center text-text-tertiary hover:text-text-primary"
+                title="Sobre o Zenith"
               >
                 <Mountain size={16} />
-                Sobre
               </button>
               <RoutineDropdown currentView={currentView} setCurrentView={setCurrentView} setSelectedDate={setSelectedDate} today={today} />
               <ToolsDropdown currentView={currentView} setCurrentView={setCurrentView as any} />
               <FinanceDropdown currentView={currentView} setCurrentView={setCurrentView} />
               <button
-                onClick={() => {
-                  setIsNotificationCenterOpen(true);
-                }}
+                onClick={() => { setIsNotificationCenterOpen(true); }}
                 className="relative cursor-pointer text-text-tertiary hover:text-text-primary transition-colors flex items-center"
                 title="Central de Notificações"
               >
@@ -668,15 +666,18 @@ function App() {
               >
                 {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
               </button>
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="cursor-pointer text-text-tertiary hover:text-text-primary font-bold uppercase tracking-wider text-xs transition-colors"
+              >
+                Sair
+              </button>
             </nav>
-            
             
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-4">
               <button 
-                onClick={() => {
-                  setIsNotificationCenterOpen(true);
-                }}
+                onClick={() => { setIsNotificationCenterOpen(true); }}
                 className="relative cursor-pointer text-text-secondary hover:text-text-primary transition-colors"
                 title="Central de Notificações"
               >
@@ -1102,8 +1103,8 @@ function App() {
 
       <GlobalMusicPlayer onNavigate={(v) => setCurrentView(v as AppView)} />
 
-      {/* Floating Action Buttons */}
-      {session && !['hero', 'sobre', 'chat'].includes(currentView) && (
+      {/* Floating Action Buttons - ocultos no hub, hero, sobre e chat */}
+      {session && !['hero', 'sobre', 'chat', 'hub'].includes(currentView) && (
         <div className="fixed bottom-6 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none">
           {/* Chat AI Button */}
           <button
