@@ -3,6 +3,7 @@ import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowR
 interface SobreViewProps {
   onBack: () => void;
   onStart: () => void;
+  isLoggedIn?: boolean;
 }
 
 type Feature = {
@@ -50,7 +51,7 @@ const features: Feature[] = [
   },
 ];
 
-export function SobreView({ onBack, onStart }: SobreViewProps) {
+export function SobreView({ onBack, onStart, isLoggedIn }: SobreViewProps) {
   return (
     <div className="relative min-h-screen w-full pt-8 flex flex-col px-4">
 
@@ -62,10 +63,10 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
       {/* Back */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors text-sm mb-12 cursor-pointer group"
+        className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors text-sm mb-12 cursor-pointer group w-fit"
       >
         <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-        Voltar
+        {isLoggedIn ? 'Menu Principal' : 'Voltar'}
       </button>
 
       {/* Manifesto */}

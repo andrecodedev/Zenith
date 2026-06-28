@@ -770,7 +770,8 @@ function App() {
             <Hero onStart={() => session ? setCurrentView('hub') : setIsAuthModalOpen(true)} />
           ) : currentView === 'sobre' ? (
             <SobreView
-              onBack={() => setCurrentView('hero')}
+              isLoggedIn={!!session}
+              onBack={() => setCurrentView(session ? 'hub' : 'hero')}
               onStart={() => session ? setCurrentView('hub') : setIsAuthModalOpen(true)}
             />
           ) : currentView === 'hub' ? (
