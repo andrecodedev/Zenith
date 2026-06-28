@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -23,6 +23,7 @@ import { FinanceView } from './components/ui/FinanceView';
 import { InvestmentView } from './components/ui/InvestmentView';
 import { MusicDownloaderView } from './components/ui/MusicDownloaderView';
 import { ChatView } from './components/ui/ChatView';
+import { QuickTranscriber } from './components/ui/QuickTranscriber';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
@@ -1100,6 +1101,22 @@ function App() {
       )}
 
       <GlobalMusicPlayer onNavigate={(v) => setCurrentView(v as AppView)} />
+
+      {/* Floating Action Buttons */}
+      {session && !['hero', 'sobre', 'chat'].includes(currentView) && (
+        <div className="fixed bottom-6 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none">
+          {/* Chat AI Button */}
+          <button
+            onClick={() => setCurrentView('chat')}
+            className="pointer-events-auto w-14 h-14 rounded-full bg-bg-secondary border border-border-base text-text-secondary hover:text-brand-pink hover:border-brand-pink hover:-translate-y-1 active:translate-y-0 active:scale-95 flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer group"
+            title="Zenith AI"
+          >
+            <Bot size={22} className="transition-colors duration-300 group-hover:text-brand-pink" />
+          </button>
+          {/* Quick Transcriber */}
+          <QuickTranscriber />
+        </div>
+      )}
     </div>
   );
 }
