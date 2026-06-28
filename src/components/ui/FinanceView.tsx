@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Check, X, Bell } from 'lucide-react';
 import { addMonths, subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
@@ -19,6 +19,7 @@ interface FinanceEntry {
   amount: number;
   paid: boolean;
   sortOrder: number;
+  notify?: boolean;
 }
 
 interface EntryForm {
@@ -28,8 +29,11 @@ interface EntryForm {
   amountStr: string;
   paid: boolean;
   recurring: boolean;
+  recurrenceType: 'monthly' | 'days';
+  recurrenceDays: string;
   endYear: number;
   endMonth: number;
+  notify: boolean;
 }
 
 const fmt = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -48,6 +52,7 @@ const mapRow = (r: Record<string, unknown>): FinanceEntry => ({
   amount: Number(r.amount) || 0,
   paid: Boolean(r.paid),
   sortOrder: Number(r.sort_order) || 0,
+  notify: Boolean(r.notify),
 });
 
 const parseDateStr = (s: string): number => {
@@ -144,35 +149,64 @@ function DateEditable({ value, onSave }: { value: string; onSave: (v: string) =>
 }
 
 const MONTH_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const MONTH_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (form: EntryForm, months: { year: number; month: number }[]) => Promise<void>;
+  onSubmit: (form: EntryForm, occurrences: { year: number; month: number; dateStr: string }[]) => Promise<void>;
   currentYear: number;
   currentMonth: number;
 }) {
   const blank = (): EntryForm => ({
     type: 'fixed', name: '', dateStr: '', amountStr: '', paid: false,
-    recurring: false, endYear: currentYear, endMonth: currentMonth,
+    recurring: false, recurrenceType: 'monthly', recurrenceDays: '15', endYear: currentYear, endMonth: currentMonth, notify: false
   });
   const [form, setForm] = useState<EntryForm>(blank);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { if (isOpen) setForm(blank()); }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const months = useMemo(() => {
-    const result: { year: number; month: number }[] = [];
-    let y = currentYear, m = currentMonth;
-    for (let i = 0; i < 60; i++) {
-      result.push({ year: y, month: m });
-      if (!form.recurring || (y === form.endYear && m === form.endMonth)) break;
-      m++; if (m > 12) { m = 1; y++; }
-      if (y > form.endYear || (y === form.endYear && m > form.endMonth)) break;
+  const occurrences = useMemo(() => {
+    const result: { year: number; month: number; dateStr: string }[] = [];
+    if (!form.recurring) {
+      result.push({ year: currentYear, month: currentMonth, dateStr: form.dateStr });
+      return result;
+    }
+    
+    if (form.recurrenceType === 'monthly') {
+      let y = currentYear, m = currentMonth;
+      for (let i = 0; i < 60; i++) {
+        result.push({ year: y, month: m, dateStr: form.dateStr });
+        if (y === form.endYear && m === form.endMonth) break;
+        m++; if (m > 12) { m = 1; y++; }
+        if (y > form.endYear || (y === form.endYear && m > form.endMonth)) break;
+      }
+    } else {
+      const days = parseInt(form.recurrenceDays) || 15;
+      const [dd, mm] = form.dateStr.split('/').map(Number);
+      if (!dd || !mm) return [{ year: currentYear, month: currentMonth, dateStr: form.dateStr }];
+      
+      const curDate = new Date(currentYear, mm - 1, dd);
+      const endDate = new Date(form.endYear, form.endMonth, 0); // last day of endMonth
+      
+      for (let i = 0; i < 60; i++) {
+        const y = curDate.getFullYear();
+        const m = curDate.getMonth() + 1;
+        const d = curDate.getDate();
+        
+        if (curDate > endDate) break;
+        
+        result.push({ 
+          year: y, 
+          month: m, 
+          dateStr: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}` 
+        });
+        
+        curDate.setDate(curDate.getDate() + days);
+      }
     }
     return result;
-  }, [form.recurring, form.endYear, form.endMonth, currentYear, currentMonth]);
+  }, [form.recurring, form.recurrenceType, form.recurrenceDays, form.endYear, form.endMonth, currentYear, currentMonth, form.dateStr]);
 
   const handleDateInput = (raw: string) => {
     const d = raw.replace(/\D/g, '').slice(0, 4);
@@ -182,7 +216,7 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
   const submit = async () => {
     if (!form.name.trim() || !form.amountStr.trim()) return;
     setBusy(true);
-    await onSubmit(form, months);
+    await onSubmit(form, occurrences);
     setBusy(false);
     onClose();
   };
@@ -248,16 +282,27 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
             </div>
           </div>
 
-          {/* Pago */}
-          {cfg.showPaid && (
-            <label className="flex items-center gap-2.5 cursor-pointer select-none"
-              onClick={() => setForm(f => ({ ...f, paid: !f.paid }))}>
-              <div className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${form.paid ? 'bg-green-500' : 'bg-elements'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${form.paid ? 'translate-x-4' : ''}`} />
-              </div>
-              <span className="text-sm text-text-secondary">Já pago</span>
-            </label>
-          )}
+          {/* Status & Notificação */}
+          <div className="flex flex-col gap-4">
+            {cfg.showPaid && (
+              <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit"
+                onClick={() => setForm(f => ({ ...f, paid: !f.paid }))}>
+                <div className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${form.paid ? 'bg-green-500' : 'bg-elements'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${form.paid ? 'translate-x-4' : ''}`} />
+                </div>
+                <span className="text-sm text-text-secondary">Já pago</span>
+              </label>
+            )}
+            {cfg.showDate && !form.paid && (
+              <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit group"
+                onClick={() => setForm(f => ({ ...f, notify: !f.notify }))}>
+                <div className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${form.notify ? 'bg-amber-400' : 'bg-elements group-hover:bg-elements-hover'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ease-spring ${form.notify ? 'translate-x-4' : ''}`} />
+                </div>
+                <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors flex items-center gap-1.5"><Bell size={14} /> Receber notificação no dia</span>
+              </label>
+            )}
+          </div>
 
           {/* Recorrência */}
           <div className="border-t border-border-base/30 pt-4">
@@ -273,7 +318,7 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
               <div className="mt-3 flex flex-col gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-text-tertiary">
-                    De <span className="text-text-primary font-semibold">{MONTH_PT[currentMonth - 1]}/{currentYear}</span> até:
+                    De <span className="text-text-primary font-semibold">{form.dateStr || '...'}</span> até o fim de:
                   </span>
                   <select value={form.endMonth} onChange={e => setForm(f => ({ ...f, endMonth: Number(e.target.value) }))}
                     className="bg-bg-primary border border-border-base rounded-lg px-2 py-1 text-xs text-text-primary outline-none cursor-pointer">
@@ -284,13 +329,31 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
                     {years.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
-                {months.length > 0 && (
-                  <div className="bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-2">
+                
+                <div className="flex items-center gap-2 mt-2">
+                  <select value={form.recurrenceType} onChange={e => setForm(f => ({ ...f, recurrenceType: e.target.value as 'monthly' | 'days' }))}
+                    className="bg-bg-primary border border-border-base rounded-lg px-2 py-1.5 text-xs text-text-primary outline-none cursor-pointer">
+                    <option value="monthly">Todo mês no mesmo dia</option>
+                    <option value="days">Repetir a cada X dias</option>
+                  </select>
+                  
+                  {form.recurrenceType === 'days' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-text-tertiary">a cada</span>
+                      <input type="number" min="1" max="365" value={form.recurrenceDays} onChange={e => setForm(f => ({ ...f, recurrenceDays: e.target.value }))}
+                        className="w-16 bg-bg-primary border border-border-base rounded-lg px-2 py-1 text-xs text-text-primary outline-none focus:border-neutral-500" />
+                      <span className="text-xs text-text-tertiary">dias</span>
+                    </div>
+                  )}
+                </div>
+
+                {occurrences.length > 0 && (
+                  <div className="bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-2 mt-2">
                     <p className="text-xs text-violet-300 mb-1">
-                      Será criado em <span className="font-bold">{months.length}</span> {months.length === 1 ? 'mês' : 'meses'}:
+                      Serão criadas <span className="font-bold">{occurrences.length}</span> entradas:
                     </p>
-                    <p className="text-xs text-violet-400/80 font-mono leading-relaxed">
-                      {months.map(({ year: y, month: m }) => `${MONTH_SHORT[m - 1]}/${y}`).join(' · ')}
+                    <p className="text-xs text-violet-400/80 font-mono leading-relaxed max-h-20 overflow-y-auto">
+                      {occurrences.map(o => `${o.dateStr}/${o.year}`).join(' · ')}
                     </p>
                   </div>
                 )}
@@ -311,7 +374,7 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
                 ? 'bg-elements text-text-tertiary cursor-not-allowed'
                 : 'bg-text-primary text-bg-primary hover:bg-text-secondary cursor-pointer'
             }`}>
-            {busy ? 'Criando...' : months.length > 1 ? `Criar (${months.length} meses)` : 'Criar entrada'}
+            {busy ? 'Criando...' : occurrences.length > 1 ? `Criar (${occurrences.length} ocorrências)` : 'Criar entrada'}
           </button>
         </div>
       </div>
@@ -353,6 +416,15 @@ function EntryRow({ entry, cfg, onUpdate, onDelete }: {
           placeholder="R$ 0,00" right
         />
       </td>
+      {cfg.showDate && (
+        <td className="px-1 sm:px-3 py-2.5 w-12 sm:w-16 text-center border border-border-base">
+          <button type="button" onClick={() => onUpdate(entry.id, { notify: !entry.notify })}
+            className={`mx-auto shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${entry.notify ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20' : 'text-text-tertiary/40 hover:text-text-primary hover:bg-elements'}`}
+            title={entry.notify ? "Notificação ativada" : "Ativar notificação"}>
+            <Bell size={14} className={entry.notify ? 'animate-pulse' : ''} />
+          </button>
+        </td>
+      )}
       <td className="px-3 py-2.5 w-10 border border-border-base">
         <button type="button" onClick={() => onDelete(entry.id)}
           className="mx-auto shrink-0 w-5 h-5 flex items-center justify-center text-text-tertiary/50 hover:text-red-400 transition-all cursor-pointer">
@@ -388,6 +460,7 @@ function Section({ type, entries, onAdd, onUpdate, onDelete }: {
               <th className="px-3 py-2.5 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Descrição</th>
               {cfg.showDate && <th className="px-3 py-2.5 w-24 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal hidden sm:table-cell border border-border-base">Data</th>}
               <th className="px-3 py-2.5 w-24 sm:w-32 text-right text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Valor</th>
+              {cfg.showDate && <th className="px-1 sm:px-3 py-2.5 w-12 sm:w-16 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base" title="Notificação">Notif.</th>}
               <th className="px-3 py-2.5 w-10 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Ação</th>
             </tr>
           </thead>
@@ -572,10 +645,10 @@ export function FinanceView() {
     if (!user) return;
     const id = crypto.randomUUID();
     const sortOrder = entries.filter(e => e.type === type).length;
-    const entry: FinanceEntry = { id, type, name: '', dateStr: '', amount: 0, paid: false, sortOrder };
+    const entry: FinanceEntry = { id, type, name: '', dateStr: '', amount: 0, paid: false, sortOrder, notify: false };
     setEntries(p => [...p, entry]);
     await supabase.from('finance_entries').insert({
-      id, user_id: user.id, year, month, type, name: '', date_str: '', amount: 0, paid: false, sort_order: sortOrder,
+      id, user_id: user.id, year, month, type, name: '', date_str: '', amount: 0, paid: false, sort_order: sortOrder, notify: false
     });
   }, [entries, year, month]);
 
@@ -586,6 +659,7 @@ export function FinanceView() {
     if (updates.dateStr !== undefined) db.date_str = updates.dateStr;
     if (updates.amount !== undefined) db.amount = updates.amount;
     if (updates.paid !== undefined) db.paid = updates.paid;
+    if (updates.notify !== undefined) db.notify = updates.notify;
     await supabase.from('finance_entries').update(db).eq('id', id);
   }, []);
 
@@ -594,21 +668,22 @@ export function FinanceView() {
     await supabase.from('finance_entries').delete().eq('id', id);
   }, []);
 
-  const createEntries = useCallback(async (form: EntryForm, months: { year: number; month: number }[]) => {
+  const createEntries = useCallback(async (form: EntryForm, occurrences: { year: number; month: number; dateStr: string }[]) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const amount = parseAmt(form.amountStr);
     const sortBase = entries.filter(e => e.type === form.type).length;
-    const rows = months.map(({ year: y, month: m }, idx) => ({
+    const rows = occurrences.map((occ, idx) => ({
       id: crypto.randomUUID(),
       user_id: user.id,
-      year: y, month: m,
+      year: occ.year, month: occ.month,
       type: form.type,
       name: form.name,
-      date_str: form.dateStr,
+      date_str: occ.dateStr,
       amount,
       paid: idx === 0 ? form.paid : false,
       sort_order: sortBase + idx,
+      notify: form.notify,
     }));
     await supabase.from('finance_entries').insert(rows);
     const thisMonth = rows.filter(r => r.year === year && r.month === month);

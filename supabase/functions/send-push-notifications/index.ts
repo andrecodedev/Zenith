@@ -23,6 +23,7 @@ serve(async () => {
 
   console.log(`[push] Running at ${hh}:${mm} BRT (UTC-3)`);
 
+  // --- MÓDULO: ROTINAS ---
   const { data: routines } = await supabase
     .from('routines')
     .select('id, title, description, user_id, time, times, recurrence, custom_days, date, start_date, end_date, excluded_dates, created_at');
@@ -152,5 +153,59 @@ serve(async () => {
   );
 
   console.log(`[push] Sent ${sends.length}, logged ${toSend.length} routines`);
-  return new Response(`sent ${sends.length}`, { status: 200 });
+  
+  // --- MÓDULO: FINANÇAS (Roda apenas às 09:00 BRT) ---
+  let financeSends = 0;
+  if (hh === '09' && mm === '00') {
+    const year = local.getFullYear();
+    const month = local.getMonth() + 1;
+    const day = local.getDate();
+    const dateStrFormated = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
+    
+    console.log(`[push-finance] Checking finance entries for ${dateStrFormated}`);
+    
+    const { data: finances } = await supabase
+      .from('finance_entries')
+      .select('*')
+      .eq('year', year)
+      .eq('month', month)
+      .eq('notify', true)
+      .eq('paid', false);
+      
+    if (finances && finances.length > 0) {
+      const dueToday = finances.filter(f => f.date_str === dateStrFormated);
+      if (dueToday.length > 0) {
+        console.log(`[push-finance] Found ${dueToday.length} due finance entries`);
+        const userIdsFin = [...new Set(dueToday.map(f => f.user_id))];
+        const { data: subsFin } = await supabase.from('push_subscriptions').select('*').in('user_id', userIdsFin);
+        
+        if (subsFin && subsFin.length > 0) {
+          const pushesFin = dueToday.flatMap(fin => 
+            subsFin.filter(s => s.user_id === fin.user_id).map(async sub => {
+               try {
+                 await webpush.sendNotification(
+                   { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                   JSON.stringify({
+                     title: `Conta Vencendo Hoje!`,
+                     body: `A despesa "${fin.name}" (R$ ${Number(fin.amount).toFixed(2)}) vence hoje.`,
+                     payload: { type: 'finance', id: fin.id, dateStr: todayStr },
+                   }),
+                   { TTL: 120 }
+                 );
+                 financeSends++;
+               } catch (err: any) {
+                 if (err.statusCode === 404 || err.statusCode === 410) {
+                   await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+                 }
+               }
+            })
+          );
+          await Promise.all(pushesFin);
+          console.log(`[push-finance] Sent ${financeSends} finance push notifications`);
+        }
+      }
+    }
+  }
+
+  return new Response(`sent ${sends.length} routines, ${financeSends} finance`, { status: 200 });
 });

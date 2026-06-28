@@ -318,6 +318,55 @@ function App() {
   }, [routines, taskInstances, notificationsEnabled]);
 
   useEffect(() => {
+    if (!session || !notificationsEnabled) return;
+
+    const checkFinanceNotifications = async () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+      const dateStr = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}`;
+      const cacheKey = `finance_notified_${year}_${month}_${day}`;
+
+      if (localStorage.getItem(cacheKey)) return;
+
+      const { data } = await supabase
+        .from('finance_entries')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('year', year)
+        .eq('month', month)
+        .eq('notify', true)
+        .eq('paid', false);
+
+      if (data && data.length > 0) {
+        let notifiedAny = false;
+        data.forEach(entry => {
+          if (entry.date_str === dateStr) {
+            const amount = Number(entry.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            useStore.getState().addNotification(
+              `Conta Vencendo Hoje!`,
+              `A despesa "${entry.name}" no valor de ${amount} vence hoje.`,
+              entry.id,
+              dateStr
+            );
+            notifiedAny = true;
+          }
+        });
+        if (notifiedAny) {
+          localStorage.setItem(cacheKey, 'true');
+        }
+      }
+    };
+
+    checkFinanceNotifications();
+    
+    // Tenta de novo a cada 1 hora se o app ficar muito tempo aberto
+    const interval = setInterval(checkFinanceNotifications, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [session, notificationsEnabled]);
+
+  useEffect(() => {
     registerServiceWorker().then(() => {
       // subscribeToPush é chamado pelo onAuthStateChange no SIGNED_IN. não duplicar aqui
     });
