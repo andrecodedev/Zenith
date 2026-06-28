@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, Info } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -553,11 +553,12 @@ function App() {
           </div>
 
           {(currentView === 'hero' || (currentView === 'sobre' && !session)) ? (
-            <nav className="flex flex-col gap-4 text-lg font-medium">
+            <nav className="flex flex-col gap-4 text-base font-medium">
               <button
                 onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'sobre' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
               >
+                <Info size={24} />
                 Sobre o Zenith
               </button>
               {session ? (
@@ -586,11 +587,12 @@ function App() {
               )}
             </nav>
           ) : (
-            <nav className="flex flex-col gap-4 text-lg font-medium">
+            <nav className="flex flex-col gap-4 text-base font-medium">
               <button
                 onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
                 className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
               >
+                <Info size={24} />
                 Sobre o Zenith
               </button>
               <button

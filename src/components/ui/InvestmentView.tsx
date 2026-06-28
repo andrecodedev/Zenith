@@ -276,11 +276,11 @@ function Editable({ value, onSave, right = false, placeholder = '' }: {
   if (ed) return (
     <input ref={ref} value={d} onChange={e => setD(e.target.value)} onBlur={done}
       onKeyDown={e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') setEd(false); }}
-      className={`bg-transparent outline-none w-full p-0 m-0 border-transparent border-0 ring-0 focus:ring-0 leading-tight text-sm font-mono ${right ? 'text-right' : ''}`} />
+      className={`bg-transparent outline-none w-full p-0 m-0 border-transparent border-0 ring-0 focus:ring-0 leading-tight text-xs sm:text-sm font-mono ${right ? 'text-right' : ''}`} />
   );
   return (
     <span onClick={() => setEd(true)}
-      className={`cursor-text block w-full p-0 m-0 border-transparent border-0 leading-tight text-sm font-mono ${right ? 'text-right' : ''} ${!value ? 'text-text-tertiary/30' : ''}`}>
+      className={`cursor-text block w-full p-0 m-0 border-transparent border-0 leading-tight text-xs sm:text-sm font-mono ${right ? 'text-right' : ''} ${!value ? 'text-text-tertiary/30' : ''}`}>
       {value || placeholder || ' '}
     </span>
   );
@@ -343,8 +343,8 @@ function DistTable({ title, patrimonioLabel = "Patrimônio atual", patrimonio, a
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
       <div onClick={() => setCollapsed(!collapsed)} className="px-4 py-3 border-b border-border-base bg-bg-secondary flex items-center justify-between cursor-pointer hover:bg-elements/10 transition-colors">
-        <span className="text-lg font-bold text-text-primary">{title}</span>
-        {collapsed ? <ChevronDown size={14} className="text-text-tertiary" /> : <ChevronUp size={14} className="text-text-tertiary" />}
+        <span className="text-sm sm:text-base font-bold text-text-primary pr-2">{title}</span>
+        {collapsed ? <ChevronDown size={14} className="text-text-tertiary shrink-0" /> : <ChevronUp size={14} className="text-text-tertiary shrink-0" />}
       </div>
       {!collapsed && (
       <div className="overflow-x-auto">
@@ -386,7 +386,7 @@ function DistTable({ title, patrimonioLabel = "Patrimônio atual", patrimonio, a
               const hasActiveGoal = row.goal && row.goal.currentAmount < row.goal.targetAmount;
               return (
                 <tr key={row.label} className="hover:bg-elements/10 transition-colors">
-                  <td className="px-4 py-2.5 text-sm text-text-primary border border-border-base">
+                  <td className="px-4 py-2.5 text-xs sm:text-sm text-text-primary border border-border-base">
                     <div className="flex items-center gap-1.5">
                       {row.label}
                       {hasActiveGoal && (
@@ -401,14 +401,14 @@ function DistTable({ title, patrimonioLabel = "Patrimônio atual", patrimonio, a
                       {row.onCurrentPctCh ? (
                         <Editable value={fmtP(row.currentPct)} onSave={v => row.onCurrentPctCh!(parseFmt(v))} right />
                       ) : (
-                        <span className="text-sm font-mono text-text-secondary">{fmtP(row.currentPct)}</span>
+                        <span className="text-xs sm:text-sm font-mono text-text-secondary">{fmtP(row.currentPct)}</span>
                       )}
                     </td>
                   )}
                   <td className={`px-3 py-2.5 text-right ${isSimulator ? 'w-[25%]' : 'w-24'} border border-border-base`}>
                     <Editable value={fmtP(row.idealPct)} onSave={v => row.onIdealCh(parseFmt(v))} right />
                   </td>
-                  <td className={`px-3 py-2.5 text-right text-sm font-mono border border-border-base ${row.quantoColoco > 0 ? (hasActiveGoal ? 'text-text-primary' : 'text-emerald-400') : 'text-text-tertiary/40'}`}>
+                  <td className={`px-3 py-2.5 text-right text-xs sm:text-sm font-mono border border-border-base ${row.quantoColoco > 0 ? (hasActiveGoal ? 'text-text-primary' : 'text-emerald-400') : 'text-text-tertiary/40'}`}>
                     {fmt(row.quantoColoco)}
                   </td>
                 </tr>
@@ -614,14 +614,14 @@ function GoalsSection({ goals, categories, investPatrimonio, onAdd, onDelete, on
   }, 0));
   return (
     <div className="shrink-0">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-text-primary">Metas de Investimento</h2>
+      <div className="flex flex-wrap items-center justify-between mb-3 gap-3">
+        <div className="flex flex-wrap items-center gap-2 flex-1">
+          <h2 className="text-base sm:text-lg font-bold text-text-primary whitespace-nowrap">Metas de Investimento</h2>
           {goals.length > 0 && totalPriority > 0 && (
-            <span className="text-[10px] font-bold text-text-primary bg-elements/10 border border-border-base px-2 py-0.5 rounded uppercase tracking-wider">{totalPriority}% do aporte direcionado</span>
+            <span className="text-[10px] font-bold text-text-primary bg-elements/10 border border-border-base px-2 py-0.5 rounded uppercase tracking-wider whitespace-nowrap">{totalPriority}% do aporte direcionado</span>
           )}
         </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-1 text-xs text-text-primary hover:text-text-primary cursor-pointer transition-colors font-semibold">
+        <button onClick={() => setShowForm(true)} className="flex shrink-0 items-center gap-1 text-xs text-text-primary hover:text-text-primary cursor-pointer transition-colors font-semibold">
           <Plus size={12} strokeWidth={2.5} /> Nova Meta
         </button>
       </div>
@@ -699,11 +699,11 @@ function PortfolioSummary({ holdings, prices, totalCost, transactions }: {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
       {cards.map(c => (
-        <div key={c.label} className="bg-bg-secondary border border-border-base rounded-2xl px-5 py-4 shadow-sm flex flex-col justify-center">
-          <p className="text-xs font-medium text-text-tertiary mb-1.5">{c.label}</p>
-          <p className={`text-xl font-bold font-mono tracking-tight ${c.colorClass}`}>{c.value}</p>
+        <div key={c.label} className="bg-bg-secondary border border-border-base rounded-2xl px-3 sm:px-5 py-3 sm:py-4 shadow-sm flex flex-col justify-center min-w-0 overflow-hidden">
+          <p className="text-[10px] sm:text-xs font-medium text-text-tertiary mb-1 sm:mb-1.5 truncate">{c.label}</p>
+          <p className={`text-base sm:text-xl font-bold font-mono tracking-tight truncate ${c.colorClass}`}>{c.value}</p>
         </div>
       ))}
     </div>
@@ -885,8 +885,8 @@ function EvolutionChart({ transactions, prices, holdings }: { transactions: ITra
     <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h3 className="text-lg font-bold text-text-primary">Evolução do Patrimônio</h3>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex-1 sm:w-36">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+          <div className="w-full sm:w-36">
             <StyledSelect
               value={period}
               onChange={v => setPeriod(v as '12m' | 'all')}
@@ -896,7 +896,7 @@ function EvolutionChart({ transactions, prices, holdings }: { transactions: ITra
               ]}
             />
           </div>
-          <div className="flex-1 sm:w-36">
+          <div className="w-full sm:w-36">
             <StyledSelect
               value="all"
               onChange={() => {}}
@@ -1141,7 +1141,7 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
     return (
       <div className="bg-bg-secondary border border-border-base rounded-xl p-4 shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-text-primary">Ativos na Mira</h2>
+          <h2 className="text-sm sm:text-base font-bold text-text-primary">Ativos na Mira</h2>
         </div>
         <div className="flex gap-2 flex-wrap mt-2">
           {categories.map(cat => (
@@ -1158,7 +1158,7 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden shrink-0">
       <div onClick={() => setTableCollapsed(!tableCollapsed)} className="px-4 py-3 border-b border-border-base bg-bg-secondary flex items-center justify-between cursor-pointer hover:bg-elements/10 transition-colors">
-        <span className="text-lg font-bold text-text-primary">Ativos na Mira</span>
+        <span className="text-sm sm:text-base font-bold text-text-primary">Ativos na Mira</span>
         {tableCollapsed ? <ChevronDown size={14} className="text-text-tertiary" /> : <ChevronUp size={14} className="text-text-tertiary" />}
       </div>
       {!tableCollapsed && (<div>
@@ -1305,11 +1305,11 @@ function TransactionsTab({ transactions, categories, onEdit, onDelete }: {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-bg-secondary border border-border-base rounded-xl p-5">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="bg-bg-secondary border border-border-base rounded-xl p-5 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h3 className="text-lg font-bold text-text-primary">Consolidação de aportes</h3>
-          <div className="flex items-center gap-3">
-            <div className="w-36">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+            <div className="w-full sm:w-36">
               <StyledSelect
                 value={period}
                 onChange={v => setPeriod(v as '12m' | 'all')}
@@ -1319,7 +1319,7 @@ function TransactionsTab({ transactions, categories, onEdit, onDelete }: {
                 ]}
               />
             </div>
-            <div className="w-36">
+            <div className="w-full sm:w-36">
               <StyledSelect
                 value={categoryId}
                 onChange={setCategoryId}
@@ -1331,7 +1331,7 @@ function TransactionsTab({ transactions, categories, onEdit, onDelete }: {
             </div>
           </div>
         </div>
-        <div className="h-[300px] w-full">
+        <div className="h-[300px] w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
               <XAxis dataKey="label" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} />
@@ -1412,17 +1412,17 @@ function TransactionCategorySection({ cat, transactions, onEdit, onDelete }: {
             <tbody>
               {catTxs.map(t => (
                 <tr key={t.id} className="border-b border-border-base/50 last:border-0 hover:bg-bg-primary transition-colors">
-                  <td className="px-4 py-3 text-sm font-bold text-text-primary">{t.ticker}</td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-4 py-3 text-xs sm:text-sm font-bold text-text-primary">{t.ticker}</td>
+                  <td className="px-4 py-3 text-xs sm:text-sm">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${t.type === 'buy' ? 'bg-emerald-500/10 text-emerald-400' : t.type === 'sell' ? 'bg-rose-500/10 text-rose-400' : 'bg-blue-500/10 text-blue-400'}`}>
                       {t.type === 'buy' ? 'Compra' : t.type === 'sell' ? 'Venda' : 'Provento'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-text-secondary">{new Date(t.date).toLocaleDateString('pt-BR')}</td>
-                  <td className="px-4 py-3 text-sm font-mono text-text-primary text-right">{t.quantity}</td>
-                  <td className="px-4 py-3 text-sm font-mono text-text-primary text-right">{fmt(t.price)}</td>
-                  <td className="px-4 py-3 text-sm font-mono text-text-primary text-right">{fmt(t.quantity * t.price + t.otherCosts)}</td>
-                  <td className="px-4 py-3 text-sm text-center">
+                  <td className="px-4 py-3 text-xs sm:text-sm text-text-secondary">{new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                  <td className="px-4 py-3 text-xs sm:text-sm font-mono text-text-primary text-right">{t.quantity}</td>
+                  <td className="px-4 py-3 text-xs sm:text-sm font-mono text-text-primary text-right">{fmt(t.price)}</td>
+                  <td className="px-4 py-3 text-xs sm:text-sm font-mono text-text-primary text-right">{fmt(t.quantity * t.price + t.otherCosts)}</td>
+                  <td className="px-4 py-3 text-xs sm:text-sm text-center">
                     <div className="flex items-center justify-center gap-2">
                       <button onClick={(e) => { e.stopPropagation(); onEdit(t); }} className="text-text-tertiary hover:text-indigo-400 transition-colors cursor-pointer"><Pencil size={14} /></button>
                       <button onClick={(e) => { e.stopPropagation(); onDelete(t); }} className="text-text-tertiary hover:text-rose-400 transition-colors cursor-pointer"><Trash2 size={14} /></button>
@@ -1700,9 +1700,9 @@ export function InvestmentView() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-3 border-b border-border-base shrink-0 overflow-x-auto">
-        <div className="flex items-center gap-4 sm:gap-6">
-          <span className="text-xl font-bold text-text-primary hidden sm:block">Controle de Investimentos</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 overflow-x-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
+          <span className="text-xl font-bold text-text-primary">Controle de Investimentos</span>
           <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base">
             <button
               onClick={() => setActiveTab('resumo')}
@@ -1731,7 +1731,7 @@ export function InvestmentView() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto pr-2 pb-12 sm:pb-8 flex flex-col gap-6">
         {activeTab === 'resumo' && (
           <>
             <PortfolioSummary holdings={holdings} prices={priceCache} totalCost={totalCost} transactions={transactions} />
