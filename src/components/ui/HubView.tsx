@@ -1,4 +1,3 @@
-import React from 'react';
 import { LayoutDashboard, Calendar, BarChart2, FileText, Mountain, Landmark, PieChart } from 'lucide-react';
 
 export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub';
@@ -14,42 +13,42 @@ export function HubView({ onNavigate }: HubViewProps) {
       title: 'Meu Dia',
       description: 'Acompanhe sua rotina e tarefas de hoje',
       icon: <LayoutDashboard size={32} />,
-      color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+      color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'calendar',
       title: 'Calendário',
       description: 'Planeje sua semana e eventos futuros',
       icon: <Calendar size={32} />,
-      color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+      color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'stats',
       title: 'Estatísticas',
       description: 'Análise de produtividade e evolução',
       icon: <BarChart2 size={32} />,
-      color: 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+      color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'notes',
       title: 'Notas e Estudos',
       description: 'Gerencie anotações, cursos e flashcards',
       icon: <FileText size={32} />,
-      color: 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+      color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'finance',
       title: 'Controle Financeiro',
       description: 'Gestão de despesas, orçamentos e receitas',
       icon: <Landmark size={32} />,
-      color: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+      color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'investments',
       title: 'Investimentos',
       description: 'Acompanhamento da sua carteira e metas',
       icon: <PieChart size={32} />,
-      color: 'bg-violet-500/10 text-violet-400 border-violet-500/20'
+      color: 'bg-elements/10 text-text-primary border-border-base'
     }
   ];
 
