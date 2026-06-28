@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -18,15 +18,16 @@ import { BulkEditorModal } from './components/ui/BulkEditorModal';
 import { SobreView } from './components/ui/SobreView';
 import { HubView } from './components/ui/HubView';
 import { NotesView } from './components/ui/NotesView';
+import { GlobalMusicPlayer } from './components/ui/GlobalMusicPlayer';
 import { FinanceView } from './components/ui/FinanceView';
 import { InvestmentView } from './components/ui/InvestmentView';
+import { MusicDownloaderView } from './components/ui/MusicDownloaderView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
-import { Bell } from 'lucide-react';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -125,6 +126,56 @@ function FinanceDropdown({ currentView, setCurrentView }: {
           >
             <PieChart size={14} />
             Investimentos
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ToolsDropdown({ currentView, setCurrentView }: {
+  currentView: AppView;
+  setCurrentView: (v: 'notes' | 'music') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isActive = currentView === 'notes' || currentView === 'music';
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`cursor-pointer transition-colors flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
+      >
+        <Wrench size={16} />
+        Ferramentas
+        <ChevronDown size={12} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden z-50 animate-in slide-in-from-top-2">
+          <button
+            onClick={() => { setCurrentView('notes'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <FileText size={14} />
+            Notas Integradas
+          </button>
+          <div className="h-px bg-border-base/40" />
+          <button
+            onClick={() => { setCurrentView('music'); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'music' ? 'text-text-primary' : 'text-text-tertiary'}`}
+          >
+            <Music size={14} />
+            Zenith Music
           </button>
         </div>
       )}
@@ -239,7 +290,15 @@ function App() {
       setIsInitializing(false);
     });
 
-    return () => subscription.unsubscribe();
+    const handleGlobalNavigation = (e: CustomEvent) => {
+      if (e.detail) setCurrentView(e.detail as AppView);
+    };
+    window.addEventListener('navigate', handleGlobalNavigation as EventListener);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('navigate', handleGlobalNavigation as EventListener);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -580,13 +639,7 @@ function App() {
                 Sobre
               </button>
               <RoutineDropdown currentView={currentView} setCurrentView={setCurrentView} setSelectedDate={setSelectedDate} today={today} />
-              <button
-                onClick={() => setCurrentView('notes')}
-                className={`cursor-pointer transition-colors flex items-center gap-2 ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
-              >
-                <FileText size={16} />
-                Notas
-              </button>
+              <ToolsDropdown currentView={currentView} setCurrentView={setCurrentView as any} />
               <FinanceDropdown currentView={currentView} setCurrentView={setCurrentView} />
               <button
                 onClick={() => {
@@ -697,6 +750,10 @@ function App() {
                 <Mountain size={24} />
                 Sobre o Zenith
               </button>
+              
+              <div className="h-px bg-border-base/40 my-2" />
+              <div className="text-xs uppercase font-bold text-text-tertiary px-4 mb-2 tracking-widest">Rotina</div>
+              
               <button
                 onClick={() => { setSelectedDate(today); setCurrentView('dashboard'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'dashboard' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
@@ -718,13 +775,25 @@ function App() {
                 <BarChart2 size={24} />
                 Estatísticas
               </button>
+              <div className="h-px bg-border-base/40 my-2" />
+              <div className="text-xs uppercase font-bold text-text-tertiary px-4 mb-2 tracking-widest">Ferramentas</div>
               <button
                 onClick={() => { setCurrentView('notes'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'notes' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
               >
                 <FileText size={24} />
-                Notas
+                Notas Integradas
               </button>
+              <button
+                onClick={() => { setCurrentView('music'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'music' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <Music size={24} />
+                Zenith Music
+              </button>
+              
+              <div className="h-px bg-border-base/40 my-2" />
+              <div className="text-xs uppercase font-bold text-text-tertiary px-4 mb-2 tracking-widest">Finanças</div>
               <button
                 onClick={() => { setCurrentView('finance'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'finance' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
@@ -774,6 +843,8 @@ function App() {
             />
           ) : currentView === 'hub' ? (
             <HubView onNavigate={(v) => setCurrentView(v)} />
+          ) : currentView === 'music' ? (
+            <MusicDownloaderView />
           ) : currentView === 'dashboard' ? (
             <div className="w-full flex flex-col px-4">
 
@@ -1008,6 +1079,8 @@ function App() {
           </div>
         </div>
       )}
+
+      <GlobalMusicPlayer onNavigate={(v) => setCurrentView(v as AppView)} />
     </div>
   );
 }

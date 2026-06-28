@@ -1,6 +1,6 @@
-import { LayoutDashboard, Calendar, BarChart2, FileText, Mountain, Landmark, PieChart } from 'lucide-react';
+import { LayoutDashboard, Calendar, BarChart2, FileText, Mountain, Landmark, PieChart, Music } from 'lucide-react';
 
-export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub';
+export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music';
 
 interface HubViewProps {
   onNavigate: (view: AppView) => void;
@@ -48,6 +48,13 @@ export function HubView({ onNavigate }: HubViewProps) {
       title: 'Investimentos',
       description: 'Acompanhamento da sua carteira e metas',
       icon: <PieChart size={20} />,
+      color: 'bg-elements/10 text-text-primary border-border-base'
+    },
+    {
+      id: 'music',
+      title: 'Zenith Music',
+      description: 'Busque e baixe músicas do YouTube',
+      icon: <Music size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     }
   ];

@@ -1,0 +1,16 @@
+{
+  "name": "zenith-music-api",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "yt-search": "^2.11.1",
+    "@distube/ytdl-core": "^4.13.3"
+  }
+}

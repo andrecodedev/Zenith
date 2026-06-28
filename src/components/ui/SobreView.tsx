@@ -1,4 +1,4 @@
-import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowRight, Landmark } from 'lucide-react';
+import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowRight, Landmark, Music } from 'lucide-react';
 
 interface SobreViewProps {
   onBack: () => void;
@@ -23,6 +23,11 @@ const features: Feature[] = [
     icon: BookOpen,
     title: 'Quebrador de Cursos IA',
     desc: 'Cole a ementa de qualquer curso e a IA quebra em aulas, agenda automaticamente no seu calendário sem conflito com suas tarefas.',
+  },
+  {
+    icon: Music,
+    title: 'Zenith Music',
+    desc: 'Busque e baixe músicas diretamente do YouTube. Ouça offline ou deixe tocando em segundo plano enquanto você estuda e se organiza.',
   },
   {
     icon: Bell,

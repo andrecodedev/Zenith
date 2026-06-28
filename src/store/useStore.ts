@@ -35,6 +35,20 @@ interface StoreState {
   createNote: () => Promise<string>;
   updateNote: (id: string, updates: { title?: string; content?: string }) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+
+  // Global Music Player State
+  playingVideo: any | null;
+  isPlaying: boolean;
+  musicHistory: any[];
+  isPlayerExpanded: boolean;
+  isPlayerMinimized: boolean;
+  musicTab: 'search' | 'history';
+  setPlayingVideo: (video: any | null) => void;
+  setIsPlaying: (playing: boolean) => void;
+  setMusicHistory: (history: any[]) => void;
+  setIsPlayerExpanded: (expanded: boolean) => void;
+  setIsPlayerMinimized: (minimized: boolean) => void;
+  setMusicTab: (tab: 'search' | 'history') => void;
 }
 
 const getUserId = async () => {
@@ -49,6 +63,20 @@ export const useStore = create<StoreState>((set, get) => ({
   taskInstances: [],
   appNotifications: JSON.parse(localStorage.getItem('app_notifications') || '[]'),
   notes: [],
+
+  // Global Music Player State
+  playingVideo: null,
+  isPlaying: false,
+  musicHistory: [],
+  isPlayerExpanded: false,
+  isPlayerMinimized: false,
+  musicTab: 'search',
+  setPlayingVideo: (video) => set({ playingVideo: video }),
+  setIsPlaying: (playing) => set({ isPlaying: playing }),
+  setMusicHistory: (history) => set({ musicHistory: history }),
+  setIsPlayerExpanded: (expanded) => set({ isPlayerExpanded: expanded }),
+  setIsPlayerMinimized: (minimized) => set({ isPlayerMinimized: minimized }),
+  setMusicTab: (tab) => set({ musicTab: tab }),
 
   fetchData: async () => {
     const { data: { user } } = await supabase.auth.getUser();

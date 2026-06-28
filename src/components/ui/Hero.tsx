@@ -1,9 +1,23 @@
 import Ferrofluid from './Ferrofluid';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Clock, BookOpen, Music, Bell, BarChart2, Shield, StickyNote, Landmark } from 'lucide-react';
 
 interface HeroProps {
   onStart: () => void;
 }
+
+const features = [
+  { icon: Clock, label: 'Tarefas e Rotinas' },
+  { icon: BookOpen, label: 'Quebrador de Cursos IA' },
+  { icon: Music, label: 'Zenith Music' },
+  { icon: Bell, label: 'Push Notifications' },
+  { icon: BarChart2, label: 'Estatísticas' },
+  { icon: Shield, label: 'Banco Local Seguro' },
+  { icon: StickyNote, label: 'Notas Integradas' },
+  { icon: Landmark, label: 'Controle Financeiro' },
+];
+
+const marqueeItems = [...features, ...features]; // Duplicate for seamless infinite scroll
+
 
 export function Hero({ onStart }: HeroProps) {
   return (
@@ -27,7 +41,7 @@ export function Hero({ onStart }: HeroProps) {
         />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen w-full text-center max-w-2xl mx-auto px-6 pointer-events-none">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen w-full text-center max-w-2xl mx-auto px-6 pt-16 md:pt-20 pointer-events-none">
 
         {/* Eyebrow */}
         <div className="flex items-center gap-3 mb-8">
@@ -62,13 +76,30 @@ export function Hero({ onStart }: HeroProps) {
         </button>
 
         {/* Trust */}
-        <div className="flex items-center gap-5 mt-8 pointer-events-none select-none">
+        <div className="flex items-center gap-5 mt-8 mb-4 pointer-events-none select-none">
           {['Organize', 'Execute', 'Evolua'].map((label, i) => (
             <span key={label} className="flex items-center gap-5">
               <span className="text-[10px] text-text-tertiary uppercase tracking-widest">{label}</span>
               {i < 2 && <span className="w-px h-3 bg-text-tertiary/30" />}
             </span>
           ))}
+        </div>
+
+        {/* Infinite Marquee Footer */}
+        <div 
+          className="w-full max-w-[100vw] overflow-hidden py-2 pointer-events-none mt-8 md:mt-10" 
+          style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}
+        >
+          <div className="flex w-max animate-marquee">
+            {marqueeItems.map((feat, i) => (
+              <div key={i} className="flex items-center gap-3 px-8 shrink-0">
+                <feat.icon size={16} className="text-text-tertiary" />
+                <span className="text-[10px] uppercase tracking-widest text-text-secondary font-bold">
+                  {feat.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
