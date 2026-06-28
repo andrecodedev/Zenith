@@ -213,16 +213,7 @@ const calcRFCurrentPrice = (valorInicial: number, meta: any, purchaseDate: strin
   }
 
   const valorBruto = valorInicial * fator;
-  const lucroBruto = valorBruto - valorInicial;
   
-  // Tabela Regressiva do Imposto de Renda (Renda Fixa)
-  let aliquotaIR = 0.225; // Até 180 dias
-  if (dias > 180 && dias <= 360) aliquotaIR = 0.20;
-  else if (dias > 360 && dias <= 720) aliquotaIR = 0.175;
-  else if (dias > 720) aliquotaIR = 0.15;
-  
-  // LCI/LCA e Debêntures Incentivadas são isentas, mas por segurança assumimos IR se não especificado
-  const isIsento = meta?.tipo && ['LCI', 'LCA', 'CRI', 'CRA'].some(t => meta.tipo.toUpperCase().includes(t));
   // Retorna o valor bruto para espelhar o comportamento padrão do Investidor10 (que mostra saldo bruto)
   return valorBruto;
 };
