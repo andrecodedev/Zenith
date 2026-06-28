@@ -1063,13 +1063,13 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
                     <td className="px-3 py-2.5 text-right font-mono text-text-primary border border-border-base">{r.saldo > 0 ? fmt(r.saldo) : <span className="text-text-tertiary/40">-</span>}</td>
                     <td className="px-3 py-2.5 text-right font-mono text-text-tertiary border border-border-base">{r.pctCarteira !== null ? r.pctCarteira.toFixed(2) + '%' : <span className="text-text-tertiary/40">-</span>}</td>
                     <td className="px-3 py-2.5 border border-border-base">
-                      <div className="flex items-center justify-end gap-1.5 transition-opacity">
+                      <div className="flex items-center justify-end gap-2.5 transition-opacity">
                         <button onClick={() => onAddTransaction(r.ticker, cat.id)} title="Novo lançamento"
-                          className="text-text-tertiary/50 hover:text-indigo-400 cursor-pointer transition-colors"><Plus size={10} strokeWidth={2.5} /></button>
+                          className="text-text-tertiary/50 hover:text-indigo-400 cursor-pointer transition-colors"><Plus size={14} strokeWidth={2.5} /></button>
                         <button onClick={() => onEditTicker(r.ticker)} title="Editar Lançamento"
-                          className="text-text-tertiary/50 hover:text-emerald-400 cursor-pointer transition-colors"><Pencil size={10} /></button>
+                          className="text-text-tertiary/50 hover:text-emerald-400 cursor-pointer transition-colors"><Pencil size={14} /></button>
                         <button onClick={() => setConfirmDelete({ ticker: r.ticker, name: r.name })}
-                          className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={10} /></button>
+                          className="text-text-tertiary/50 hover:text-red-400 cursor-pointer transition-colors"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>

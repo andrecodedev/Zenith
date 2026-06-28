@@ -148,6 +148,11 @@ function App() {
       if (!target.classList || (!target.classList.contains('overflow-y-auto') && !target.classList.contains('overflow-auto'))) return;
 
       const currentScrollY = target.scrollTop;
+      if (window.innerWidth >= 768) {
+        setHeaderVisible(true);
+        return;
+      }
+
       if (currentScrollY <= 0) {
         setHeaderVisible(true);
       } else if (currentScrollY > lastScrollY.current + 10) {
@@ -158,8 +163,22 @@ function App() {
       lastScrollY.current = currentScrollY;
     };
 
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setHeaderVisible(true);
+      }
+    };
+
     document.addEventListener('scroll', handleScroll, true);
-    return () => document.removeEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    
+    // Initial check on mount
+    handleResize();
+
+    return () => {
+      document.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
   const currentViewRef = useRef<AppView>('hero');
   const [session, setSession] = useState<Session | null>(null);
