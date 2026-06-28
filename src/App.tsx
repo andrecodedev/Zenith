@@ -1134,11 +1134,14 @@ function App() {
         </div>
       )}
 
-      <GlobalMusicPlayer onNavigate={(v) => setCurrentView(v as AppView)} />
+      <GlobalMusicPlayer onNavigate={(v) => setCurrentView(v as AppView)} hidden={isMobileMenuOpen} />
 
-      {/* Floating Action Buttons - ocultos no hub, hero, sobre e chat */}
-      {session && !['hero', 'sobre', 'chat', 'hub'].includes(currentView) && (
-        <div className="fixed bottom-6 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none">
+      {/* Floating Action Buttons - ocultos no hero, sobre e chat */}
+      {session && !isMobileMenuOpen && !['hero', 'sobre', 'chat'].includes(currentView) && (
+        <div 
+          className="fixed right-4 z-[105] flex flex-col items-end gap-3 pointer-events-none transition-all duration-300"
+          style={{ bottom: playingVideo ? (isPlayerMinimized ? '72px' : '130px') : '24px' }}
+        >
           {/* Chat AI Button */}
           <button
             onClick={() => setCurrentView('chat')}

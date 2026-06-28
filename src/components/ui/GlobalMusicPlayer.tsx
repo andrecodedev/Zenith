@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Repeat, Repeat1, Shuffle, Volume2, VolumeX, Maximize2, Minimize2, X, ChevronDown, ChevronUp, Music } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
-export function GlobalMusicPlayer({ onNavigate }: { onNavigate?: (view: string) => void }) {
+export function GlobalMusicPlayer({ onNavigate, hidden }: { onNavigate?: (view: string) => void; hidden?: boolean }) {
   const { playingVideo, setPlayingVideo, isPlaying, setIsPlaying, musicHistory, isPlayerExpanded, setIsPlayerExpanded, isPlayerMinimized, setIsPlayerMinimized, setMusicTab } = useStore();
   
   const [currentTime, setCurrentTime] = useState(0);
@@ -124,7 +124,7 @@ export function GlobalMusicPlayer({ onNavigate }: { onNavigate?: (view: string) 
   return (
     <>
       {isPlayerMinimized ? (
-      <div className="fixed bottom-0 right-0 left-0 bg-bg-secondary border-t border-border-base p-2 px-4 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] z-[100] flex items-center justify-between transition-all duration-300 animate-in slide-in-from-bottom">
+      <div className={`fixed bottom-0 right-0 left-0 bg-bg-secondary border-t border-border-base p-2 px-4 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] z-[110] flex items-center justify-between transition-all duration-300 animate-in slide-in-from-bottom ${hidden ? 'hidden' : ''}`}>
         <div className="flex items-center gap-3 w-1/3">
           <img src={playingVideo.thumbnail} alt={playingVideo.title} className="w-8 h-8 rounded object-cover shadow-sm" />
           <div className="min-w-0 flex-1">
@@ -158,7 +158,7 @@ export function GlobalMusicPlayer({ onNavigate }: { onNavigate?: (view: string) 
         </div>
       </div>
       ) : (
-    <div className={`fixed bottom-0 left-0 right-0 bg-bg-secondary border-t border-border-base p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] z-[100] transition-all duration-300 ${isPlayerExpanded ? 'h-screen flex flex-col justify-center px-8' : 'animate-in slide-in-from-bottom-full'}`}>
+    <div className={`fixed bottom-0 left-0 right-0 bg-bg-secondary border-t border-border-base p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] z-[110] transition-all duration-300 ${isPlayerExpanded ? 'h-screen flex flex-col justify-center px-8' : 'animate-in slide-in-from-bottom-full'} ${hidden ? 'hidden' : ''}`}>
       <div className={`mx-auto flex w-full ${isPlayerExpanded ? 'flex-col max-w-2xl gap-8' : 'flex-col sm:flex-row items-center gap-4 max-w-7xl'}`}>
         <div className={`flex items-center gap-4 ${isPlayerExpanded ? 'flex-col text-center w-full' : 'w-full sm:w-1/3'}`}>
           <img src={playingVideo.thumbnail} alt={playingVideo.title} className={`${isPlayerExpanded ? 'w-64 h-64 shadow-2xl rounded-xl object-cover mb-4' : 'w-14 h-14 rounded object-cover shadow-sm'}`} />
