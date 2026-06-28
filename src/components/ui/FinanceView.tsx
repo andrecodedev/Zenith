@@ -445,7 +445,7 @@ function Summary({ entries }: { entries: FinanceEntry[] }) {
 }
 
 const TT_STYLE: React.CSSProperties = {
-  background: '#1f1f1f', border: '1px solid #282828', borderRadius: 10, padding: '8px 12px',
+  background: 'var(--bg-secondary)', border: '1px solid var(--border-base)', borderRadius: 10, padding: '8px 12px', color: 'var(--text-primary)'
 };
 
 function FinanceCharts({ entries }: { entries: FinanceEntry[] }) {
@@ -622,19 +622,22 @@ export function FinanceView() {
   return (
     <>
       <div className="flex flex-col">
-        <div className="bg-bg-primary flex items-center justify-between py-3 border-b border-border-base">
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setRefDate(d => subMonths(d, 1))}
-              className="p-1.5 rounded-lg hover:bg-elements cursor-pointer text-text-tertiary hover:text-text-primary transition-colors">
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-semibold text-text-primary capitalize min-w-[110px] sm:min-w-[160px] text-center select-none">
-              {label}
-            </span>
-            <button type="button" onClick={() => setRefDate(d => addMonths(d, 1))}
-              className="p-1.5 rounded-lg hover:bg-elements cursor-pointer text-text-tertiary hover:text-text-primary transition-colors">
-              <ChevronRight size={16} />
-            </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 overflow-x-auto mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
+            <span className="text-xl font-bold text-text-primary">Controle Financeiro</span>
+            <div className="flex items-center gap-2 bg-bg-primary rounded-lg p-1 border border-border-base">
+              <button type="button" onClick={() => setRefDate(d => subMonths(d, 1))}
+                className="p-1.5 rounded-lg hover:bg-elements cursor-pointer text-text-tertiary hover:text-text-primary transition-colors">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-sm font-semibold text-text-primary capitalize min-w-[110px] sm:min-w-[160px] text-center select-none">
+                {label}
+              </span>
+              <button type="button" onClick={() => setRefDate(d => addMonths(d, 1))}
+                className="p-1.5 rounded-lg hover:bg-elements cursor-pointer text-text-tertiary hover:text-text-primary transition-colors">
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-1">
             <button type="button" onClick={() => setModalOpen(true)}
@@ -644,7 +647,7 @@ export function FinanceView() {
             {loading && <span className="text-text-tertiary text-[10px] animate-pulse">Carregando...</span>}
           </div>
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <Summary entries={entries} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="flex flex-col gap-4">
