@@ -355,7 +355,7 @@ function EntryRow({ entry, cfg, onUpdate, onDelete }: {
       </td>
       <td className="px-3 py-2.5 w-10 border border-border-base">
         <button type="button" onClick={() => onDelete(entry.id)}
-          className="mx-auto shrink-0 w-5 h-5 flex items-center justify-center text-transparent group-hover:text-text-tertiary/50 hover:text-red-400 transition-all cursor-pointer">
+          className="mx-auto shrink-0 w-5 h-5 flex items-center justify-center text-text-tertiary/50 hover:text-red-400 transition-all cursor-pointer">
           <Trash2 size={11} />
         </button>
       </td>
@@ -388,7 +388,7 @@ function Section({ type, entries, onAdd, onUpdate, onDelete }: {
               <th className="px-3 py-2.5 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Descrição</th>
               {cfg.showDate && <th className="px-3 py-2.5 w-24 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal hidden sm:table-cell border border-border-base">Data</th>}
               <th className="px-3 py-2.5 w-24 sm:w-32 text-right text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Valor</th>
-              <th className="px-3 py-2.5 w-10 border border-border-base"></th>
+              <th className="px-3 py-2.5 w-10 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Ação</th>
             </tr>
           </thead>
           <tbody className="bg-[#1a1a1a]">
