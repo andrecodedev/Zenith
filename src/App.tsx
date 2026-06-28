@@ -136,9 +136,9 @@ function App() {
   const { routines, categories, taskInstances } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const PERSISTENT_VIEWS: AppView[] = ['hub', 'dashboard', 'calendar', 'stats', 'notes', 'finance', 'investments'];
   const [currentView, setCurrentView] = useState<AppView>('hero');
   const [headerVisible, setHeaderVisible] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -186,15 +186,7 @@ function App() {
 
   useEffect(() => {
     currentViewRef.current = currentView;
-    if (PERSISTENT_VIEWS.includes(currentView)) {
-      localStorage.setItem('zenith_view', currentView);
-    }
   }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const restoreView = () => {
-    const saved = localStorage.getItem('zenith_view') as AppView | null;
-    return saved && PERSISTENT_VIEWS.includes(saved) ? saved : 'hub';
-  };
 
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('theme') === 'light';
@@ -221,9 +213,10 @@ function App() {
         useStore.getState().fetchData();
         useStore.getState().fetchNotes();
         if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
-          setCurrentView(restoreView());
+          setCurrentView('hub');
         }
       }
+      setIsInitializing(false);
     });
 
     const {
@@ -241,9 +234,9 @@ function App() {
         }
       } else {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
-        localStorage.removeItem('zenith_view');
         setCurrentView('hero');
       }
+      setIsInitializing(false);
     });
 
     return () => subscription.unsubscribe();
@@ -503,6 +496,15 @@ function App() {
       }, 100);
     }
   }, [selectedDate, currentView]);
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 border-4 border-elements border-t-text-primary rounded-full animate-spin" />
+        <p className="text-text-tertiary text-sm font-semibold tracking-wide animate-pulse">CARREGANDO ZENITH...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden">

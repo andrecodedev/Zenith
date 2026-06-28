@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Check, X, Bell } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Check, X, Bell, Pencil } from 'lucide-react';
 import { addMonths, subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
@@ -150,21 +150,34 @@ function DateEditable({ value, onSave }: { value: string; onSave: (v: string) =>
 
 const MONTH_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
+function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth, initialEntry }: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (form: EntryForm, occurrences: { year: number; month: number; dateStr: string }[]) => Promise<void>;
   currentYear: number;
   currentMonth: number;
+  initialEntry?: FinanceEntry;
 }) {
-  const blank = (): EntryForm => ({
-    type: 'fixed', name: '', dateStr: '', amountStr: '', paid: false,
-    recurring: false, recurrenceType: 'monthly', recurrenceDays: '15', endYear: currentYear, endMonth: currentMonth, notify: false
-  });
+  const blank = (): EntryForm => {
+    if (initialEntry) {
+      return {
+        type: initialEntry.type,
+        name: initialEntry.name,
+        dateStr: initialEntry.dateStr,
+        amountStr: initialEntry.amount > 0 ? fmt(initialEntry.amount) : '',
+        paid: initialEntry.paid,
+        recurring: false, recurrenceType: 'monthly', recurrenceDays: '15', endYear: currentYear, endMonth: currentMonth, notify: initialEntry.notify || false
+      };
+    }
+    return {
+      type: 'fixed', name: '', dateStr: '', amountStr: '', paid: false,
+      recurring: false, recurrenceType: 'monthly', recurrenceDays: '15', endYear: currentYear, endMonth: currentMonth, notify: false
+    };
+  };
   const [form, setForm] = useState<EntryForm>(blank);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (isOpen) setForm(blank()); }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (isOpen) setForm(blank()); }, [isOpen, initialEntry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const occurrences = useMemo(() => {
     const result: { year: number; month: number; dateStr: string }[] = [];
@@ -235,7 +248,7 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-base shrink-0">
-          <h2 className="text-base font-bold text-text-primary">Nova Entrada</h2>
+          <h2 className="text-base font-bold text-text-primary">{initialEntry ? 'Editar Entrada' : 'Nova Entrada'}</h2>
           <button onClick={onClose} className="text-text-tertiary hover:text-text-primary cursor-pointer transition-colors">
             <X size={18} />
           </button>
@@ -307,7 +320,7 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
           {/* Recorrência */}
           <div className="border-t border-border-base/30 pt-4">
             <label className="flex items-center gap-2.5 cursor-pointer select-none"
-              onClick={() => setForm(f => ({ ...f, recurring: !f.recurring }))}>
+                onClick={() => setForm(f => ({ ...f, recurring: !f.recurring }))}>
               <div className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${form.recurring ? 'bg-violet-500' : 'bg-elements'}`}>
                 <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${form.recurring ? 'translate-x-4' : ''}`} />
               </div>
@@ -374,7 +387,7 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
                 ? 'bg-elements text-text-tertiary cursor-not-allowed'
                 : 'bg-text-primary text-bg-primary hover:bg-text-secondary cursor-pointer'
             }`}>
-            {busy ? 'Criando...' : occurrences.length > 1 ? `Criar (${occurrences.length} ocorrências)` : 'Criar entrada'}
+            {busy ? 'Salvando...' : occurrences.length > 1 && !initialEntry ? `Criar (${occurrences.length} ocorrências)` : initialEntry ? 'Salvar alterações' : 'Criar entrada'}
           </button>
         </div>
       </div>
@@ -382,11 +395,12 @@ function EntryModal({ isOpen, onClose, onSubmit, currentYear, currentMonth }: {
   );
 }
 
-function EntryRow({ entry, cfg, onUpdate, onDelete }: {
+function EntryRow({ entry, cfg, onUpdate, onDelete, onEdit }: {
   entry: FinanceEntry;
   cfg: typeof CFG[EntryType];
   onUpdate: (id: string, u: Partial<FinanceEntry>) => void;
   onDelete: (id: string) => void;
+  onEdit: (entry: FinanceEntry) => void;
 }) {
   const paidCls = entry.paid ? 'line-through text-green-400' : '';
   return (
@@ -425,21 +439,28 @@ function EntryRow({ entry, cfg, onUpdate, onDelete }: {
           </button>
         </td>
       )}
-      <td className="px-3 py-2.5 w-10 border border-border-base">
-        <button type="button" onClick={() => onDelete(entry.id)}
-          className="mx-auto shrink-0 w-5 h-5 flex items-center justify-center text-text-tertiary/50 hover:text-red-400 transition-all cursor-pointer">
-          <Trash2 size={11} />
-        </button>
+      <td className="px-3 py-2.5 w-16 border border-border-base">
+        <div className="flex items-center justify-center gap-1.5 mx-auto">
+          <button type="button" onClick={() => onEdit(entry)}
+            className="w-5 h-5 flex items-center justify-center text-text-tertiary/50 hover:text-blue-400 transition-all cursor-pointer">
+            <Pencil size={11} />
+          </button>
+          <button type="button" onClick={() => onDelete(entry.id)}
+            className="w-5 h-5 flex items-center justify-center text-text-tertiary/50 hover:text-red-400 transition-all cursor-pointer">
+            <Trash2 size={11} />
+          </button>
+        </div>
       </td>
     </tr>
   );
 }
 
-function Section({ type, entries, onAdd, onUpdate, onDelete }: {
+function Section({ type, entries, onAdd, onUpdate, onDelete, onEdit }: {
   type: EntryType; entries: FinanceEntry[];
   onAdd: (t: EntryType) => void;
   onUpdate: (id: string, u: Partial<FinanceEntry>) => void;
   onDelete: (id: string) => void;
+  onEdit: (entry: FinanceEntry) => void;
 }) {
   const cfg = CFG[type];
   const total = entries.reduce((s, e) => s + e.amount, 0);
@@ -461,13 +482,13 @@ function Section({ type, entries, onAdd, onUpdate, onDelete }: {
               {cfg.showDate && <th className="px-3 py-2.5 w-24 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal hidden sm:table-cell border border-border-base">Data</th>}
               <th className="px-3 py-2.5 w-24 sm:w-32 text-right text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Valor</th>
               {cfg.showDate && <th className="px-1 sm:px-3 py-2.5 w-12 sm:w-16 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base" title="Notificação">Notif.</th>}
-              <th className="px-3 py-2.5 w-10 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Ação</th>
+              <th className="px-3 py-2.5 w-16 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Ações</th>
             </tr>
           </thead>
           <tbody className="bg-bg-primary">
             {sorted.length === 0
               ? <tr><td colSpan={5} className="text-center text-text-tertiary/40 text-xs py-3 border border-border-base">-</td></tr>
-              : sorted.map(e => <EntryRow key={e.id} entry={e} cfg={cfg} onUpdate={onUpdate} onDelete={onDelete} />)
+              : sorted.map(e => <EntryRow key={e.id} entry={e} cfg={cfg} onUpdate={onUpdate} onDelete={onDelete} onEdit={onEdit} />)
             }
           </tbody>
         </table>
@@ -621,6 +642,7 @@ export function FinanceView() {
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<FinanceEntry | null>(null);
 
   const year = refDate.getFullYear();
   const month = refDate.getMonth() + 1;
@@ -655,6 +677,7 @@ export function FinanceView() {
   const updateEntry = useCallback(async (id: string, updates: Partial<FinanceEntry>) => {
     setEntries(p => p.map(e => e.id === id ? { ...e, ...updates } : e));
     const db: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (updates.type !== undefined) db.type = updates.type;
     if (updates.name !== undefined) db.name = updates.name;
     if (updates.dateStr !== undefined) db.date_str = updates.dateStr;
     if (updates.amount !== undefined) db.amount = updates.amount;
@@ -726,12 +749,12 @@ export function FinanceView() {
           <Summary entries={entries} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="flex flex-col gap-4">
-              <Section type="income" entries={by('income')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} />
-              <Section type="fixed" entries={by('fixed')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} />
+              <Section type="income" entries={by('income')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} onEdit={e => setEditingEntry(e)} />
+              <Section type="fixed" entries={by('fixed')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} onEdit={e => setEditingEntry(e)} />
             </div>
             <div className="flex flex-col gap-4">
-              <Section type="variable" entries={by('variable')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} />
-              <Section type="investment" entries={by('investment')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} />
+              <Section type="variable" entries={by('variable')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} onEdit={e => setEditingEntry(e)} />
+              <Section type="investment" entries={by('investment')} onAdd={addEntry} onUpdate={updateEntry} onDelete={deleteEntry} onEdit={e => setEditingEntry(e)} />
             </div>
           </div>
           <FinanceCharts entries={entries} />
@@ -743,6 +766,33 @@ export function FinanceView() {
         onSubmit={createEntries}
         currentYear={year}
         currentMonth={month}
+      />
+      <EntryModal
+        isOpen={!!editingEntry}
+        onClose={() => setEditingEntry(null)}
+        onSubmit={async (form, occurrences) => {
+          if (!editingEntry) return;
+          
+          await updateEntry(editingEntry.id, {
+            type: form.type,
+            name: form.name,
+            dateStr: form.dateStr,
+            amount: parseAmt(form.amountStr),
+            paid: form.paid,
+            notify: form.notify,
+          });
+
+          if (form.recurring && occurrences.length > 1) {
+            // Criar as repetições (ignorando a primeira que é a própria entrada atual)
+            const futureOccurrences = occurrences.slice(1);
+            await createEntries(form, futureOccurrences);
+          }
+
+          setEditingEntry(null);
+        }}
+        currentYear={year}
+        currentMonth={month}
+        initialEntry={editingEntry || undefined}
       />
     </>
   );
