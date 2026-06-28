@@ -16,6 +16,7 @@ import { AuthModal } from './components/ui/AuthModal';
 import { NotificationCenterModal } from './components/ui/NotificationCenterModal';
 import { BulkEditorModal } from './components/ui/BulkEditorModal';
 import { SobreView } from './components/ui/SobreView';
+import { HubView } from './components/ui/HubView';
 import { NotesView } from './components/ui/NotesView';
 import { FinanceView } from './components/ui/FinanceView';
 import { InvestmentView } from './components/ui/InvestmentView';
@@ -25,7 +26,7 @@ import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 import { Bell } from 'lucide-react';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -558,7 +559,7 @@ function App() {
                 onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'sobre' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
               >
-                <Info size={24} />
+                <Mountain size={24} />
                 Sobre o Zenith
               </button>
               {session ? (
@@ -592,7 +593,7 @@ function App() {
                 onClick={() => { setCurrentView('sobre'); setIsMobileMenuOpen(false); }}
                 className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
               >
-                <Info size={24} />
+                <Mountain size={24} />
                 Sobre o Zenith
               </button>
               <button
@@ -647,12 +648,14 @@ function App() {
         <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-2 lg:px-8'}`}>
 
           {currentView === 'hero' ? (
-            <Hero onStart={() => session ? setCurrentView('dashboard') : setIsAuthModalOpen(true)} />
+            <Hero onStart={() => session ? setCurrentView('hub') : setIsAuthModalOpen(true)} />
           ) : currentView === 'sobre' ? (
             <SobreView
               onBack={() => setCurrentView('hero')}
-              onStart={() => session ? setCurrentView('dashboard') : setIsAuthModalOpen(true)}
+              onStart={() => session ? setCurrentView('hub') : setIsAuthModalOpen(true)}
             />
+          ) : currentView === 'hub' ? (
+            <HubView onNavigate={(v) => setCurrentView(v)} />
           ) : currentView === 'dashboard' ? (
             <div className="w-full flex flex-col pb-24">
 
@@ -840,7 +843,7 @@ function App() {
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
-        onSuccess={() => setCurrentView('dashboard')} 
+        onSuccess={() => setCurrentView('hub')} 
       />
 
       <NotificationCenterModal
