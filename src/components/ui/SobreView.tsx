@@ -1,11 +1,18 @@
-import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowRight, Landmark } from 'lucide-react';
 
 interface SobreViewProps {
   onBack: () => void;
   onStart: () => void;
 }
 
-const features = [
+type Feature = {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  soon?: boolean;
+};
+
+const features: Feature[] = [
   {
     icon: Clock,
     title: 'Tarefas e Rotinas',
@@ -34,8 +41,12 @@ const features = [
   {
     icon: StickyNote,
     title: 'Notas Integradas',
-    desc: 'Em breve: bloco de notas direto no Zenith. Sem precisar abrir mais um app.',
-    soon: true,
+    desc: 'Crie anotações rápidas com suporte a Markdown, blocos de código e links direto no Zenith. Sem precisar de outro app.',
+  },
+  {
+    icon: Landmark,
+    title: 'Controle Financeiro',
+    desc: 'Gerencie receitas, despesas e investimentos. Crie parcelamentos recorrentes com alertas automáticos no dia do vencimento.',
   },
 ];
 
@@ -99,7 +110,7 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
       {/* Features */}
       <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.3em] text-text-tertiary mb-8">O que tem dentro</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
           {features.map(({ icon: Icon, title, desc, soon }) => (
             <div
               key={title}
@@ -119,8 +130,9 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
               <p className="text-text-secondary text-xs leading-relaxed">{desc}</p>
             </div>
           ))}
+        </div>
 
-                {/* CTA */}
+                        {/* CTA */}
       <div className="border border-border-base rounded-2xl p-6 sm:p-8 md:p-12 text-center bg-bg-secondary/30 mb-8">
         <p className="text-text-tertiary text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4">Pronto para começar</p>
         <h2 className="font-title font-bold text-2xl md:text-3xl text-text-primary mb-3">
@@ -139,7 +151,6 @@ export function SobreView({ onBack, onStart }: SobreViewProps) {
           <ArrowRight size={14} className="transition-transform duration-500 group-hover:translate-x-1.5" />
         </button>
       </div>
-        </div>
       </div>
     </div>
   );
