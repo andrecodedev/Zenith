@@ -1112,7 +1112,7 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
   onRefreshWatchlist: (id: string) => Promise<void>;
   onEditWatchlistTicker: (id: string, newTicker: string) => void;
 }) {
-  const [tableCollapsed, setTableCollapsed] = useState(true);
+  const [tableCollapsed, setTableCollapsed] = useState(false);
   const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     categories.forEach(c => initial[c.id] = true);
