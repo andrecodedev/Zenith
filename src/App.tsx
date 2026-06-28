@@ -458,15 +458,15 @@ function App() {
   return (
     <div className="h-screen w-full flex flex-col relative overflow-hidden">
       
-      {/* Header Block - Absolute on Hero, Static elsewhere */}
+      {/* Header Block - Absolute for all views to allow scroll behind */}
       <div 
-        className={`w-full flex justify-center transition-all duration-300 z-50 ${
-          currentView === 'hero' 
-            ? `absolute left-0 ${headerVisible ? 'top-6 translate-y-0 opacity-100' : 'top-6 -translate-y-24 opacity-0 pointer-events-none'}`
-            : `flex-shrink-0 ${headerVisible ? 'pt-6 pb-2 sm:pb-4 opacity-100' : 'h-0 overflow-hidden opacity-0 pointer-events-none m-0 p-0'}`
+        className={`absolute left-0 w-full flex justify-center transition-all duration-300 z-50 pointer-events-none ${
+          headerVisible 
+            ? 'top-6 translate-y-0 opacity-100' 
+            : 'top-6 -translate-y-24 opacity-0'
         }`}
       >
-        <header className="w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]">
+        <header className="pointer-events-auto w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
@@ -703,7 +703,7 @@ function App() {
 
     {/* Main Content */}
     <main id="main-scroll" className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-      <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8'}`}>
+      <div className={`w-full mx-auto flex-1 flex flex-col min-h-0 ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'}`}>
 
           {!['hero', 'hub', 'sobre'].includes(currentView) && (
             <button
