@@ -12,42 +12,42 @@ export function HubView({ onNavigate }: HubViewProps) {
       id: 'dashboard',
       title: 'Meu Dia',
       description: 'Acompanhe sua rotina e tarefas de hoje',
-      icon: <LayoutDashboard size={32} />,
+      icon: <LayoutDashboard size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'calendar',
       title: 'Calendário',
       description: 'Planeje sua semana e eventos futuros',
-      icon: <Calendar size={32} />,
+      icon: <Calendar size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'stats',
       title: 'Estatísticas',
       description: 'Análise de produtividade e evolução',
-      icon: <BarChart2 size={32} />,
+      icon: <BarChart2 size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'notes',
       title: 'Notas e Estudos',
       description: 'Gerencie anotações, cursos e flashcards',
-      icon: <FileText size={32} />,
+      icon: <FileText size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'finance',
       title: 'Controle Financeiro',
       description: 'Gestão de despesas, orçamentos e receitas',
-      icon: <Landmark size={32} />,
+      icon: <Landmark size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
       id: 'investments',
       title: 'Investimentos',
       description: 'Acompanhamento da sua carteira e metas',
-      icon: <PieChart size={32} />,
+      icon: <PieChart size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     }
   ];
@@ -70,14 +70,16 @@ export function HubView({ onNavigate }: HubViewProps) {
             <button
               key={opt.id}
               onClick={() => onNavigate(opt.id as AppView)}
-              className="flex flex-col text-left p-6 rounded-2xl border border-border-base bg-bg-secondary hover:border-border-gray hover:bg-elements/5 transition-all group cursor-pointer"
+              className="flex flex-col text-left p-5 rounded-2xl border border-border-base bg-bg-secondary hover:border-border-gray hover:bg-elements/5 transition-all group cursor-pointer"
             >
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-6 border ${opt.color} group-hover:scale-110 transition-transform`}>
-                {opt.icon}
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-8 h-8 shrink-0 rounded flex items-center justify-center border ${opt.color} group-hover:scale-110 transition-transform`}>
+                  {opt.icon}
+                </div>
+                <h2 className="text-lg font-bold text-text-primary group-hover:text-text-primary transition-colors">
+                  {opt.title}
+                </h2>
               </div>
-              <h2 className="text-xl font-bold text-text-primary mb-2 group-hover:text-text-primary transition-colors">
-                {opt.title}
-              </h2>
               <p className="text-sm text-text-tertiary">
                 {opt.description}
               </p>
