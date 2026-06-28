@@ -1137,23 +1137,7 @@ function WatchlistSection({ categories, watchlist, onAddWatchlist, onDeleteWatch
     setRefreshingWatch(null);
   };
 
-  if (watchlist.length === 0 && addingCatId === null) {
-    return (
-      <div className="bg-bg-secondary border border-border-base rounded-xl p-4 shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm sm:text-base font-bold text-text-primary">Ativos na Mira</h2>
-        </div>
-        <div className="flex gap-2 flex-wrap mt-2">
-          {categories.map(cat => (
-             <button key={cat.id} onClick={() => setAddingCatId(cat.id)}
-               className="text-xs text-text-tertiary hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-1 rounded px-2 py-1">
-               <Plus size={11} /> Adicionar em {cat.name}
-             </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden shrink-0">
