@@ -771,10 +771,10 @@ function PortfolioChart({ categories, holdings, prices }: {
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h3 className="text-lg font-bold text-text-primary">Ativos na Carteira</h3>
-        <div className="w-40">
+        <div className="w-full sm:w-40">
           <StyledSelect
             value="all"
             onChange={() => {}}
@@ -783,8 +783,8 @@ function PortfolioChart({ categories, holdings, prices }: {
         </div>
       </div>
       
-      <div className="flex items-center justify-between gap-6 flex-1 px-4">
-        <div className="shrink-0 relative flex items-center justify-center">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 flex-1 px-4">
+        <div className="shrink-0 relative flex items-center justify-center w-full sm:w-auto">
           <DonutChart data={data} size={160} />
         </div>
 
@@ -891,11 +891,11 @@ function EvolutionChart({ transactions, prices, holdings }: { transactions: ITra
   if (data.length === 0) return null;
 
   return (
-    <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-bg-secondary border border-border-base rounded-xl p-5 flex flex-col h-full min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h3 className="text-lg font-bold text-text-primary">Evolução do Patrimônio</h3>
-        <div className="flex items-center gap-3">
-          <div className="w-36">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:w-36">
             <StyledSelect
               value={period}
               onChange={v => setPeriod(v as '12m' | 'all')}
@@ -905,7 +905,7 @@ function EvolutionChart({ transactions, prices, holdings }: { transactions: ITra
               ]}
             />
           </div>
-          <div className="w-36">
+          <div className="flex-1 sm:w-36">
             <StyledSelect
               value="all"
               onChange={() => {}}
@@ -932,7 +932,7 @@ function EvolutionChart({ transactions, prices, holdings }: { transactions: ITra
         </div>
       </div>
 
-      <div className="flex-1 min-h-[220px] -ml-4">
+      <div className="flex-1 min-h-[220px] -ml-4 w-full min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
             <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickMargin={8} />
@@ -996,22 +996,22 @@ function CategorySection({ cat, holdings, prices, totalPortfolioValue, onUpdate,
           <span className="text-sm font-bold" style={{ color: cat.color }}>{cat.name}</span>
           {collapsed ? <ChevronDown size={12} className="text-text-tertiary/50" /> : <ChevronUp size={12} className="text-text-tertiary/50" />}
         </div>
-        <div className="flex items-center gap-6 text-right" onClick={e => e.stopPropagation()}>
-          <div className="w-12">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-6 text-right w-full sm:w-auto mt-2 sm:mt-0 justify-end" onClick={e => e.stopPropagation()}>
+          <div className="sm:w-12 flex flex-col justify-end">
             <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Ativos</div>
             <div className="text-xs font-bold font-mono text-text-primary">{rows.length}</div>
           </div>
-          <div className="w-24">
+          <div className="sm:w-24 flex flex-col justify-end">
             <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Valor Total</div>
             <div className="text-xs font-bold font-mono text-text-primary">{totalValue > 0 ? fmt(totalValue) : '—'}</div>
           </div>
-          <div className="w-20">
+          <div className="sm:w-20 flex flex-col justify-end">
             <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">Variação</div>
             <div className={`text-xs font-bold font-mono ${weightedVar !== null ? (weightedVar >= 0 ? 'text-emerald-400' : 'text-red-400') : 'text-text-tertiary/50'}`}>
               {weightedVar !== null ? `${weightedVar >= 0 ? '+' : ''}${weightedVar.toFixed(2)}%` : '—'}
             </div>
           </div>
-          <div className="w-28">
+          <div className="sm:w-28 flex flex-col justify-end">
             <div className="text-[9px] text-text-tertiary/50 uppercase tracking-wider">% Cart / Ideal</div>
             <div className="text-xs font-bold font-mono text-text-primary flex items-center justify-end gap-1">
               <span>{pctCart !== null ? pctCart.toFixed(1) + '%' : '—'}</span>
@@ -1709,8 +1709,8 @@ export function InvestmentView() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border-base shrink-0">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-3 border-b border-border-base shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-4 sm:gap-6">
           <span className="text-xl font-bold text-text-primary hidden sm:block">Controle de Investimentos</span>
           <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base">
             <button

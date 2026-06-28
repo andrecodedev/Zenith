@@ -491,7 +491,7 @@ function FinanceCharts({ entries }: { entries: FinanceEntry[] }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Donut - Distribuição */}
-      <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
+      <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden min-w-0">
         <div className="px-4 py-2.5 border-b border-border-base/30">
           <span className="text-sm font-bold text-text-primary">Distribuição da Renda</span>
         </div>
@@ -520,7 +520,7 @@ function FinanceCharts({ entries }: { entries: FinanceEntry[] }) {
       </div>
 
       {/* Bar - Comparativo */}
-      <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden">
+      <div className="bg-bg-secondary border border-border-base rounded-xl overflow-hidden min-w-0">
         <div className="px-4 py-2.5 border-b border-border-base/30">
           <span className="text-sm font-bold text-text-primary">Comparativo por Categoria</span>
         </div>
