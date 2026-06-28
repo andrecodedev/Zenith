@@ -392,8 +392,11 @@ export function NotesView() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Bloco de Notas</h1>
-          <p className="text-text-tertiary text-sm mt-0.5">{notes.length} {notes.length === 1 ? 'nota' : 'notas'}</p>
+          <h1 className="text-3xl font-bold font-title text-text-primary flex items-center gap-3 mb-2">
+            <FileText size={32} className="text-brand-pink" />
+            Notas e Estudos
+          </h1>
+          <p className="text-text-secondary mt-0.5">{notes.length} {notes.length === 1 ? 'nota' : 'notas'}</p>
         </div>
         <button onClick={handleCreate} className="flex items-center gap-2 px-4 py-2 bg-btn-bg hover:bg-btn-hover text-text-primary rounded-lg font-medium text-sm transition-colors cursor-pointer">
           <Plus size={16} />

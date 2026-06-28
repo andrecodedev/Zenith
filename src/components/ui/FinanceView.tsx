@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Check, X, Bell, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Check, X, Bell, Pencil, Landmark } from 'lucide-react';
 import { addMonths, subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
@@ -720,10 +720,16 @@ export function FinanceView() {
   return (
     <>
       <div className="flex flex-col">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 overflow-x-auto mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
-            <span className="text-xl font-bold text-text-primary">Controle Financeiro</span>
-            <div className="flex items-center gap-2 bg-bg-primary rounded-lg p-1 border border-border-base">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-6">
+            <div>
+              <h1 className="text-3xl font-bold font-title text-text-primary flex items-center gap-3 mb-2">
+                <Landmark size={32} className="text-brand-pink" />
+                Controle Financeiro
+              </h1>
+              <p className="text-text-secondary">Gestão de despesas, orçamentos e receitas</p>
+            </div>
+            <div className="flex items-center gap-2 bg-bg-primary rounded-lg p-1 border border-border-base shrink-0">
               <button type="button" onClick={() => setRefDate(d => subMonths(d, 1))}
                 className="p-1.5 rounded-lg hover:bg-elements cursor-pointer text-text-tertiary hover:text-text-primary transition-colors">
                 <ChevronLeft size={16} />

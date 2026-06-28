@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, Trash2, Target, ChevronDown, ChevronUp, Pencil, RefreshCw, X } from 'lucide-react';
+import { Plus, Trash2, Target, ChevronDown, ChevronUp, Pencil, RefreshCw, X, PieChart as PieChartIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { TransactionData, AssetType } from './TransactionModal';
@@ -1684,10 +1684,16 @@ export function InvestmentView() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 overflow-x-auto mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
-          <span className="text-xl font-bold text-text-primary">Controle de Investimentos</span>
-          <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-6">
+          <div>
+            <h1 className="text-3xl font-bold font-title text-text-primary flex items-center gap-3 mb-2">
+              <PieChartIcon size={32} className="text-brand-pink" />
+              Controle de Investimentos
+            </h1>
+            <p className="text-text-secondary">Acompanhamento da sua carteira e metas</p>
+          </div>
+          <div className="flex bg-bg-primary rounded-lg p-1 border border-border-base shrink-0">
             <button
               onClick={() => setActiveTab('resumo')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${activeTab === 'resumo' ? 'bg-text-primary text-bg-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'}`}

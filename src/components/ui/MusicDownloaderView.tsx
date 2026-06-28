@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Music, Download, Play, X, Settings2, XCircle, Clock, Pause, Trash2, List, Check, Loader2, Tag, ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react';
+import { Search, Music, Download, Play, X, Settings2, XCircle, Pause, Trash2, List, Check, Loader2, Tag, ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useStore } from '../../store/useStore';
 
@@ -455,7 +455,7 @@ export function MusicDownloaderView() {
   };
 
   return (
-    <div className="w-full flex flex-col px-4 max-w-4xl mx-auto min-h-full">
+    <div className="w-full flex flex-col min-h-full">
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold font-title mb-2 flex items-center gap-3">

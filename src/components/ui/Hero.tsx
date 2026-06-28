@@ -1,5 +1,5 @@
 import Ferrofluid from './Ferrofluid';
-import { ArrowRight, Clock, BookOpen, Music, Bell, BarChart2, Shield, StickyNote, Landmark } from 'lucide-react';
+import { ArrowRight, Clock, BookOpen, Music, Bell, BarChart2, Shield, StickyNote, Landmark, Bot } from 'lucide-react';
 
 interface HeroProps {
   onStart: () => void;
@@ -9,6 +9,7 @@ const features = [
   { icon: Clock, label: 'Tarefas e Rotinas' },
   { icon: BookOpen, label: 'Quebrador de Cursos IA' },
   { icon: Music, label: 'Zenith Music' },
+  { icon: Bot, label: 'Zenith AI' },
   { icon: Bell, label: 'Push Notifications' },
   { icon: BarChart2, label: 'Estatísticas' },
   { icon: Shield, label: 'Banco Local Seguro' },

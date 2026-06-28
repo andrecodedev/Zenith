@@ -147,10 +147,14 @@ export function CalendarView({ selectedDate, onNavigate, onSelectDate }: Calenda
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-bg-primary px-4">
-      <header className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+      <header className="mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
-          <h2 className="text-3xl font-bold font-title mb-1">{getTitle()}</h2>
-          <div className="relative inline-block mt-1">
+          <h1 className="text-3xl font-bold font-title text-text-primary flex items-center gap-3 mb-2">
+            <Calendar size={32} className="text-brand-pink" />
+            Calendário
+          </h1>
+          <p className="text-text-secondary mb-3">{getTitle()} da sua rotina e compromissos</p>
+          <div className="relative inline-block">
             <input 
               type="month"
               value={selectedDate.slice(0, 7)}

@@ -22,12 +22,13 @@ import { GlobalMusicPlayer } from './components/ui/GlobalMusicPlayer';
 import { FinanceView } from './components/ui/FinanceView';
 import { InvestmentView } from './components/ui/InvestmentView';
 import { MusicDownloaderView } from './components/ui/MusicDownloaderView';
+import { ChatView } from './components/ui/ChatView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -197,8 +198,8 @@ function App() {
   useEffect(() => {
     const handleScroll = (e: Event) => {
       const target = e.target as HTMLElement;
-      // track scroll only on elements that have scrollable overflow
-      if (!target.classList || (!target.classList.contains('overflow-y-auto') && !target.classList.contains('overflow-auto'))) return;
+      // Só processa rolagem do container principal da página
+      if (!target || target.id !== 'main-scroll') return;
 
       const currentScrollY = target.scrollTop;
       if (window.innerWidth >= 768) {
@@ -570,7 +571,7 @@ function App() {
       {/* Header Block - Absolute for all views to allow scroll behind */}
       <div 
         className={`absolute left-0 w-full flex justify-center transition-all duration-300 z-50 pointer-events-none ${
-          headerVisible 
+          (headerVisible || currentView === 'chat')
             ? 'top-6 translate-y-0 opacity-100' 
             : 'top-6 -translate-y-24 opacity-0'
         }`}
@@ -703,7 +704,7 @@ function App() {
 
     {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] bg-bg-primary/95 backdrop-blur-md flex flex-col p-6 md:hidden">
+        <div className="fixed inset-0 z-[100] bg-bg-primary/95 backdrop-blur-md flex flex-col p-6 md:hidden overflow-y-auto pb-24">
           <div className="flex justify-between items-center mb-8">
             <span className="text-text-tertiary text-xs uppercase tracking-widest font-bold">Menu</span>
             <button
@@ -821,7 +822,7 @@ function App() {
       )}
 
     {/* Main Content */}
-    <main id="main-scroll" className={`flex-1 min-h-0 w-full flex flex-col ${currentView === 'hero' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+    <main id="main-scroll" className={`flex-1 min-h-0 w-full flex flex-col ${['hero', 'chat'].includes(currentView) ? 'overflow-hidden' : 'overflow-y-auto'}`}>
       {isInitializing ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="w-10 h-10 border-4 border-elements border-t-text-primary rounded-full animate-spin" />
@@ -829,10 +830,8 @@ function App() {
         </div>
       ) : (
         <div 
-          className={`w-full mx-auto grow shrink-0 flex flex-col ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'}`}
-        >
-
-          {!['hero', 'hub', 'sobre'].includes(currentView) && (
+          className={`w-full mx-auto flex flex-col ${['hero', 'chat'].includes(currentView) ? 'flex-1 min-h-0' : 'flex-none'} ${currentView === 'hero' ? 'max-w-7xl' : 'max-w-full px-4 lg:px-8 pt-24 sm:pt-28'} pb-2`}
+        >  {!['hero', 'hub', 'sobre'].includes(currentView) && (
             <button
               onClick={() => setCurrentView('hub')}
               className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors text-sm mb-6 mt-6 cursor-pointer group w-fit"
@@ -1018,6 +1017,8 @@ function App() {
             <div className="w-full flex-1 flex flex-col mb-8 px-4"><FinanceView /></div>
           ) : currentView === 'investments' ? (
             <div className="w-full flex-1 flex flex-col mb-8 px-4"><InvestmentView /></div>
+          ) : currentView === 'chat' ? (
+            <div className="w-full flex-1 flex flex-col px-4 min-h-0 pb-4"><ChatView /></div>
           ) : (
             <div className="w-full flex-1 flex flex-col mb-8 px-4">
               <CalendarView
@@ -1033,11 +1034,11 @@ function App() {
       {/* Spacer block para garantir que o scroll passe do player global */}
       {playingVideo && (
         <div 
-          className="w-full shrink-0" 
-          style={{ height: isPlayerMinimized ? '120px' : isPlayerExpanded ? '80vh' : '220px' }} 
+          className="w-full shrink-0 transition-all duration-300" 
+          style={{ height: isPlayerMinimized ? '60px' : isPlayerExpanded ? '80vh' : '70px' }} 
         />
       )}
-      {!playingVideo && <div className="w-full shrink-0 h-8" />}
+      {!playingVideo && <div className="w-full shrink-0 h-4" />}
     </main>
 
       <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />

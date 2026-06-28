@@ -1,4 +1,4 @@
-import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowRight, Landmark, Music } from 'lucide-react';
+import { ArrowLeft, Shield, BookOpen, Clock, BarChart2, Bell, StickyNote, ArrowRight, Landmark, Music, Bot } from 'lucide-react';
 
 interface SobreViewProps {
   onBack: () => void;
@@ -28,6 +28,11 @@ const features: Feature[] = [
     icon: Music,
     title: 'Zenith Music',
     desc: 'Busque e baixe músicas diretamente do YouTube. Ouça offline ou deixe tocando em segundo plano enquanto você estuda e se organiza.',
+  },
+  {
+    icon: Bot,
+    title: 'Zenith AI',
+    desc: 'Seu assistente virtual integrado. Converse, tire dúvidas, transcreva áudios via Whisper e acelere seu dia com Inteligência Artificial.',
   },
   {
     icon: Bell,

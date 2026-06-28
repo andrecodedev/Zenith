@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStats } from '../../utils/useStats';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Trophy, TrendingUp, CheckCircle2, Target, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, TrendingUp, CheckCircle2, Target, ChevronLeft, ChevronRight, BarChart2 } from 'lucide-react';
 import { getTodayStr } from '../../utils/date';
 
 export function StatsView() {
@@ -23,10 +23,13 @@ export function StatsView() {
   const todayLabel = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6 pb-12">
-      <div>
-        <h2 className="text-3xl sm:text-4xl font-bold font-title mb-1">Estatísticas</h2>
-        <p className="text-sm sm:text-base text-text-secondary capitalize">{todayLabel}</p>
+    <div className="w-full space-y-6 pb-12">
+      <div className="mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold font-title text-text-primary flex items-center gap-3 mb-2">
+          <BarChart2 size={32} className="text-brand-pink" />
+          Estatísticas
+        </h1>
+        <p className="text-sm sm:text-base text-text-secondary capitalize">Análise de produtividade e evolução • {todayLabel}</p>
       </div>
 
 
