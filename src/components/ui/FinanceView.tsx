@@ -383,7 +383,7 @@ function Section({ type, entries, onAdd, onUpdate, onDelete }: {
       <div className="overflow-x-auto min-h-[48px] max-h-[300px] sm:max-h-[500px] overflow-y-auto">
         <table className="w-full text-left border-collapse border border-border-base">
           <thead>
-            <tr className="bg-[#1f1f1f]">
+            <tr className="bg-elements/10">
               {cfg.showPaid && <th className="px-3 py-1.5 w-10 border border-border-base"></th>}
               <th className="px-3 py-2.5 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Descrição</th>
               {cfg.showDate && <th className="px-3 py-2.5 w-24 text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal hidden sm:table-cell border border-border-base">Data</th>}
@@ -391,7 +391,7 @@ function Section({ type, entries, onAdd, onUpdate, onDelete }: {
               <th className="px-3 py-2.5 w-10 text-center text-[10px] uppercase tracking-widest text-text-tertiary/50 font-normal border border-border-base">Ação</th>
             </tr>
           </thead>
-          <tbody className="bg-[#1a1a1a]">
+          <tbody className="bg-bg-primary">
             {sorted.length === 0
               ? <tr><td colSpan={5} className="text-center text-text-tertiary/40 text-xs py-3 border border-border-base">-</td></tr>
               : sorted.map(e => <EntryRow key={e.id} entry={e} cfg={cfg} onUpdate={onUpdate} onDelete={onDelete} />)
