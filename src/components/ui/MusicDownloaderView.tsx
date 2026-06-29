@@ -228,7 +228,7 @@ export function MusicDownloaderView() {
     setSelectedVideo(null); // Clear selected video on new search
     try {
       // Fazendo a busca de verdade no nosso novo backend
-      const res = await fetch(`http://localhost:3333/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`http://${window.location.hostname}:3333/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Falha ao buscar');
       const data = await res.json();
       setResults(data);
@@ -265,7 +265,7 @@ export function MusicDownloaderView() {
       setBatchItems([...currentItems]);
 
       try {
-        const res = await fetch(`http://localhost:3333/search?q=${encodeURIComponent(currentItems[i].query)}`);
+        const res = await fetch(`http://${window.location.hostname}:3333/search?q=${encodeURIComponent(currentItems[i].query)}`);
         const data = await res.json();
         currentItems[i].results = data.slice(0, 3); // top 3
         currentItems[i].status = 'ready';
@@ -312,7 +312,7 @@ export function MusicDownloaderView() {
       items[itemIndex].status = 'downloading';
       setBatchItems(items);
 
-      const res = await fetch(`http://localhost:3333/download?id=${video.id}`);
+      const res = await fetch(`http://${window.location.hostname}:3333/download?id=${video.id}`);
       if (!res.ok) throw new Error('Falha no download');
 
       const blob = await res.blob();
@@ -355,7 +355,7 @@ export function MusicDownloaderView() {
     setBatchItems(items);
 
     try {
-      const res = await fetch(`http://localhost:3333/search?q=${encodeURIComponent(newQuery)}`);
+      const res = await fetch(`http://${window.location.hostname}:3333/search?q=${encodeURIComponent(newQuery)}`);
       const data = await res.json();
       items[itemIndex].results = data.slice(0, 3);
       items[itemIndex].status = 'ready';
@@ -380,7 +380,7 @@ export function MusicDownloaderView() {
     
     try {
       const startTime = Date.now();
-      const res = await fetch(`http://localhost:3333/download?id=${selectedVideo.id}`, {
+      const res = await fetch(`http://${window.location.hostname}:3333/download?id=${selectedVideo.id}`, {
         signal: abortControllerRef.current.signal
       });
       

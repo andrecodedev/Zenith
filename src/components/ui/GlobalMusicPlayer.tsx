@@ -269,7 +269,7 @@ export function GlobalMusicPlayer({ onNavigate, hidden }: { onNavigate?: (view: 
       {/* Hidden Audio Element - Moved outside conditional so it never unmounts */}
       <audio 
         ref={audioRef}
-        src={`http://localhost:3333/stream?id=${playingVideo.id}`} 
+        src={`http://${window.location.hostname}:3333/stream?id=${playingVideo.id}`} 
         autoPlay
         loop={repeatMode === 'one'}
         onPlay={() => setIsPlaying(true)}
