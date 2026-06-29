@@ -269,7 +269,7 @@ export function GlobalMusicPlayer({ onNavigate, hidden }: { onNavigate?: (view: 
       {/* Hidden Audio Element - Moved outside conditional so it never unmounts */}
       <audio 
         ref={audioRef}
-        src={`http://${window.location.hostname}:3333/stream?id=${playingVideo.id}`} 
+        src={`${import.meta.env.VITE_MUSIC_API_URL || (window.location.hostname.includes('vercel.app') ? 'https://seu-backend-deployado.com' : `http://${window.location.hostname}:3333`)}/stream?id=${playingVideo.id}`} 
         autoPlay
         loop={repeatMode === 'one'}
         onPlay={() => setIsPlaying(true)}
