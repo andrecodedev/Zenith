@@ -1,147 +1,117 @@
 import express from 'express';
 import cors from 'cors';
 import ytSearch from 'yt-search';
-import { Readable } from 'stream';
+import { spawn } from 'child_process';
+import { writeFileSync, existsSync } from 'fs';
+import path from 'path';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PIPED_INSTANCES = [
-  'https://pipedapi.kavin.rocks',
-  'https://pipedapi.adminforge.de',
-  'https://pipedapi.darkness.services',
-  'https://api.piped.projectsegfau.lt',
-  'https://piped-api.garudalinux.org',
-  'https://watchapi.whatever.social',
-  'https://pipedapi.in.projectsegfau.lt',
-];
+const ytDlpPath = path.resolve('./yt-dlp_linux');
+const COOKIES_PATH = '/tmp/yt-cookies.txt';
 
-const INVIDIOUS_INSTANCES = [
-  'https://yewtu.be',
-  'https://invidious.kavin.rocks',
-  'https://inv.nadeko.net',
-  'https://invidious.privacydev.net',
-  'https://inv.tux.pizza',
-];
+// Decodifica e persiste os cookies do YouTube no disco ao iniciar
+if (process.env.YOUTUBE_COOKIES_B64) {
+  try {
+    const decoded = Buffer.from(process.env.YOUTUBE_COOKIES_B64, 'base64').toString('utf8');
+    writeFileSync(COOKIES_PATH, decoded);
+    console.log('✅ Cookies do YouTube carregados');
+  } catch (err) {
+    console.warn('⚠️  Falha ao carregar cookies:', err.message);
+  }
+} else {
+  console.warn('⚠️  YOUTUBE_COOKIES_B64 não definido — requisições podem ser bloqueadas pelo YouTube');
+}
 
-async function safeFetch(url) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Zenith/1.0)' },
-    signal: AbortSignal.timeout(12000),
+function buildArgs(extra) {
+  const args = [
+    '--extractor-args', 'youtube:player_client=ios,android,tv_embedded',
+    '--no-playlist',
+  ];
+  if (existsSync(COOKIES_PATH)) args.push('--cookies', COOKIES_PATH);
+  return [...args, ...extra];
+}
+
+function spawnAsync(cmd, args) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(cmd, args);
+    let out = '';
+    let err = '';
+    proc.stdout.on('data', d => { out += d; });
+    proc.stderr.on('data', d => { err += d; });
+    proc.on('close', code => (code === 0 ? resolve(out) : reject(new Error(err))));
+    proc.on('error', reject);
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
 }
 
-function bestAudioFromPiped(streams) {
-  const m4a = streams.filter(s => s.mimeType?.includes('mp4'));
-  const pool = m4a.length ? m4a : streams;
-  return pool.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-}
-
-function bestAudioFromInvidious(formats) {
-  const audio = formats.filter(f => f.type?.startsWith('audio'));
-  const m4a = audio.filter(f => f.type?.includes('mp4') || f.type?.includes('aac'));
-  const pool = m4a.length ? m4a : audio;
-  return pool.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-}
-
-async function getAudioStream(videoId) {
-  // Tier 1: Piped
-  for (const base of PIPED_INSTANCES) {
-    try {
-      const data = await safeFetch(`${base}/streams/${videoId}`);
-      const best = bestAudioFromPiped(data.audioStreams || []);
-      if (!best?.url) continue;
-      console.log(`[OK] Piped: ${base}`);
-      return { url: best.url, mimeType: best.mimeType || 'audio/mp4', title: data.title || videoId };
-    } catch (err) {
-      console.warn(`[FAIL] Piped ${base}: ${err.message}`);
-    }
-  }
-
-  // Tier 2: Invidious
-  for (const base of INVIDIOUS_INSTANCES) {
-    try {
-      const data = await safeFetch(`${base}/api/v1/videos/${videoId}?fields=title,adaptiveFormats`);
-      const best = bestAudioFromInvidious(data.adaptiveFormats || []);
-      if (!best?.url) continue;
-      console.log(`[OK] Invidious: ${base}`);
-      const mimeType = best.type?.split(';')[0] || 'audio/mp4';
-      return { url: best.url, mimeType, title: data.title || videoId };
-    } catch (err) {
-      console.warn(`[FAIL] Invidious ${base}: ${err.message}`);
-    }
-  }
-
-  throw new Error('Todos os provedores falharam (Piped + Invidious)');
-}
-
-// Pesquisa no YouTube
+// Pesquisa
 app.get('/search', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Parâmetro "q" obrigatório' });
   try {
     const r = await ytSearch(q);
-    const videos = r.videos.slice(0, 10).map(v => ({
+    res.json(r.videos.slice(0, 10).map(v => ({
       id: v.videoId,
       title: v.title,
       channel: v.author.name,
       duration: v.timestamp,
       thumbnail: v.thumbnail,
       url: v.url,
-    }));
-    res.json(videos);
+    })));
   } catch (err) {
     console.error('Erro na pesquisa:', err.message);
-    res.status(500).json({ error: 'Falha ao pesquisar no YouTube' });
+    res.status(500).json({ error: 'Falha ao pesquisar' });
   }
 });
 
-// Stream direto → redireciona para URL de áudio
+// Stream → retorna URL direta do YouTube e redireciona
 app.get('/stream', async (req, res) => {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'Video ID obrigatório' });
+  const ytUrl = `https://www.youtube.com/watch?v=${id}`;
   try {
-    const { url } = await getAudioStream(id);
-    res.redirect(url);
+    const stdout = await spawnAsync(ytDlpPath, buildArgs([
+      '-g', '-f', 'bestaudio[ext=m4a]/bestaudio', ytUrl,
+    ]));
+    const directUrl = stdout.trim();
+    if (!directUrl) throw new Error('URL não encontrada');
+    res.redirect(directUrl);
   } catch (err) {
     console.error('Erro no stream:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Falha ao obter stream' });
   }
 });
 
-// Download do áudio
+// Download → pipe do áudio direto pro cliente
 app.get('/download', async (req, res) => {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'Video ID obrigatório' });
+  const ytUrl = `https://www.youtube.com/watch?v=${id}`;
   try {
-    const { url, mimeType, title } = await getAudioStream(id);
-    const safeTitle = title.replace(/[^a-zA-Z0-9 _-]/gi, '');
-    const ext = mimeType.includes('webm') ? 'webm' : 'm4a';
+    const infoOut = await spawnAsync(ytDlpPath, buildArgs([
+      '--dump-json', '-f', 'bestaudio[ext=m4a]/bestaudio', ytUrl,
+    ]));
+    const info = JSON.parse(infoOut);
+    const title = info.title.replace(/[^a-zA-Z0-9 _-]/gi, '');
 
-    const audioRes = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!audioRes.ok) throw new Error(`Falha ao buscar áudio: ${audioRes.status}`);
+    res.setHeader('Content-Disposition', `attachment; filename="${title}.m4a"`);
+    res.setHeader('Content-Type', 'audio/mp4');
+    if (info.filesize || info.filesize_approx) {
+      res.setHeader('Content-Length', info.filesize || info.filesize_approx);
+    }
 
-    res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.${ext}"`);
-    res.setHeader('Content-Type', mimeType);
-    const len = audioRes.headers.get('content-length');
-    if (len) res.setHeader('Content-Length', len);
-
-    Readable.fromWeb(audioRes.body).pipe(res);
+    const dl = spawn(ytDlpPath, buildArgs(['-o', '-', '-f', 'bestaudio[ext=m4a]/bestaudio', ytUrl]));
+    dl.stdout.pipe(res);
+    req.on('close', () => dl.kill());
   } catch (err) {
     console.error('Erro no download:', err.message);
-    if (!res.headersSent) res.status(500).json({ error: err.message });
+    if (!res.headersSent) res.status(500).json({ error: 'Falha no download' });
   }
 });
 
-app.get('/health', (_, res) => res.json({ status: 'ok', providers: { piped: PIPED_INSTANCES.length, invidious: INVIDIOUS_INSTANCES.length } }));
+app.get('/health', (_, res) => res.json({ status: 'ok', hasCookies: existsSync(COOKIES_PATH) }));
 
 const PORT = process.env.PORT || 3333;
-app.listen(PORT, () => {
-  console.log(`🚀 Zenith Music API (Piped + Invidious) rodando na porta ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Zenith API rodando na porta ${PORT}`));
