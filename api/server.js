@@ -26,11 +26,14 @@ if (process.env.YOUTUBE_COOKIES_B64) {
 }
 
 function buildArgs(extra) {
+  const hasCookies = existsSync(COOKIES_PATH);
   const args = [
-    '--extractor-args', 'youtube:player_client=ios,android,tv_embedded',
+    '--extractor-args', hasCookies
+      ? 'youtube:player_client=web,mweb'
+      : 'youtube:player_client=ios,android',
     '--no-playlist',
   ];
-  if (existsSync(COOKIES_PATH)) args.push('--cookies', COOKIES_PATH);
+  if (hasCookies) args.push('--cookies', COOKIES_PATH);
   return [...args, ...extra];
 }
 
