@@ -1,11 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import ytSearch from 'yt-search';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { exec as execCallback } from 'child_process';
-
-const exec = promisify(execCallback);
+import ytdl from '@distube/ytdl-core';
 
 const app = express();
 app.use(cors());
@@ -33,35 +29,20 @@ app.get('/search', async (req, res) => {
   }
 });
 
-// Rota 2: Download do Áudio usando yt-dlp (Solução Industrial)
+// Rota 2: Download do Áudio usando Node puro
 app.get('/download', async (req, res) => {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'Video ID obrigatorio' });
 
   try {
     const url = `https://www.youtube.com/watch?v=${id}`;
-    
-    // Pega as info rapidinho com yt-dlp (bypassa problemas de criptografia do JS)
-    const { stdout: infoJson } = await exec(`yt-dlp --dump-json -f "bestaudio[ext=m4a]" ${url}`);
-    const info = JSON.parse(infoJson);
-    const title = info.title.replace(/[^a-zA-Z0-9 _-]/gi, ''); // Limpa caracteres estranhos pro nome do arquivo
+    const info = await ytdl.getInfo(url);
+    const title = info.videoDetails.title.replace(/[^a-zA-Z0-9 _-]/gi, '');
     
     res.header('Content-Disposition', `attachment; filename="${title}.m4a"`);
     res.header('Content-Type', 'audio/mp4');
-    
-    if (info.filesize || info.filesize_approx) {
-      res.header('Content-Length', info.filesize || info.filesize_approx);
-    }
 
-    // Spawn do processo yt-dlp mandando a saída (stdout) para a resposta (res)
-    const ytdlp = spawn('yt-dlp', ['-o', '-', '-f', 'bestaudio[ext=m4a]', url]);
-    
-    ytdlp.stdout.pipe(res);
-    
-    req.on('close', () => {
-       ytdlp.kill(); // Mata o processo se o usuário cancelar o download
-    });
-
+    ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).pipe(res);
   } catch (error) {
     console.error('Erro no download:', error);
     if (!res.headersSent) {
@@ -70,21 +51,14 @@ app.get('/download', async (req, res) => {
   }
 });
 
-// Rota 3: Streaming Direto (Suporta Avançar/Voltar na barrinha)
-app.get('/stream', async (req, res) => {
+// Rota 3: Streaming Direto
+app.get('/stream', (req, res) => {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'Video ID obrigatorio' });
 
   try {
     const url = `https://www.youtube.com/watch?v=${id}`;
-    // Pega a URL direta de streaming do Google. Ela suporta Range-Requests nativamente.
-    const { stdout } = await exec(`yt-dlp -g -f "bestaudio[ext=m4a]" ${url}`);
-    const directUrl = stdout.trim();
-    if (directUrl) {
-      res.redirect(directUrl);
-    } else {
-      res.status(404).send('URL de stream não encontrada');
-    }
+    ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).pipe(res);
   } catch (error) {
     console.error('Erro no stream:', error);
     res.status(500).send('Falha ao obter stream');
@@ -93,5 +67,5 @@ app.get('/stream', async (req, res) => {
 
 const PORT = process.env.PORT || 3333;
 app.listen(PORT, () => {
-  console.log(`🚀 Zenith Music API (Powered by yt-dlp) rodando na porta ${PORT}`);
+  console.log(`🚀 Zenith Music API (Node.js) rodando na porta ${PORT}`);
 });
