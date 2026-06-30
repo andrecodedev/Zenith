@@ -1,7 +1,7 @@
 import { LayoutDashboard, Calendar, BarChart2, FileText, Landmark, PieChart, Music, Bot, Mic } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
-export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat';
+export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio';
 
 interface HubViewProps {
   onNavigate: (view: AppView) => void;
@@ -66,9 +66,9 @@ export function HubView({ onNavigate }: HubViewProps) {
       color: 'bg-elements/10 text-text-primary border-border-base'
     },
     {
-      id: 'audio_history',
-      title: 'Histórico de Áudios',
-      description: 'Acesse suas transcrições salvas automaticamente',
+      id: 'audio',
+      title: 'Transcrições',
+      description: 'Grave áudios e acesse seu histórico',
       icon: <Mic size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     }
@@ -87,8 +87,8 @@ export function HubView({ onNavigate }: HubViewProps) {
 
       <div className="w-full space-y-8 relative z-10">
         <div className="text-center space-y-4 mb-10">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-2">
-            <div className="w-14 h-14 sm:w-16 sm:h-16">
+          <div className="flex items-center justify-center gap-3 sm:gap-4 mb-2">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0">
               <img src="/logo.png" alt="Zenith Logo" className="w-full h-full object-contain [html.light_&]:invert drop-shadow-md" />
             </div>
             <h1 className="text-4xl sm:text-5xl font-black font-title tracking-wider text-text-primary uppercase">Zenith</h1>
@@ -102,18 +102,34 @@ export function HubView({ onNavigate }: HubViewProps) {
           {options.map((opt) => (
             <button
               key={opt.id}
-              onClick={() => onNavigate(opt.id as AppView)}
-              className="flex flex-col text-left p-5 rounded-2xl border border-border-base/50 bg-bg-secondary/30 backdrop-blur-md hover:border-text-tertiary/60 hover:bg-bg-secondary/60 hover:shadow-lg transition-all group cursor-pointer"
+              onClick={() => opt.id !== 'music' && onNavigate(opt.id as AppView)}
+              disabled={opt.id === 'music'}
+              className={`relative overflow-hidden flex flex-col text-left p-5 rounded-2xl border border-border-base/50 bg-bg-secondary/30 backdrop-blur-md transition-all group ${opt.id === 'music' ? 'opacity-70 cursor-not-allowed' : 'hover:border-text-tertiary/60 hover:bg-bg-secondary/60 hover:shadow-lg cursor-pointer'}`}
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center border bg-bg-primary/50 border-border-gray text-text-primary group-hover:border-text-tertiary group-hover:scale-105 transition-all`}>
-                  {opt.icon}
+              {opt.id === 'music' && (
+                <div 
+                  className="absolute -right-12 top-6 w-48 flex items-center justify-center h-6 rotate-45 transform border-y border-[#444] z-10"
+                  style={{
+                    background: 'repeating-linear-gradient(45deg, #111, #111 12px, #3a3a3a 12px, #3a3a3a 24px)'
+                  }}
+                >
+                  <span className="text-[10px] font-bold text-white/50 whitespace-nowrap">
+                    Manutenção • Manutenção • Manutenção
+                  </span>
                 </div>
-                <h2 className="text-lg font-bold text-text-primary group-hover:text-text-primary transition-colors">
-                  {opt.title}
-                </h2>
+              )}
+
+              <div className="flex items-center justify-between mb-2 w-full">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center border bg-bg-primary/50 border-border-gray text-text-primary ${opt.id !== 'music' && 'group-hover:border-text-tertiary group-hover:scale-105'} transition-all`}>
+                    {opt.icon}
+                  </div>
+                  <h2 className={`text-lg font-bold text-text-primary ${opt.id !== 'music' && 'group-hover:text-text-primary'} transition-colors`}>
+                    {opt.title}
+                  </h2>
+                </div>
               </div>
-              <p className="text-sm text-text-tertiary">
+              <p className="text-text-secondary text-sm">
                 {opt.description}
               </p>
             </button>

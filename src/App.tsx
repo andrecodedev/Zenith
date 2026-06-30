@@ -24,12 +24,13 @@ import { InvestmentView } from './components/ui/InvestmentView';
 import { MusicDownloaderView } from './components/ui/MusicDownloaderView';
 import { ChatView } from './components/ui/ChatView';
 import { QuickTranscriber } from './components/ui/QuickTranscriber';
+import { AudioView } from './components/ui/AudioView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio_history';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -113,11 +114,11 @@ function FinanceDropdown({ currentView, setCurrentView }: {
 
 function ToolsDropdown({ currentView, setCurrentView }: {
   currentView: AppView;
-  setCurrentView: (v: 'notes' | 'music') => void;
+  setCurrentView: (v: 'notes' | 'music' | 'audio') => void;
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isActive = currentView === 'notes' || currentView === 'music';
+  const isActive = currentView === 'notes' || currentView === 'music' || currentView === 'audio';
 
   const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
   const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
@@ -133,15 +134,30 @@ function ToolsDropdown({ currentView, setCurrentView }: {
       </button>
       {open && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
-          <div className="w-48 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-56 bg-bg-secondary border border-border-base rounded-xl shadow-2xl overflow-hidden">
             <button onClick={() => { setCurrentView('notes'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'notes' ? 'text-text-primary' : 'text-text-tertiary'}`}>
               <FileText size={14} />
               Notas Integradas
             </button>
             <div className="h-px bg-border-base/40" />
-            <button onClick={() => { setCurrentView('music'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'music' ? 'text-text-primary' : 'text-text-tertiary'}`}>
-              <Music size={14} />
-              Zenith Music
+            <button disabled className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors opacity-50 cursor-not-allowed text-text-tertiary`}>
+              <div className="flex items-center gap-2.5 whitespace-nowrap">
+                <Music size={14} />
+                Zenith Music
+              </div>
+              <span 
+                className="text-[9px] font-bold text-white px-2 py-0.5 rounded border border-[#444] ml-2 flex items-center justify-center leading-none"
+                style={{
+                  background: 'repeating-linear-gradient(45deg, #111, #111 6px, #3a3a3a 6px, #3a3a3a 12px)'
+                }}
+              >
+                Manutenção
+              </span>
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('audio'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'audio' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <Mic size={14} />
+              Transcrições
             </button>
           </div>
         </div>
@@ -156,7 +172,7 @@ function AIDropdown({ currentView, setCurrentView }: {
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isActive = currentView === 'chat' || currentView === 'audio_history';
+  const isActive = currentView === 'chat';
 
   const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
   const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
@@ -176,11 +192,6 @@ function AIDropdown({ currentView, setCurrentView }: {
             <button onClick={() => { setCurrentView('chat'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'chat' ? 'text-text-primary' : 'text-text-tertiary'}`}>
               <Bot size={14} />
               Zenith AI
-            </button>
-            <div className="h-px bg-border-base/40" />
-            <button onClick={() => { setCurrentView('audio_history' as AppView); setOpen(false); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer text-text-tertiary">
-              <Mic size={14} />
-              Histórico de Áudios
             </button>
           </div>
         </div>
@@ -802,11 +813,28 @@ function App() {
                 Notas Integradas
               </button>
               <button
-                onClick={() => { setCurrentView('music'); setIsMobileMenuOpen(false); }}
-                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'music' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+                disabled
+                className={`cursor-not-allowed opacity-50 transition-colors flex items-center justify-between p-4 rounded-xl text-text-tertiary`}
               >
-                <Music size={24} />
-                Zenith Music
+                <div className="flex items-center gap-4">
+                  <Music size={24} />
+                  Zenith Music
+                </div>
+                <span 
+                  className="text-[9px] font-bold text-white px-2 py-0.5 rounded border border-[#444] flex items-center justify-center leading-none"
+                  style={{
+                    background: 'repeating-linear-gradient(45deg, #111, #111 6px, #3a3a3a 6px, #3a3a3a 12px)'
+                  }}
+                >
+                  Manutenção
+                </span>
+              </button>
+              <button
+                onClick={() => { setCurrentView('audio'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'audio' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <Mic size={24} />
+                Transcrições
               </button>
               
               <div className="h-px bg-border-base/40 my-2" />
@@ -834,13 +862,6 @@ function App() {
               >
                 <Bot size={24} />
                 Zenith AI
-              </button>
-              <button
-                onClick={() => { setIsMobileMenuOpen(false); }}
-                className="cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl text-text-tertiary active:bg-btn-bg active:text-text-primary"
-              >
-                <Mic size={24} />
-                Histórico de Áudios
               </button>
 
               <div className="h-px bg-border-base/40 my-2" />
@@ -1054,6 +1075,8 @@ function App() {
             <div className="w-full flex-1 flex flex-col mb-8 px-4"><InvestmentView /></div>
           ) : currentView === 'chat' ? (
             <div className="w-full flex-1 flex flex-col px-4 min-h-0 pb-4"><ChatView /></div>
+          ) : currentView === 'audio' ? (
+            <div className="w-full flex-1 flex flex-col px-4 min-h-0 pb-4"><AudioView /></div>
           ) : (
             <div className="w-full flex-1 flex flex-col mb-8 px-4">
               <CalendarView
@@ -1142,6 +1165,8 @@ function App() {
           className="fixed right-4 z-[105] flex flex-col items-end gap-3 pointer-events-none transition-all duration-300"
           style={{ bottom: playingVideo ? (isPlayerMinimized ? '72px' : '130px') : '24px' }}
         >
+          {/* Quick Transcriber */}
+          <QuickTranscriber />
           {/* Chat AI Button */}
           <button
             onClick={() => setCurrentView('chat')}
@@ -1150,8 +1175,6 @@ function App() {
           >
             <Bot size={22} className="transition-colors duration-300 group-hover:text-brand-pink" />
           </button>
-          {/* Quick Transcriber */}
-          <QuickTranscriber />
         </div>
       )}
     </div>
