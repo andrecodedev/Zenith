@@ -27,3 +27,9 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# API binários baixados no postinstall
+api/yt-dlp_linux
+api/yt-dlp
+api/realesrgan/
+api/realesrgan-ubuntu.zip

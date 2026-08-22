@@ -1,7 +1,7 @@
-import { LayoutDashboard, Calendar, BarChart2, FileText, Landmark, PieChart, Music, Bot, Mic } from 'lucide-react';
+import { LayoutDashboard, Calendar, BarChart2, FileText, Landmark, PieChart, Music, Bot, Mic, ImageUpscale } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
-export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio';
+export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale';
 
 interface HubViewProps {
   onNavigate: (view: AppView) => void;
@@ -70,6 +70,13 @@ export function HubView({ onNavigate }: HubViewProps) {
       title: 'Transcrições',
       description: 'Grave áudios e acesse seu histórico',
       icon: <Mic size={20} />,
+      color: 'bg-elements/10 text-text-primary border-border-base'
+    },
+    {
+      id: 'image_upscale',
+      title: 'Image Upscale',
+      description: 'Amplia imagens 2x ou 4x com Real-ESRGAN',
+      icon: <ImageUpscale size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     }
   ];

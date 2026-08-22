@@ -1,9 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import ytSearch from 'yt-search';
+import multer from 'multer';
+import { imageSize } from 'image-size';
 import { spawn } from 'child_process';
 import { writeFileSync, existsSync } from 'fs';
+import { unlink, readFile } from 'fs/promises';
 import path from 'path';
+import { randomUUID } from 'crypto';
+import { fileURLToPath } from 'url';
 
 const app = express();
 app.use(cors());
@@ -11,6 +16,56 @@ app.use(express.json());
 
 const ytDlpPath = path.resolve('./yt-dlp_linux');
 const COOKIES_PATH = '/tmp/yt-cookies.txt';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REALESRGAN_DIR = path.join(__dirname, 'realesrgan');
+const REALESRGAN_BIN = path.join(REALESRGAN_DIR, 'realesrgan-ncnn-vulkan');
+const REALESRGAN_MODELS = path.join(REALESRGAN_DIR, 'models');
+const MAX_INPUT_MP = 6_000_000;
+const UPSCALE_TIMEOUT_MS = 180_000;
+const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
+
+const upload = multer({
+  dest: '/tmp',
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
+
+let upscaleBusy = false;
+
+const hasUpscaleEngine = () => existsSync(REALESRGAN_BIN) && existsSync(REALESRGAN_MODELS);
+
+const runRealEsrgan = (inputPath, outputPath, scale) =>
+  new Promise((resolve, reject) => {
+    // Modelo anime/illustration: melhor para line art
+    const args = [
+      '-i', inputPath,
+      '-o', outputPath,
+      '-s', String(scale),
+      '-n', 'realesrgan-x4plus-anime',
+      '-m', REALESRGAN_MODELS,
+      '-f', 'png',
+      '-t', '100',
+    ];
+
+    const proc = spawn(REALESRGAN_BIN, args, { cwd: REALESRGAN_DIR });
+    let err = '';
+    const timer = setTimeout(() => {
+      proc.kill('SIGKILL');
+      reject(new Error('Timeout no upscale (motor demorou demais)'));
+    }, UPSCALE_TIMEOUT_MS);
+
+    proc.stderr.on('data', (d) => { err += d.toString(); });
+    proc.stdout.on('data', (d) => { err += d.toString(); });
+    proc.on('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0 && existsSync(outputPath)) resolve();
+      else reject(new Error(err.trim() || `Real-ESRGAN exit ${code}`));
+    });
+  });
 
 // Decodifica e persiste os cookies do YouTube no disco ao iniciar
 if (process.env.YOUTUBE_COOKIES_B64) {
@@ -114,7 +169,114 @@ app.get('/download', async (req, res) => {
   }
 });
 
-app.get('/health', (_, res) => res.json({ status: 'ok', hasCookies: existsSync(COOKIES_PATH) }));
+/**
+ * POST /upscale?scale=2|4
+ * multipart field: file
+ * Resposta: image/png
+ */
+app.post('/upscale', upload.single('file'), async (req, res) => {
+  const inputPath = req.file?.path;
+  const outputPath = path.join('/tmp', `zenith-upscale-${randomUUID()}.png`);
+
+  const cleanup = async () => {
+    if (inputPath) {
+      try { await unlink(inputPath); } catch { /* ignore */ }
+    }
+    try { await unlink(outputPath); } catch { /* ignore */ }
+  };
+
+  try {
+    if (!hasUpscaleEngine()) {
+      return res.status(503).json({
+        error: 'Motor Real-ESRGAN não instalado. Rode npm run setup:realesrgan na pasta api/.',
+      });
+    }
+
+    if (upscaleBusy) {
+      return res.status(503).json({ error: 'Upscale ocupado. Aguarde o job atual terminar.' });
+    }
+
+    const scale = Number(req.query.scale);
+    if (scale !== 2 && scale !== 4) {
+      return res.status(400).json({ error: 'scale deve ser 2 ou 4' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Campo "file" obrigatório (multipart)' });
+    }
+
+    const mime = (req.file.mimetype || '').toLowerCase();
+    if (!ALLOWED_MIME.has(mime)) {
+      return res.status(400).json({ error: 'Arquivo inválido. Use PNG, JPG ou WebP.' });
+    }
+
+    const buf = await readFile(inputPath);
+    let width;
+    let height;
+    try {
+      const size = imageSize(buf);
+      width = size.width;
+      height = size.height;
+    } catch {
+      return res.status(400).json({ error: 'Não foi possível ler dimensões da imagem' });
+    }
+
+    if (!width || !height) {
+      return res.status(400).json({ error: 'Dimensões inválidas' });
+    }
+
+    if (width * height > MAX_INPUT_MP) {
+      return res.status(413).json({
+        error: `Imagem muito grande (${width}×${height}). Limite ~6 megapixels.`,
+      });
+    }
+
+    upscaleBusy = true;
+    await runRealEsrgan(inputPath, outputPath, scale);
+
+    const outBuf = await readFile(outputPath);
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="upscaled_${scale}x.png"`);
+    res.setHeader('Content-Length', outBuf.length);
+    res.setHeader('X-Upscale-Scale', String(scale));
+    res.setHeader('X-Upscale-Input', `${width}x${height}`);
+    res.send(outBuf);
+  } catch (err) {
+    console.error('Erro no upscale:', err.message);
+    if (!res.headersSent) {
+      const msg = String(err.message || '');
+      if (msg.includes('Timeout')) {
+        res.status(500).json({ error: 'Timeout: o motor demorou demais (tente 2x ou imagem menor).' });
+      } else if (/ENOMEM|Cannot allocate|killed|SIGKILL|out of memory/i.test(msg)) {
+        res.status(500).json({ error: 'Sem memória no servidor (OOM). Use imagem menor ou host com mais RAM.' });
+      } else if (/vulkan|gpu|vk/i.test(msg)) {
+        res.status(500).json({
+          error: 'Real-ESRGAN precisa de Vulkan/GPU. Em CPU-only (ex.: Render free) pode falhar; rode a API localmente.',
+        });
+      } else {
+        res.status(500).json({ error: 'Falha do modelo no upscale' });
+      }
+    }
+  } finally {
+    upscaleBusy = false;
+    await cleanup();
+  }
+});
+
+app.get('/health', (_, res) =>
+  res.json({
+    status: 'ok',
+    hasCookies: existsSync(COOKIES_PATH),
+    hasUpscaleEngine: hasUpscaleEngine(),
+  }),
+);
 
 const PORT = process.env.PORT || 3333;
-app.listen(PORT, () => console.log(`🚀 Zenith API rodando na porta ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Zenith API rodando na porta ${PORT}`);
+  console.log(
+    hasUpscaleEngine()
+      ? '✅ Real-ESRGAN disponível'
+      : '⚠️  Real-ESRGAN ausente — rode npm run setup:realesrgan',
+  );
+});

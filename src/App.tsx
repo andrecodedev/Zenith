@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic, ImageUpscale } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -25,12 +25,13 @@ import { MusicDownloaderView } from './components/ui/MusicDownloaderView';
 import { ChatView } from './components/ui/ChatView';
 import { QuickTranscriber } from './components/ui/QuickTranscriber';
 import { AudioView } from './components/ui/AudioView';
+import { ImageUpscaleView } from './components/ui/ImageUpscaleView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -114,11 +115,11 @@ function FinanceDropdown({ currentView, setCurrentView }: {
 
 function ToolsDropdown({ currentView, setCurrentView }: {
   currentView: AppView;
-  setCurrentView: (v: 'notes' | 'music' | 'audio') => void;
+  setCurrentView: (v: 'notes' | 'music' | 'audio' | 'image_upscale') => void;
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isActive = currentView === 'notes' || currentView === 'music' || currentView === 'audio';
+  const isActive = currentView === 'notes' || currentView === 'music' || currentView === 'audio' || currentView === 'image_upscale';
 
   const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
   const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
@@ -153,6 +154,11 @@ function ToolsDropdown({ currentView, setCurrentView }: {
               >
                 Manutenção
               </span>
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('image_upscale'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'image_upscale' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <ImageUpscale size={14} />
+              Image Upscale
             </button>
             <div className="h-px bg-border-base/40" />
             <button onClick={() => { setCurrentView('audio'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'audio' ? 'text-text-primary' : 'text-text-tertiary'}`}>
@@ -830,6 +836,13 @@ function App() {
                 </span>
               </button>
               <button
+                onClick={() => { setCurrentView('image_upscale'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'image_upscale' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <ImageUpscale size={24} />
+                Image Upscale
+              </button>
+              <button
                 onClick={() => { setCurrentView('audio'); setIsMobileMenuOpen(false); }}
                 className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'audio' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
               >
@@ -1077,6 +1090,8 @@ function App() {
             <div className="w-full flex-1 flex flex-col px-4 min-h-0 pb-4"><ChatView /></div>
           ) : currentView === 'audio' ? (
             <div className="w-full flex-1 flex flex-col px-4 min-h-0 pb-4"><AudioView /></div>
+          ) : currentView === 'image_upscale' ? (
+            <ImageUpscaleView />
           ) : (
             <div className="w-full flex-1 flex flex-col mb-8 px-4">
               <CalendarView
