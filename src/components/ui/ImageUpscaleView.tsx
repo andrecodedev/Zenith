@@ -23,7 +23,7 @@ const API_URL =
     : `http://${window.location.hostname}:3333`);
 
 const MAX_MP = 6_000_000;
-const MAX_BATCH = 15;
+const MAX_BATCH = 50;
 const ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp';
 
 const isAllowedMime = (type: string) => ACCEPT.split(',').some((t) => t === type);
