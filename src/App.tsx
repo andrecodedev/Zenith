@@ -32,6 +32,7 @@ import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
+import { viewFromPath, syncUrlForView } from './utils/app-routes';
 
 type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale' | 'voice_studio' | 'video_studio';
 
@@ -222,7 +223,9 @@ function App() {
   const { routines, categories, taskInstances, playingVideo, isPlayerExpanded, isPlayerMinimized } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<AppView>('hero');
+  const [currentView, setCurrentView] = useState<AppView>(() =>
+    viewFromPath(window.location.pathname, true),
+  );
   const [headerVisible, setHeaderVisible] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
   const lastScrollY = useRef(0);
@@ -272,7 +275,16 @@ function App() {
 
   useEffect(() => {
     currentViewRef.current = currentView;
+    syncUrlForView(currentView);
   }, [currentView]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setCurrentView(viewFromPath(window.location.pathname, !!session));
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [session]);
 
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('theme') === 'light';
@@ -298,11 +310,10 @@ function App() {
       if (session) {
         useStore.getState().fetchData();
         useStore.getState().fetchNotes();
-        setCurrentView('hub');
+        setCurrentView(viewFromPath(window.location.pathname, true));
       } else {
-        if (currentViewRef.current !== 'sobre') {
-          setCurrentView('hero');
-        }
+        const guestView = viewFromPath(window.location.pathname, false);
+        setCurrentView(guestView === 'sobre' ? 'sobre' : 'hero');
       }
       setIsInitializing(false);
     });
@@ -316,11 +327,14 @@ function App() {
           useStore.getState().fetchData();
           useStore.getState().fetchNotes();
           setCurrentView('hub');
+          syncUrlForView('hub', true);
           if (notificationsEnabled) subscribeToPush();
         }
-      } else {
+        // TOKEN_REFRESHED / USER_UPDATED: mantém a tela atual (ex.: transcrições)
+      } else if (event === 'SIGNED_OUT') {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
         setCurrentView('hero');
+        syncUrlForView('hero', true);
       }
       setIsInitializing(false);
     });
