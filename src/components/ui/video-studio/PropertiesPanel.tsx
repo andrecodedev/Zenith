@@ -139,7 +139,11 @@ export const PropertiesPanel = ({
                     min={20}
                     className="field-input"
                     value={Math.round(layer.w)}
-                    onChange={(e) => onUpdateLayer(layer.id, { w: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const w = Math.max(20, Number(e.target.value) || 20);
+                      const ratio = layer.h / Math.max(1, layer.w);
+                      onUpdateLayer(layer.id, { w, h: Math.max(20, Math.round(w * ratio)) });
+                    }}
                   />
                 </Field>
                 <Field label="Altura (px)">
@@ -148,7 +152,11 @@ export const PropertiesPanel = ({
                     min={20}
                     className="field-input"
                     value={Math.round(layer.h)}
-                    onChange={(e) => onUpdateLayer(layer.id, { h: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const h = Math.max(20, Number(e.target.value) || 20);
+                      const ratio = layer.w / Math.max(1, layer.h);
+                      onUpdateLayer(layer.id, { h, w: Math.max(20, Math.round(h * ratio)) });
+                    }}
                   />
                 </Field>
                 <Field label="Opacidade">

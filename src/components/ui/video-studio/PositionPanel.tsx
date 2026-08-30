@@ -146,8 +146,24 @@ export const PositionPanel = ({
                 <NumField label="Y" value={Math.round(layer.y)} onChange={(v) => onUpdateLayer(layer.id, { y: v })} />
                 {layer.type === 'image' && (
                   <>
-                    <NumField label="Largura" value={Math.round(layer.w)} onChange={(v) => onUpdateLayer(layer.id, { w: v })} />
-                    <NumField label="Altura" value={Math.round(layer.h)} onChange={(v) => onUpdateLayer(layer.id, { h: v })} />
+                    <NumField
+                      label="Largura"
+                      value={Math.round(layer.w)}
+                      onChange={(v) => {
+                        const ratio = layer.h / Math.max(1, layer.w);
+                        const w = Math.max(20, v);
+                        onUpdateLayer(layer.id, { w, h: Math.max(20, Math.round(w * ratio)) });
+                      }}
+                    />
+                    <NumField
+                      label="Altura"
+                      value={Math.round(layer.h)}
+                      onChange={(v) => {
+                        const ratio = layer.w / Math.max(1, layer.h);
+                        const h = Math.max(20, v);
+                        onUpdateLayer(layer.id, { h, w: Math.max(20, Math.round(h * ratio)) });
+                      }}
+                    />
                   </>
                 )}
               </div>

@@ -1,20 +1,47 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { enqueueRender, getJob, isRenderBusy } from './services/render-queue.js';
 import { getFfmpegVersion, resolveAssetPath } from './services/scene-compositor.js';
+import {
+  downloadStockFile,
+  isAllowedStockUrl,
+  openStockStream,
+  searchStock,
+  STOCK_THEMES,
+  stockStatus,
+} from './services/stock-library.js';
+
+const loadLocalEnv = () => {
+  const envPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '.env');
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq < 1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (!process.env[key]) process.env[key] = val;
+  }
+};
+loadLocalEnv();
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.VIDEO_DATA_DIR || path.join(__dirname, 'data', 'jobs');
+// Sempre absoluto: concat do ffmpeg resolve paths relativos ao concat.txt.
+const DATA_DIR = path.resolve(__dirname, process.env.VIDEO_DATA_DIR || path.join('data', 'jobs'));
 const ASSETS_ROOT = path.join(__dirname, 'data', 'assets');
 const SFX_ROOT =
   process.env.SFX_LIBRARY_ROOT ||
@@ -53,6 +80,7 @@ app.get('/health', (_, res) => {
     ffmpegVersion,
     renderBusy: isRenderBusy(),
     sfxRoot: existsSync(SFX_ROOT) ? SFX_ROOT : null,
+    stock: stockStatus(),
   });
 });
 
@@ -79,6 +107,88 @@ app.get('/sfx-library', async (_, res) => {
     res.json({ root: SFX_ROOT, categories });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/stock/themes', (req, res) => {
+  const kind = String(req.query.kind || 'image');
+  res.json({ themes: STOCK_THEMES[kind] || [] });
+});
+
+app.get('/stock/search', async (req, res) => {
+  const kind = String(req.query.kind || 'image');
+  if (!['image', 'video', 'audio'].includes(kind)) {
+    return res.status(400).json({ error: 'kind invalido' });
+  }
+  try {
+    const data = await searchStock(kind, req.query.q, req.query.page);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: err.message || 'Falha na busca de stock' });
+  }
+});
+
+app.get('/stock/stream', async (req, res) => {
+  const url = String(req.query.url || '');
+  if (!url || !isAllowedStockUrl(url)) {
+    return res.status(400).json({ error: 'URL nao permitida' });
+  }
+  const ac = new AbortController();
+  const onClose = () => ac.abort();
+  req.on('close', onClose);
+  try {
+    // Timeout so na conexao inicial; o corpo pode ser MP3 longo.
+    const connectTimer = setTimeout(() => ac.abort(), 25000);
+    const { body, contentType, contentLength } = await openStockStream(url, ac.signal);
+    clearTimeout(connectTimer);
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=600');
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+
+    const { Readable } = await import('stream');
+    const nodeStream = Readable.fromWeb(body);
+    nodeStream.on('error', (err) => {
+      if (err?.name === 'AbortError' || err?.name === 'TimeoutError') return;
+      console.error('stock stream:', err.message || err);
+      if (!res.writableEnded) res.destroy();
+    });
+    res.on('close', () => {
+      nodeStream.destroy();
+    });
+    nodeStream.pipe(res);
+  } catch (err) {
+    req.off('close', onClose);
+    if (err?.name === 'AbortError' || err?.name === 'TimeoutError') {
+      if (!res.headersSent) res.status(504).json({ error: 'Timeout ao buscar midia' });
+      return;
+    }
+    if (!res.headersSent) {
+      res.status(502).json({ error: err.message || 'Falha no stream de stock' });
+    }
+  }
+});
+
+app.post('/stock/import', async (req, res) => {
+  const { projectId, url, name } = req.body || {};
+  if (!projectId || !url) {
+    return res.status(400).json({ error: 'projectId e url obrigatorios' });
+  }
+  try {
+    const { buf, ext } = await downloadStockFile(url);
+    const dir = path.join(ASSETS_ROOT, projectId);
+    await mkdir(dir, { recursive: true });
+    const filename = `${randomUUID()}${ext}`;
+    await writeFile(path.join(dir, filename), buf);
+    const assetRef = `asset://${filename}`;
+    res.json({
+      src: assetRef,
+      filename,
+      url: `/assets/${projectId}/${filename}`,
+      name: String(name || 'stock').slice(0, 120),
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Falha ao importar stock' });
   }
 });
 
@@ -208,8 +318,17 @@ app.get('/render/download/:jobId', async (req, res) => {
 });
 
 const PORT = process.env.VIDEO_PORT || 3335;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Zenith Video API na porta ${PORT}`);
   console.log(ffmpegOk ? `FFmpeg ${ffmpegVersion}` : 'FFmpeg ausente - instale com sudo apt install ffmpeg');
   console.log(`SFX root: ${existsSync(SFX_ROOT) ? SFX_ROOT : '(não encontrado)'}`);
+});
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Porta ${PORT} ja em uso. Mate o processo antigo:`);
+    console.error(`  fuser -k ${PORT}/tcp`);
+    console.error(`  # ou: ss -ltnp | grep ${PORT}`);
+    process.exit(1);
+  }
+  throw err;
 });

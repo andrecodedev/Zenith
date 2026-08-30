@@ -155,6 +155,7 @@ export const getFfmpegVersion = () =>
   });
 
 export const renderProject = async (project, jobDir, onProgress, uhd = true) => {
+  jobDir = path.resolve(jobDir);
   const { W, H } = sizeFor(uhd);
   const assetsDir = path.join(jobDir, 'assets');
   await mkdir(jobDir, { recursive: true });
@@ -200,9 +201,16 @@ export const renderProject = async (project, jobDir, onProgress, uhd = true) => 
 
   const totalDuration = scenes.reduce((s, sc) => s + (sc.durationSec || 5), 0);
   const concatList = path.join(jobDir, 'concat.txt');
+  // Paths no concat demuxer sao relativos ao concat.txt; basename evita
+  // data/jobs/id/data/jobs/id/... quando jobDir e relativo.
   await writeFile(
     concatList,
-    segmentPaths.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'),
+    segmentPaths
+      .map((p) => {
+        const entry = path.basename(p).replace(/'/g, "'\\''");
+        return `file '${entry}'`;
+      })
+      .join('\n'),
   );
 
   const videoOnly = path.join(jobDir, 'video_only.mp4');
@@ -238,10 +246,15 @@ export const renderProject = async (project, jobDir, onProgress, uhd = true) => 
     audioInputs.push('-i', audioPath);
     const delayMs = Math.round((clip.startSec || 0) * 1000);
     const vol = clip.volume ?? 1;
-    const trim = clip.trimStartSec ? `,atrim=start=${clip.trimStartSec}` : '';
-    filterParts.push(
-      `[${inputIdx}:a]${trim},adelay=${delayMs}|${delayMs},volume=${vol}[a${inputIdx}]`,
-    );
+    // Sem leading comma: `[1:a],adelay` vira filter "" e o ffmpeg quebra.
+    const chain = [
+      clip.trimStartSec ? `atrim=start=${clip.trimStartSec}` : null,
+      `adelay=${delayMs}|${delayMs}`,
+      `volume=${vol}`,
+    ]
+      .filter(Boolean)
+      .join(',');
+    filterParts.push(`[${inputIdx}:a]${chain}[a${inputIdx}]`);
     inputIdx++;
   }
 

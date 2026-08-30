@@ -29,6 +29,7 @@ type EditorCanvasProps = {
   selectedLayerIds?: string[];
   selectedSceneId: string | null;
   playheadSec: number;
+  isPlaying?: boolean;
   onSelectLayer: (id: string | null) => void;
   onSelectScene: (id: string) => void;
   onUpdateLayer: (id: string, patch: Partial<ProjectLayer>) => void;
@@ -46,23 +47,27 @@ const BackgroundVisual = ({
   color,
   src,
   opacity = 1,
+  playheadSec = 0,
+  isPlaying = false,
   resolveImageUrl,
 }: {
   color: string;
   src?: string;
   opacity?: number;
+  playheadSec?: number;
+  isPlaying?: boolean;
   resolveImageUrl: (s: string) => string;
 }) => {
   const url = src ? resolveImageUrl(src) : '';
-  const image = useImage(url);
-  if (image) {
+  const media = useLayerMedia(url, playheadSec, 0, isPlaying);
+  if (media) {
     return (
       <KonvaImage
         x={0}
         y={0}
         width={PROJECT_WIDTH}
         height={PROJECT_HEIGHT}
-        image={image}
+        image={media}
         opacity={opacity}
         listening={false}
       />
@@ -104,7 +109,12 @@ const useImage = (url: string) => {
   return image;
 };
 
-const useLayerMedia = (url: string, playheadSec: number, startSec: number) => {
+const useLayerMedia = (
+  url: string,
+  playheadSec: number,
+  startSec: number,
+  isPlaying = false,
+) => {
   const videoMode = isVideoSrc(url);
   const image = useImage(videoMode ? '' : url);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
@@ -118,6 +128,7 @@ const useLayerMedia = (url: string, playheadSec: number, startSec: number) => {
     v.muted = true;
     v.playsInline = true;
     v.preload = 'auto';
+    v.loop = false;
     if (url.startsWith('http://') || url.startsWith('https://')) {
       v.crossOrigin = 'anonymous';
     }
@@ -127,7 +138,8 @@ const useLayerMedia = (url: string, playheadSec: number, startSec: number) => {
     return () => {
       v.removeEventListener('loadeddata', onReady);
       v.pause();
-      v.src = '';
+      v.removeAttribute('src');
+      v.load();
       setVideo(null);
     };
   }, [url, videoMode]);
@@ -135,12 +147,33 @@ const useLayerMedia = (url: string, playheadSec: number, startSec: number) => {
   useEffect(() => {
     if (!video) return;
     const t = Math.max(0, playheadSec - startSec);
-    const dur = Number.isFinite(video.duration) ? video.duration : t;
+    const dur = Number.isFinite(video.duration) ? video.duration : Infinity;
     const next = Math.min(t, Math.max(0, dur - 0.04));
-    if (Math.abs(video.currentTime - next) > 0.05) {
-      video.currentTime = next;
+
+    if (isPlaying) {
+      // Evita seek a cada frame (isso trava). Só corrige se atrasar/adiantar muito.
+      if (Math.abs(video.currentTime - next) > 0.4) {
+        try {
+          video.currentTime = next;
+        } catch {
+          /* ignore */
+        }
+      }
+      if (video.paused) {
+        void video.play().catch(() => {});
+      }
+      return;
     }
-  }, [video, playheadSec, startSec]);
+
+    if (!video.paused) video.pause();
+    if (Math.abs(video.currentTime - next) > 0.08) {
+      try {
+        video.currentTime = next;
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [video, playheadSec, startSec, isPlaying]);
 
   return videoMode ? video : image;
 };
@@ -279,6 +312,7 @@ const ImageLayerNode = ({
   layer,
   isSelected,
   playheadSec,
+  isPlaying = false,
   interactive = true,
   draggable,
   onChange,
@@ -288,6 +322,7 @@ const ImageLayerNode = ({
   layer: Extract<ProjectLayer, { type: 'image' }>;
   isSelected: boolean;
   playheadSec: number;
+  isPlaying?: boolean;
   interactive?: boolean;
   draggable?: boolean;
   onChange: (patch: Partial<ProjectLayer>) => void;
@@ -297,12 +332,25 @@ const ImageLayerNode = ({
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const url = resolveImageUrl(layer.src);
-  const image = useLayerMedia(url, playheadSec, layer.startSec);
+  const image = useLayerMedia(url, playheadSec, layer.startSec, isPlaying);
   const canDrag = draggable ?? interactive;
+  const isVideo = isVideoSrc(url);
 
   useEffect(() => {
     groupRef.current?.getLayer()?.batchDraw();
-  }, [image, playheadSec]);
+  }, [image, playheadSec, isPlaying]);
+
+  // Enquanto o vídeo toca, redesenha o canvas (o elemento <video> muda de frame sem React).
+  useEffect(() => {
+    if (!isVideo || !isPlaying || !image) return;
+    let raf = 0;
+    const tick = () => {
+      groupRef.current?.getLayer()?.batchDraw();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isVideo, isPlaying, image]);
 
   const localT =
     layer.durationSec > 0
@@ -332,15 +380,16 @@ const ImageLayerNode = ({
   const commitTransform = () => {
     const node = groupRef.current;
     if (!node) return;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    node.scaleX(1);
+    const sx = Math.abs(node.scaleX());
+    const sy = Math.abs(node.scaleY());
+    const s = (sx + sy) / 2 || 1;
+    node.scaleX(layer.flipX ? -1 : 1);
     node.scaleY(1);
     onChange({
       x: node.x(),
       y: node.y(),
-      w: Math.max(20, layer.w * scaleX),
-      h: Math.max(20, layer.h * scaleY),
+      w: Math.max(20, layer.w * s),
+      h: Math.max(20, layer.h * s),
       rotation: node.rotation(),
     });
   };
@@ -440,10 +489,17 @@ const ImageLayerNode = ({
         <Transformer
           ref={trRef}
           rotateEnabled
+          keepRatio
           borderStroke="#a78bfa"
           anchorStroke="#a78bfa"
           anchorFill="#ffffff"
           anchorCornerRadius={2}
+          enabledAnchors={[
+            'top-left',
+            'top-right',
+            'bottom-left',
+            'bottom-right',
+          ]}
           boundBoxFunc={(oldBox, newBox) =>
             newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
           }
@@ -570,6 +626,7 @@ export const EditorCanvas = ({
   selectedLayerIds,
   selectedSceneId,
   playheadSec,
+  isPlaying = false,
   onSelectLayer,
   onSelectScene,
   onUpdateLayer,
@@ -592,11 +649,22 @@ export const EditorCanvas = ({
       const h = el.clientHeight - 32;
       const sx = w / PROJECT_WIDTH;
       const sy = h / PROJECT_HEIGHT;
-      setScale(Math.min(sx, sy, 0.55));
+      setScale(Math.min(sx, sy, 1));
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    let raf = 0;
+    const tick = () => {
+      stageRef.current?.getLayers().forEach((l) => l.batchDraw());
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isPlaying]);
 
   const [liveDrag, setLiveDrag] = useState<{ id: string; x: number; y: number } | null>(null);
   const [guides, setGuides] = useState<GuideLine[]>([]);
@@ -717,21 +785,26 @@ export const EditorCanvas = ({
         height={PROJECT_HEIGHT * scale}
         scaleX={scale}
         scaleY={scale}
+        pixelRatio={Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)}
         style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.45)' }}
       >
-        <Layer>
+        <Layer imageSmoothingEnabled>
           {transitionBackground ? (
             <>
               <BackgroundVisual
                 color={transitionBackground.fromColor}
                 src={transitionBackground.fromSrc}
                 opacity={transitionBackground.fromOpacity}
+                playheadSec={playheadSec}
+                isPlaying={isPlaying}
                 resolveImageUrl={resolveImageUrl}
               />
               <BackgroundVisual
                 color={transitionBackground.toColor}
                 src={transitionBackground.toSrc}
                 opacity={transitionBackground.toOpacity}
+                playheadSec={playheadSec}
+                isPlaying={isPlaying}
                 resolveImageUrl={resolveImageUrl}
               />
             </>
@@ -739,6 +812,8 @@ export const EditorCanvas = ({
             <BackgroundVisual
               color={backgroundColor}
               src={backgroundSrc}
+              playheadSec={playheadSec}
+              isPlaying={isPlaying}
               resolveImageUrl={resolveImageUrl}
             />
           )}
@@ -766,6 +841,7 @@ export const EditorCanvas = ({
                   layer={layer}
                   isSelected={isSelected || (isMorph && selectedIds.includes(selectId))}
                   playheadSec={playheadSec}
+                  isPlaying={isPlaying}
                   interactive
                   draggable={!isMorph}
                   posOverride={liveDrag?.id === selectId ? liveDrag : null}

@@ -78,7 +78,7 @@ type VideoEditorState = {
   sendSceneBackward: (sceneId: string) => void;
   bringSceneToFront: (sceneId: string) => void;
   sendSceneToBack: (sceneId: string) => void;
-  setSceneBackground: (sceneId: string, src: string) => void;
+  setSceneBackground: (sceneId: string, src: string | null) => void;
   setSceneColor: (sceneId: string, color: string) => void;
   setSceneTransition: (sceneId: string, transition: SceneTransition, durationSec?: number) => void;
   applyTransitionToAllScenes: (transition: SceneTransition, durationSec: number) => void;
@@ -739,8 +739,33 @@ export const useVideoEditorStore = create<VideoEditorState>((rawSet, get) => {
   setSceneBackground: (sceneId, src) => {
     const { project, editorSurface } = get();
     if (!project) return;
+    if (src) {
+      set({
+        project: touchProject(patchWorkingScene(project, editorSurface, sceneId, { backgroundSrc: src })),
+        isDirty: true,
+      });
+      return;
+    }
+    // Tira imagem/video do fundo; a cor solida permanece.
+    const stripBg = (scene: VideoScene): VideoScene => {
+      const next = { ...scene };
+      delete next.backgroundSrc;
+      return next;
+    };
+    if (editorSurface === 'banner') {
+      const banner = ensureBanner(project);
+      if (banner.scene.id !== sceneId) return;
+      set({
+        project: touchProject({ ...project, banner: { ...banner, scene: stripBg(banner.scene) } }),
+        isDirty: true,
+      });
+      return;
+    }
     set({
-      project: touchProject(patchWorkingScene(project, editorSurface, sceneId, { backgroundSrc: src })),
+      project: touchProject({
+        ...project,
+        scenes: project.scenes.map((s) => (s.id === sceneId ? stripBg(s) : s)),
+      }),
       isDirty: true,
     });
   },

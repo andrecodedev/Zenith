@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Plus, Trash2, Type, ImageIcon, Music, Layers, Minus, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Type, ImageIcon, Music, Layers, Minus, Sparkles, Video } from 'lucide-react';
 import type { ProjectElement, VideoProject, VideoScene } from '../../../types/video-project';
 import {
   hasSceneTransition,
@@ -12,6 +12,7 @@ import {
 } from '../../../types/video-project';
 import { collectSnapTimes, SNAP_PX, snapMove, snapTime, type SnapKind } from '../../../lib/timeline-snap';
 import { useVideoEditorStore } from '../../../store/useVideoEditorStore';
+import { isVideoSrc } from '../../../lib/video-assets';
 
 type TimelineProps = {
   project: VideoProject;
@@ -136,8 +137,17 @@ type ItemDrag = {
   };
 };
 
-const layerIcon = (layer: ProjectElement) =>
-  layer.type === 'text' ? <Type size={12} /> : <ImageIcon size={12} />;
+const layerIcon = (layer: ProjectElement) => {
+  if (layer.type === 'text') return <Type size={12} />;
+  if (layer.type === 'image' && isVideoSrc(layer.src)) return <Video size={12} />;
+  return <ImageIcon size={12} />;
+};
+
+const layerLabel = (layer: ProjectElement) => {
+  if (layer.type === 'text') return layer.text;
+  if (layer.type === 'image' && isVideoSrc(layer.src)) return 'Vídeo';
+  return 'Imagem';
+};
 
 
 const SceneGap = ({
@@ -891,7 +901,7 @@ export const Timeline = (props: TimelineProps) => {
                     />
                     {layerIcon(layer)}
                     <span className="truncate flex-1 min-w-0">
-                      {layer.type === 'text' ? layer.text : 'Imagem'}
+                      {layerLabel(layer)}
                     </span>
                     <button
                       type="button"

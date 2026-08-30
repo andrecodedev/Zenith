@@ -30,8 +30,8 @@ import {
 } from '../../lib/video-projects';
 import type { VideoProjectSummary } from '../../types/video-project';
 import { projectTotalDurationSec, sceneAtTime, createEmptyBanner } from '../../types/video-project';
-import { resolveAssetSrc, isVideoSrc } from '../../lib/video-assets';
-import { persistImageBlob, stripImageBackground } from '../../lib/remove-background';
+import { resolveAssetSrc, isVideoSrc, getMediaFitSize } from '../../lib/video-assets';
+import { persistImageBlob, stripImageBackground, BgRemovalAbortedError } from '../../lib/remove-background';
 import { getMatchMoveAt, layersForPreview } from '../../lib/match-move';
 import { EditorCanvas } from './video-studio/EditorCanvas';
 import { Timeline } from './video-studio/Timeline';
@@ -68,6 +68,7 @@ export const VideoStudioView = () => {
   const [transitionSceneId, setTransitionSceneId] = useState<string | null>(null);
   const [removingBackground, setRemovingBackground] = useState(false);
   const [removingBgHint, setRemovingBgHint] = useState<string | null>(null);
+  const removeBgAbortRef = useRef<AbortController | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [deletingProject, setDeletingProject] = useState(false);
   const [timelineH, setTimelineH] = useState(240);
@@ -301,6 +302,10 @@ export const VideoStudioView = () => {
     return null;
   }, [store.project, store.selectedClipId]);
 
+  const handleCancelRemoveBackground = () => {
+    removeBgAbortRef.current?.abort();
+  };
+
   const handleRemoveBackground = async () => {
     if (removingBackground) return;
     const project = store.project;
@@ -320,20 +325,29 @@ export const VideoStudioView = () => {
       setActionError('Selecione uma imagem (ou um fundo com foto)');
       return;
     }
+    const ac = new AbortController();
+    removeBgAbortRef.current = ac;
     setRemovingBackground(true);
     setActionError(null);
     setRemovingBgHint('Preparando...');
     try {
-      const blob = await stripImageBackground(src, setRemovingBgHint);
+      const blob = await stripImageBackground(src, setRemovingBgHint, ac.signal);
+      if (ac.signal.aborted) return;
       const stored = await persistImageBlob(blob, {
         apiUrl: API_URL,
         apiOnline,
         projectId: project.id,
       });
+      if (ac.signal.aborted) return;
       apply(stored);
     } catch (err) {
+      if (err instanceof BgRemovalAbortedError || (err instanceof Error && err.name === 'AbortError')) {
+        setRemovingBgHint(null);
+        return;
+      }
       setActionError(err instanceof Error ? err.message : 'Falha ao remover fundo');
     } finally {
+      if (removeBgAbortRef.current === ac) removeBgAbortRef.current = null;
       setRemovingBackground(false);
       setRemovingBgHint(null);
     }
@@ -421,8 +435,8 @@ export const VideoStudioView = () => {
         type: 'image',
         id: crypto.randomUUID(),
         src,
-        x: 160,
-        y: 80,
+        x: Math.max(40, Math.round((1920 - w) / 2)),
+        y: Math.max(40, Math.round((1080 - h) / 2)),
         w,
         h,
         opacity: 1,
@@ -435,19 +449,12 @@ export const VideoStudioView = () => {
       place(size.w, size.h);
       return;
     }
-    if (src.startsWith('/personagem/')) {
-      const img = new Image();
-      img.onload = () => {
-        const maxH = 780;
-        const maxW = 900;
-        const s = Math.min(1, maxH / img.naturalHeight, maxW / img.naturalWidth);
-        place(Math.round(img.naturalWidth * s), Math.round(img.naturalHeight * s));
-      };
-      img.onerror = () => place(480, 640);
-      img.src = src;
-      return;
-    }
-    place(640, 360);
+    const url = resolveAssetSrc(src, store.project?.id, API_URL) || src;
+    void getMediaFitSize(url, {
+      maxW: isVideoSrc(src) ? 1280 : 900,
+      maxH: isVideoSrc(src) ? 720 : 780,
+      isVideo: isVideoSrc(src),
+    }).then(({ w, h }) => place(w, h));
   };
 
   const addShapeElement = (src: string) => {
@@ -832,6 +839,7 @@ export const VideoStudioView = () => {
       {removingBackground && (
         <div className="shrink-0 mx-3 mt-2 rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-2 text-sm text-violet-200">
           {removingBgHint || 'Removendo fundo...'}
+          <span className="text-violet-300/80"> · use Interromper na barra do elemento</span>
         </div>
       )}
 
@@ -941,7 +949,9 @@ export const VideoStudioView = () => {
                   : 'none'
               }
               onRemoveBackground={handleRemoveBackground}
+              onCancelRemoveBackground={handleCancelRemoveBackground}
               removingBackground={removingBackground}
+              onClearSceneBackground={(id) => store.setSceneBackground(id, null)}
               onDelete={() => store.deleteSelection()}
               canDeleteScene={!isBanner && (store.project?.scenes.length ?? 0) > 1}
               hideTimelineTools={isBanner}
@@ -965,6 +975,7 @@ export const VideoStudioView = () => {
             selectedLayerIds={store.selectedLayerIds}
             selectedSceneId={store.activeSceneId}
             playheadSec={isBanner ? 0 : store.playheadSec}
+            isPlaying={!isBanner && store.isPlaying}
             onSelectLayer={(id) => {
               store.selectLayer(id);
               if (
@@ -978,7 +989,18 @@ export const VideoStudioView = () => {
             }}
             onSelectScene={(id) => store.setActiveScene(id, { seekToStart: false })}
             onUpdateLayer={store.updateElement}
-            onReplaceImageSrc={(id, src) => store.updateElement(id, { src })}
+            onReplaceImageSrc={(id, src) => {
+              const layer = store.project?.elements.find((el) => el.id === id);
+              store.updateElement(id, { src });
+              if (!layer || layer.type !== 'image') return;
+              const url = resolveAssetSrc(src, store.project?.id, API_URL) || src;
+              const maxSide = Math.max(layer.w, layer.h);
+              void getMediaFitSize(url, {
+                maxW: maxSide,
+                maxH: maxSide,
+                isVideo: isVideoSrc(src),
+              }).then(({ w, h }) => store.updateElement(id, { w, h }));
+            }}
             onDropAddImage={(src, dur) => addImageElement(src, undefined, dur)}
             resolveImageUrl={resolveImageUrl}
             stylePaintArmed={store.stylePaintArmed}

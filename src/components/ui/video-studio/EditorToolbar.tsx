@@ -4,11 +4,12 @@ import {
   AlignRight,
   Bold,
   FlipHorizontal2,
+  ImageOff,
   Italic,
-  Loader2,
   Music,
   Paintbrush,
   Scissors,
+  Square,
   Timer,
   Underline,
   Volume2,
@@ -18,6 +19,7 @@ import {
 import type { Layer, VideoScene } from '../../../types/video-project';
 import { asPercent } from '../../../types/video-project';
 import { historyGestureBind } from '../../../store/useVideoEditorStore';
+import { isVideoSrc } from '../../../lib/video-assets';
 
 export type ElementSidePanel = 'none' | 'effects' | 'animate' | 'position';
 
@@ -45,7 +47,9 @@ type EditorToolbarProps = {
   selectedClipId: string | null;
   selectionCount?: number;
   onRemoveBackground?: () => void;
+  onCancelRemoveBackground?: () => void;
   removingBackground?: boolean;
+  onClearSceneBackground?: (sceneId: string) => void;
   onDelete?: () => void;
   canDeleteScene?: boolean;
   hideTimelineTools?: boolean;
@@ -126,27 +130,37 @@ const DeleteBtn = ({ onClick, disabled }: { onClick?: () => void; disabled?: boo
 
 const RemoveBgBtn = ({
   onClick,
+  onCancel,
   busy,
 }: {
   onClick?: () => void;
+  onCancel?: () => void;
   busy?: boolean;
 }) => {
+  if (!onClick && !onCancel) return null;
+  if (busy) {
+    return (
+      <button
+        type="button"
+        title="Interromper remoção de fundo"
+        onClick={onCancel}
+        className="h-9 px-3 rounded-md text-sm font-medium cursor-pointer transition-colors flex items-center gap-1.5 bg-rose-700/90 hover:bg-rose-600 text-white"
+      >
+        <Square size={14} fill="currentColor" />
+        Interromper
+      </button>
+    );
+  }
   if (!onClick) return null;
   return (
     <button
       type="button"
-      title="Recortar o fundo da imagem com IA"
-      disabled={busy}
+      title="Recortar o fundo da imagem"
       onClick={onClick}
-      className={
-        'h-9 px-3 rounded-md text-sm font-medium cursor-pointer transition-colors flex items-center gap-1.5 ' +
-        (busy
-          ? 'bg-violet-700/80 text-white cursor-wait'
-          : 'text-neutral-200 hover:bg-neutral-700')
-      }
+      className="h-9 px-3 rounded-md text-sm font-medium cursor-pointer transition-colors flex items-center gap-1.5 text-neutral-200 hover:bg-neutral-700"
     >
-      {busy ? <Loader2 size={15} className="animate-spin" /> : <WandSparkles size={15} />}
-      {busy ? 'Removendo...' : 'Remover fundo'}
+      <WandSparkles size={15} />
+      Remover fundo
     </button>
   );
 };
@@ -167,7 +181,9 @@ export const EditorToolbar = ({
   onOpenTransition,
   activePanel,
   onRemoveBackground,
+  onCancelRemoveBackground,
   removingBackground,
+  onClearSceneBackground,
   onDelete,
   canDeleteScene = true,
   hideTimelineTools = false,
@@ -193,6 +209,7 @@ export const EditorToolbar = ({
         onOpenPanel={onOpenPanel}
         activePanel={activePanel}
         onRemoveBackground={onRemoveBackground}
+        onCancelRemoveBackground={onCancelRemoveBackground}
         removingBackground={removingBackground}
         onDelete={onDelete}
         hideTimelineTools={hideTimelineTools}
@@ -293,7 +310,24 @@ export const EditorToolbar = ({
           onClick={() => onOpenPanel(activePanel === 'position' ? 'none' : 'position')}
         />
         {scene.backgroundSrc ? (
-          <RemoveBgBtn onClick={onRemoveBackground} busy={removingBackground} />
+          <>
+            {!isVideoSrc(scene.backgroundSrc) && (
+              <RemoveBgBtn
+                onClick={onRemoveBackground}
+                onCancel={onCancelRemoveBackground}
+                busy={removingBackground}
+              />
+            )}
+            <button
+              type="button"
+              title="Tirar imagem ou video do fundo e deixar so a cor"
+              onClick={() => onClearSceneBackground?.(scene.id)}
+              className="h-9 px-3 rounded-md text-sm font-medium cursor-pointer transition-colors flex items-center gap-1.5 text-neutral-200 hover:bg-neutral-700"
+            >
+              <ImageOff size={15} />
+              Só cor
+            </button>
+          </>
         ) : null}
         <Sep />
         <DeleteBtn onClick={onDelete} disabled={!canDeleteScene} />
@@ -316,6 +350,7 @@ const LayerToolbar = ({
   onOpenPanel,
   activePanel,
   onRemoveBackground,
+  onCancelRemoveBackground,
   removingBackground,
   onDelete,
   hideTimelineTools = false,
@@ -329,6 +364,7 @@ const LayerToolbar = ({
   onOpenPanel: (panel: ElementSidePanel) => void;
   activePanel: ElementSidePanel;
   onRemoveBackground?: () => void;
+  onCancelRemoveBackground?: () => void;
   removingBackground?: boolean;
   onDelete?: () => void;
   hideTimelineTools?: boolean;
@@ -472,7 +508,11 @@ const LayerToolbar = ({
       >
         <FlipHorizontal2 size={16} />
       </Btn>
-      <RemoveBgBtn onClick={onRemoveBackground} busy={removingBackground} />
+      <RemoveBgBtn
+        onClick={onRemoveBackground}
+        onCancel={onCancelRemoveBackground}
+        busy={removingBackground}
+      />
       <Sep />
       <label className="relative h-9 w-9 rounded-md border border-neutral-600 overflow-hidden cursor-pointer" title="Cor de fundo (atrás da imagem)">
         <input

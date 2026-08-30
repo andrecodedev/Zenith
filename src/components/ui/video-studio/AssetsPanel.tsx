@@ -32,6 +32,7 @@ import type { SceneTransition } from '../../../types/video-project';
 import { loadPersonagemCatalog, type PersonagemFolder } from '../../../lib/personagem-catalog';
 import { loadSfxCatalog, type SfxFolder } from '../../../lib/sfx-catalog';
 import { startZenithImageDrag } from '../../../lib/canvas-image-drag';
+import { StockBrowser } from './StockBrowser';
 
 type AssetTab =
   | 'elementos'
@@ -107,9 +108,9 @@ const TAB_COPY: Record<AssetTab, { title: string; hint: string }> = {
   elementos: { title: 'Elementos', hint: 'Formas prontas e elementos que você enviar' },
   personagem: { title: 'Personagem', hint: 'Clique para colocar. Arraste sobre outra imagem no preview para trocar' },
   texto: { title: 'Texto', hint: 'Adicione títulos e legendas ao preview' },
-  imagens: { title: 'Imagens', hint: 'Fotos e PNGs só deste projeto' },
-  videos: { title: 'Vídeos', hint: 'Clips de vídeo só deste projeto' },
-  audios: { title: 'Áudios', hint: 'Música e narração só deste projeto' },
+  imagens: { title: 'Imagens', hint: 'Biblioteca pronta (Pexels) e arquivos só deste projeto' },
+  videos: { title: 'Vídeos', hint: 'Clips prontos e clips que você enviar' },
+  audios: { title: 'Áudios', hint: 'Lo-fi, suspense e trilhas livres, além dos seus uploads' },
   sfx: { title: 'Efeitos sonoros', hint: 'Pastas da biblioteca. Clique para ouvir e adicionar' },
 };
 
@@ -770,6 +771,17 @@ export const AssetsPanel = ({
                       onChange={(e) => onImageFilesPicked(e.target.files)}
                     />
                     <OfflineHint />
+                    <StockBrowser
+                      apiUrl={apiUrl}
+                      apiOnline={apiOnline}
+                      projectId={projectId}
+                      kind="image"
+                      onError={onError}
+                      onUseImage={(src) => onUseLibraryImage(src)}
+                      onUseFundo={onUseLibraryImageAsFundo}
+                      onUseAudio={onUseLibraryAudio}
+                      onAddToLibrary={onAddLibraryAsset}
+                    />
                     {images.length === 0 ? (
                       <EmptyLibrary icon={<ImageIcon size={28} />} text="Nenhuma imagem enviada" />
                     ) : (
@@ -801,47 +813,82 @@ export const AssetsPanel = ({
                       onChange={(e) => onVideoFilesPicked(e.target.files)}
                     />
                     <OfflineHint />
+                    <StockBrowser
+                      apiUrl={apiUrl}
+                      apiOnline={apiOnline}
+                      projectId={projectId}
+                      kind="video"
+                      onError={onError}
+                      onUseImage={(src, dur) => onUseLibraryImage(src, dur)}
+                      onUseFundo={onUseLibraryImageAsFundo}
+                      onUseAudio={onUseLibraryAudio}
+                      onAddToLibrary={onAddLibraryAsset}
+                    />
                     {videos.length === 0 ? (
                       <EmptyLibrary icon={<Video size={28} />} text="Nenhum vídeo enviado" />
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
-                        {videos.map((asset) => (
-                          <button
+                        {videos.map((asset) => {
+                          const url = resolveAssetUrl(asset.src);
+                          return (
+                          <div
                             key={asset.id}
-                            type="button"
-                            title="Adicionar na timeline"
-                            onClick={() => onUseLibraryImage(asset.src, asset.durationSec)}
-                            className="relative group rounded-lg border border-neutral-700 bg-neutral-800 overflow-hidden aspect-video cursor-pointer text-left"
+                            className="relative group rounded-lg border border-neutral-700 bg-neutral-800 overflow-hidden aspect-video"
                           >
-                            <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
-                              <Video size={32} className="text-neutral-600" />
-                            </div>
-                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                            {url ? (
+                              <video
+                                src={url}
+                                muted
+                                playsInline
+                                preload="metadata"
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onMouseEnter={(e) => {
+                                  void e.currentTarget.play().catch(() => {});
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.pause();
+                                  e.currentTarget.currentTime = 0;
+                                }}
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
+                                <Video size={32} className="text-neutral-600" />
+                              </div>
+                            )}
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2 pointer-events-none">
                               <p className="text-[10px] text-neutral-200 truncate">{asset.name}</p>
                               {asset.durationSec != null && (
                                 <p className="text-[10px] text-neutral-400">{fmtDur(asset.durationSec)}</p>
                               )}
                             </div>
-                            <span
-                              role="button"
-                              tabIndex={0}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
+                              <button
+                                type="button"
+                                onClick={() => onUseLibraryImage(asset.src, asset.durationSec)}
+                                className="w-full py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-medium cursor-pointer"
+                              >
+                                Usar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onUseLibraryImageAsFundo(asset.src)}
+                                className="w-full py-1.5 rounded-md bg-neutral-700 hover:bg-neutral-600 text-neutral-100 text-[11px] font-medium cursor-pointer flex items-center justify-center gap-1"
+                              >
+                                <ImagePlus size={12} />
+                                Fundo
+                              </button>
+                            </div>
+                            <button
+                              type="button"
                               title="Remover"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveLibraryAsset(asset.id);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.stopPropagation();
-                                  onRemoveLibraryAsset(asset.id);
-                                }
-                              }}
-                              className="absolute top-1 right-1 p-1 rounded bg-black/60 text-red-300 opacity-0 group-hover:opacity-100 cursor-pointer"
+                              onClick={() => onRemoveLibraryAsset(asset.id)}
+                              className="absolute top-1 right-1 p-1 rounded bg-black/60 text-red-300 opacity-0 group-hover:opacity-100 cursor-pointer z-10"
                             >
                               <Trash2 size={12} />
-                            </span>
-                          </button>
-                        ))}
+                            </button>
+                          </div>
+                          );
+                        })}
                       </div>
                     )}
                     <p className="text-[11px] text-neutral-600 text-center">
@@ -862,6 +909,16 @@ export const AssetsPanel = ({
                       onChange={(e) => onAudioFilesPicked(e.target.files)}
                     />
                     <OfflineHint />
+                    <StockBrowser
+                      apiUrl={apiUrl}
+                      apiOnline={apiOnline}
+                      projectId={projectId}
+                      kind="audio"
+                      onError={onError}
+                      onUseImage={onUseLibraryImage}
+                      onUseAudio={onUseLibraryAudio}
+                      onAddToLibrary={onAddLibraryAsset}
+                    />
                     {audios.length === 0 ? (
                       <EmptyLibrary icon={<Music size={28} />} text="Nenhum áudio enviado" />
                     ) : (
