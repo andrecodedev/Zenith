@@ -1,7 +1,7 @@
-import { LayoutDashboard, Calendar, BarChart2, FileText, Landmark, PieChart, Music, Bot, Mic, ImageUpscale } from 'lucide-react';
+import { LayoutDashboard, Calendar, BarChart2, FileText, Landmark, PieChart, Music, Bot, Mic, ImageUpscale, AudioLines } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
-export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale';
+export type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale' | 'voice_studio';
 
 interface HubViewProps {
   onNavigate: (view: AppView) => void;
@@ -77,6 +77,13 @@ export function HubView({ onNavigate }: HubViewProps) {
       title: 'Image Upscale',
       description: 'Amplia imagens 2x ou 4x com Real-ESRGAN',
       icon: <ImageUpscale size={20} />,
+      color: 'bg-elements/10 text-text-primary border-border-base'
+    },
+    {
+      id: 'voice_studio',
+      title: 'Voice Studio',
+      description: 'Clone de voz + TTS local para Tag Aberta',
+      icon: <AudioLines size={20} />,
       color: 'bg-elements/10 text-text-primary border-border-base'
     }
   ];

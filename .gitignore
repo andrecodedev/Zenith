@@ -33,3 +33,12 @@ api/yt-dlp_linux
 api/yt-dlp
 api/realesrgan/
 api/realesrgan-ubuntu.zip
+# Voice Studio (TTS)
+api-tts/.venv/
+api-tts/data/voices/*/
+api-tts/data/jobs/
+api-tts/data/tmp/
+api-tts/data/tts-models/
+api-tts/data/mpl-cache/
+api-tts/**/__pycache__/
+api-tts/.env

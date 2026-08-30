@@ -1,0 +1,6 @@
+# Dados locais do Voice Studio (não versionar)
+api-tts/data/voices/*/
+api-tts/data/jobs/
+api-tts/data/tmp/
+api-tts/.venv/
+api-tts/**/__pycache__/

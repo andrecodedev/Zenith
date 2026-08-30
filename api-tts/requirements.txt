@@ -1,0 +1,14 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.17
+pydantic==2.10.3
+pydantic-core==2.27.1
+pydantic-settings==2.6.1
+aiofiles==24.1.0
+# Motor: Coqui XTTS v2 (clone de voz). CPU ok, lento sem NVIDIA.
+# Torch CPU: pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+TTS==0.22.0
+# TTS 0.22 precisa de transformers 4.x (BeamSearchScorer sumiu no 5.x)
+transformers==4.40.2
+tokenizers>=0.19,<0.20
+soundfile>=0.12.1

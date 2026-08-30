@@ -22,7 +22,6 @@ const API_URL =
     ? 'https://seu-backend-deployado.com'
     : `http://${window.location.hostname}:3333`);
 
-const MAX_MP = 6_000_000;
 const MAX_BATCH = 50;
 const ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp';
 
@@ -92,11 +91,6 @@ export const ImageUpscaleView = () => {
       const previewUrl = URL.createObjectURL(file);
       try {
         const dims = await loadImageDims(previewUrl);
-        if (dims.w * dims.h > MAX_MP) {
-          URL.revokeObjectURL(previewUrl);
-          rejects.push(`${file.name}: ${dims.w}×${dims.h} acima de ~6MP`);
-          continue;
-        }
         next.push({
           id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
           file,
@@ -287,7 +281,7 @@ export const ImageUpscaleView = () => {
             <Upload size={28} className="text-text-tertiary" />
             <span className="text-text-primary font-semibold">Escolher imagens</span>
             <span className="text-text-tertiary text-xs">
-              PNG, JPG ou WebP · até {MAX_BATCH} por vez · ~6MP cada
+              PNG, JPG ou WebP · até {MAX_BATCH} por vez
             </span>
           </button>
         ) : (

@@ -21,7 +21,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REALESRGAN_DIR = path.join(__dirname, 'realesrgan');
 const REALESRGAN_BIN = path.join(REALESRGAN_DIR, 'realesrgan-ncnn-vulkan');
 const REALESRGAN_MODELS = path.join(REALESRGAN_DIR, 'models');
-const MAX_INPUT_MP = 6_000_000;
 const UPSCALE_TIMEOUT_MS = 180_000;
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 
@@ -223,12 +222,6 @@ app.post('/upscale', upload.single('file'), async (req, res) => {
 
     if (!width || !height) {
       return res.status(400).json({ error: 'Dimensões inválidas' });
-    }
-
-    if (width * height > MAX_INPUT_MP) {
-      return res.status(413).json({
-        error: `Imagem muito grande (${width}×${height}). Limite ~6 megapixels.`,
-      });
     }
 
     upscaleBusy = true;

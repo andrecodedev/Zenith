@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic, ImageUpscale } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic, ImageUpscale, AudioLines } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -26,12 +26,13 @@ import { ChatView } from './components/ui/ChatView';
 import { QuickTranscriber } from './components/ui/QuickTranscriber';
 import { AudioView } from './components/ui/AudioView';
 import { ImageUpscaleView } from './components/ui/ImageUpscaleView';
+import { VoiceStudioView } from './components/ui/VoiceStudioView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale' | 'voice_studio';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -178,7 +179,7 @@ function AIDropdown({ currentView, setCurrentView }: {
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isActive = currentView === 'chat';
+  const isActive = currentView === 'chat' || currentView === 'voice_studio';
 
   const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
   const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
@@ -198,6 +199,11 @@ function AIDropdown({ currentView, setCurrentView }: {
             <button onClick={() => { setCurrentView('chat'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'chat' ? 'text-text-primary' : 'text-text-tertiary'}`}>
               <Bot size={14} />
               Zenith AI
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('voice_studio'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'voice_studio' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <AudioLines size={14} />
+              Voice Studio
             </button>
           </div>
         </div>
@@ -263,7 +269,7 @@ function App() {
   useEffect(() => {
     currentViewRef.current = currentView;
     localStorage.setItem('zenith_current_view', currentView);
-  }, [currentView]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentView]);
 
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('theme') === 'light';
@@ -662,7 +668,7 @@ function App() {
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               <RoutineDropdown currentView={currentView} setCurrentView={setCurrentView} setSelectedDate={setSelectedDate} today={today} />
-              <ToolsDropdown currentView={currentView} setCurrentView={setCurrentView as any} />
+              <ToolsDropdown currentView={currentView} setCurrentView={setCurrentView} />
               <FinanceDropdown currentView={currentView} setCurrentView={setCurrentView} />
               <AIDropdown currentView={currentView} setCurrentView={setCurrentView} />
               {/* Separador vertical */}
@@ -875,6 +881,13 @@ function App() {
               >
                 <Bot size={24} />
                 Zenith AI
+              </button>
+              <button
+                onClick={() => { setCurrentView('voice_studio'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'voice_studio' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <AudioLines size={24} />
+                Voice Studio
               </button>
 
               <div className="h-px bg-border-base/40 my-2" />
@@ -1092,6 +1105,8 @@ function App() {
             <div className="w-full flex-1 flex flex-col px-4 min-h-0 pb-4"><AudioView /></div>
           ) : currentView === 'image_upscale' ? (
             <ImageUpscaleView />
+          ) : currentView === 'voice_studio' ? (
+            <VoiceStudioView />
           ) : (
             <div className="w-full flex-1 flex flex-col mb-8 px-4">
               <CalendarView
