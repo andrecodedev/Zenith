@@ -13,6 +13,7 @@ export default defineConfig({
         '**/api-tts/**',
         '**/api/node_modules/**',
         '**/api/uploads/**',
+        '**/api-video/**',
       ],
     },
   },

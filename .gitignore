@@ -42,3 +42,7 @@ api-tts/data/tts-models/
 api-tts/data/mpl-cache/
 api-tts/**/__pycache__/
 api-tts/.env
+# Video Studio (FFmpeg render)
+api-video/node_modules/
+api-video/data/
+api-video/.env

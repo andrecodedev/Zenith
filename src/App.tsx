@@ -3,7 +3,7 @@ import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
 import { computeTaskStatus } from './utils/status';
-import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic, ImageUpscale, AudioLines } from 'lucide-react';
+import { Plus, Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles, LayoutDashboard, Menu, X, Sun, Moon, BarChart2, Settings2, FileText, Mountain, Landmark, PieChart, ArrowLeft, Wrench, Music, Bell, Bot, Mic, ImageUpscale, AudioLines, Clapperboard } from 'lucide-react';
 import { TaskModal } from './components/ui/TaskModal';
 import { CourseBreakerModal } from './components/ui/CourseBreakerModal';
 import { TaskStatusModal } from './components/ui/TaskStatusModal';
@@ -27,12 +27,13 @@ import { QuickTranscriber } from './components/ui/QuickTranscriber';
 import { AudioView } from './components/ui/AudioView';
 import { ImageUpscaleView } from './components/ui/ImageUpscaleView';
 import { VoiceStudioView } from './components/ui/VoiceStudioView';
+import { VideoStudioView } from './components/ui/VideoStudioView';
 import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
 
-type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale' | 'voice_studio';
+type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale' | 'voice_studio' | 'video_studio';
 
 function RoutineDropdown({ currentView, setCurrentView, setSelectedDate, today }: { currentView: AppView, setCurrentView: (v: AppView) => void, setSelectedDate: (d: string) => void, today: string }) {
   const [open, setOpen] = useState(false);
@@ -116,11 +117,11 @@ function FinanceDropdown({ currentView, setCurrentView }: {
 
 function ToolsDropdown({ currentView, setCurrentView }: {
   currentView: AppView;
-  setCurrentView: (v: 'notes' | 'music' | 'audio' | 'image_upscale') => void;
+  setCurrentView: (v: 'notes' | 'music' | 'audio' | 'image_upscale' | 'video_studio') => void;
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isActive = currentView === 'notes' || currentView === 'music' || currentView === 'audio' || currentView === 'image_upscale';
+  const isActive = currentView === 'notes' || currentView === 'music' || currentView === 'audio' || currentView === 'image_upscale' || currentView === 'video_studio';
 
   const handleMouseEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
   const handleMouseLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 150); };
@@ -160,6 +161,11 @@ function ToolsDropdown({ currentView, setCurrentView }: {
             <button onClick={() => { setCurrentView('image_upscale'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'image_upscale' ? 'text-text-primary' : 'text-text-tertiary'}`}>
               <ImageUpscale size={14} />
               Image Upscale
+            </button>
+            <div className="h-px bg-border-base/40" />
+            <button onClick={() => { setCurrentView('video_studio'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'video_studio' ? 'text-text-primary' : 'text-text-tertiary'}`}>
+              <Clapperboard size={14} />
+              Video Studio
             </button>
             <div className="h-px bg-border-base/40" />
             <button onClick={() => { setCurrentView('audio'); setOpen(false); }} className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-elements cursor-pointer ${currentView === 'audio' ? 'text-text-primary' : 'text-text-tertiary'}`}>
@@ -216,9 +222,7 @@ function App() {
   const { routines, categories, taskInstances, playingVideo, isPlayerExpanded, isPlayerMinimized } = useStore();
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
-  const [currentView, setCurrentView] = useState<AppView>(() => {
-    return (localStorage.getItem('zenith_current_view') as AppView) || 'hero';
-  });
+  const [currentView, setCurrentView] = useState<AppView>('hero');
   const [headerVisible, setHeaderVisible] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
   const lastScrollY = useRef(0);
@@ -268,7 +272,6 @@ function App() {
 
   useEffect(() => {
     currentViewRef.current = currentView;
-    localStorage.setItem('zenith_current_view', currentView);
   }, [currentView]);
 
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -295,9 +298,7 @@ function App() {
       if (session) {
         useStore.getState().fetchData();
         useStore.getState().fetchNotes();
-        if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
-          setCurrentView('hub');
-        }
+        setCurrentView('hub');
       } else {
         if (currentViewRef.current !== 'sobre') {
           setCurrentView('hero');
@@ -314,9 +315,7 @@ function App() {
         if (event === 'SIGNED_IN') {
           useStore.getState().fetchData();
           useStore.getState().fetchNotes();
-          if (currentViewRef.current === 'hero' || currentViewRef.current === 'sobre') {
-            setCurrentView('hub');
-          }
+          setCurrentView('hub');
           if (notificationsEnabled) subscribeToPush();
         }
       } else {
@@ -855,6 +854,13 @@ function App() {
                 <Mic size={24} />
                 Transcrições
               </button>
+              <button
+                onClick={() => { setCurrentView('video_studio'); setIsMobileMenuOpen(false); }}
+                className={`cursor-pointer transition-colors flex items-center gap-4 p-4 rounded-xl ${currentView === 'video_studio' ? 'bg-btn-bg text-text-primary' : 'text-text-tertiary active:bg-btn-bg active:text-text-primary'}`}
+              >
+                <Clapperboard size={24} />
+                Video Studio
+              </button>
               
               <div className="h-px bg-border-base/40 my-2" />
               <div className="text-xs uppercase font-bold text-text-tertiary px-4 mb-2 tracking-widest">Finanças</div>
@@ -1107,6 +1113,8 @@ function App() {
             <ImageUpscaleView />
           ) : currentView === 'voice_studio' ? (
             <VoiceStudioView />
+          ) : currentView === 'video_studio' ? (
+            <VideoStudioView />
           ) : (
             <div className="w-full flex-1 flex flex-col mb-8 px-4">
               <CalendarView

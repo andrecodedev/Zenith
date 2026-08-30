@@ -12,6 +12,8 @@ export function AudioView() {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -155,6 +157,27 @@ export function AudioView() {
     }
   };
 
+  const clearAllTranscriptions = async () => {
+    try {
+      setClearingAll(true);
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { error } = await supabase
+        .from('audio_transcriptions')
+        .delete()
+        .eq('user_id', userData.user.id);
+
+      if (error) throw error;
+      setTranscriptions([]);
+      setShowClearConfirm(false);
+    } catch (err) {
+      console.error('Erro ao limpar histórico:', err);
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
   return (
     <div className="flex-1 bg-bg-primary h-full">
       <div className="pb-12 w-full">
@@ -234,7 +257,19 @@ export function AudioView() {
         </div>
 
         <div className="h-px bg-border-base/40 w-full mb-8"></div>
-        <h2 className="text-xl font-bold font-title text-text-primary mb-6">Histórico de Transcrições</h2>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <h2 className="text-xl font-bold font-title text-text-primary">Histórico de Transcrições</h2>
+          {!loading && transcriptions.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowClearConfirm(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 text-sm font-medium transition-colors cursor-pointer"
+            >
+              <Trash2 size={16} />
+              Excluir todo o histórico
+            </button>
+          )}
+        </div>
 
         {/* List */}
         {loading ? (
@@ -290,6 +325,37 @@ export function AudioView() {
           </div>
         )}
       </div>
+
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-secondary border border-border-base rounded-xl w-full max-w-sm shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold font-title text-text-primary mb-2">Excluir todo o histórico?</h3>
+            <p className="text-sm text-text-secondary mb-6">
+              Isso apaga permanentemente {transcriptions.length} transcriç
+              {transcriptions.length === 1 ? 'ão' : 'ões'}. Não dá para desfazer.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={clearAllTranscriptions}
+                disabled={clearingAll}
+                className="w-full cursor-pointer bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {clearingAll ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                Sim, excluir tudo
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                disabled={clearingAll}
+                className="w-full cursor-pointer bg-transparent border border-border-gray hover:bg-elements text-text-primary font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

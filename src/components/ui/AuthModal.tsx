@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase';
 
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL as string | undefined;
 const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
+// Reativar quando quiser liberar visitantes de novo
+const DEMO_MODE_ENABLED = false;
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,7 +24,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   if (!isOpen) return null;
 
   const handleDemo = async () => {
-    if (!DEMO_EMAIL || !DEMO_PASSWORD) return;
+    if (!DEMO_MODE_ENABLED || !DEMO_EMAIL || !DEMO_PASSWORD) return;
     setDemoLoading(true);
     setError(null);
     try {
@@ -148,17 +150,35 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 type="button"
                 onClick={handleDemo}
-                disabled={demoLoading}
-                className="w-full flex items-center justify-center gap-2 border border-border-gray hover:border-border-gray/80 hover:bg-elements text-text-secondary hover:text-text-primary py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
+                disabled={!DEMO_MODE_ENABLED || demoLoading}
+                className={`w-full flex items-center justify-between gap-2 border py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                  DEMO_MODE_ENABLED
+                    ? 'border-border-gray hover:border-border-gray/80 hover:bg-elements text-text-secondary hover:text-text-primary cursor-pointer disabled:opacity-50'
+                    : 'border-border-base text-text-tertiary opacity-50 cursor-not-allowed'
+                }`}
               >
-                {demoLoading
-                  ? <Loader2 size={16} className="animate-spin" />
-                  : <FlaskConical size={16} />
-                }
-                Explorar sem conta
+                <span className="flex items-center justify-center gap-2 min-w-0">
+                  {demoLoading
+                    ? <Loader2 size={16} className="animate-spin shrink-0" />
+                    : <FlaskConical size={16} className="shrink-0" />
+                  }
+                  Explorar sem conta
+                </span>
+                {!DEMO_MODE_ENABLED && (
+                  <span
+                    className="text-[9px] font-bold text-white px-2 py-0.5 rounded border border-[#444] shrink-0 flex items-center justify-center leading-none"
+                    style={{
+                      background: 'repeating-linear-gradient(45deg, #111, #111 6px, #3a3a3a 6px, #3a3a3a 12px)',
+                    }}
+                  >
+                    Desativado
+                  </span>
+                )}
               </button>
               <p className="text-center text-[11px] text-text-tertiary leading-snug -mt-1">
-                Ambiente de demonstração, dados resetados periodicamente
+                {DEMO_MODE_ENABLED
+                  ? 'Ambiente de demonstração, dados resetados periodicamente'
+                  : 'Desativado temporariamente'}
               </p>
             </>
           )}
