@@ -6,7 +6,7 @@ import {
   ImageIcon,
   Video,
   Music,
-  Sparkles,
+  Megaphone,
   Layers,
   User,
   Trash2,
@@ -31,6 +31,7 @@ import type { Layer, ProjectLibraryAsset, VideoProject, VideoScene } from '../..
 import type { SceneTransition } from '../../../types/video-project';
 import { loadPersonagemCatalog, type PersonagemFolder } from '../../../lib/personagem-catalog';
 import { loadSfxCatalog, type SfxFolder } from '../../../lib/sfx-catalog';
+import { startZenithImageDrag } from '../../../lib/canvas-image-drag';
 
 type AssetTab =
   | 'elementos'
@@ -99,12 +100,12 @@ const railTabs: { id: AssetTab; label: string; title: string; icon: ReactNode }[
   { id: 'imagens', label: 'Imagens', title: 'Imagens', icon: <ImageIcon size={20} /> },
   { id: 'videos', label: 'Vídeos', title: 'Vídeos', icon: <Video size={20} /> },
   { id: 'audios', label: 'Áudios', title: 'Áudios', icon: <Music size={20} /> },
-  { id: 'sfx', label: 'SFX', title: 'Efeitos sonoros', icon: <Sparkles size={20} /> },
+  { id: 'sfx', label: 'SFX', title: 'Efeitos sonoros', icon: <Megaphone size={20} /> },
 ];
 
 const TAB_COPY: Record<AssetTab, { title: string; hint: string }> = {
   elementos: { title: 'Elementos', hint: 'Formas prontas e elementos que você enviar' },
-  personagem: { title: 'Personagem', hint: 'Pastas de poses. Clique para ver as imagens e voltar' },
+  personagem: { title: 'Personagem', hint: 'Clique para colocar. Arraste sobre outra imagem no preview para trocar' },
   texto: { title: 'Texto', hint: 'Adicione títulos e legendas ao preview' },
   imagens: { title: 'Imagens', hint: 'Fotos e PNGs só deste projeto' },
   videos: { title: 'Vídeos', hint: 'Clips de vídeo só deste projeto' },
@@ -544,14 +545,16 @@ export const AssetsPanel = ({
                           <button
                             key={el.id}
                             type="button"
+                            draggable
+                            onDragStart={(e) => startZenithImageDrag(e, { src: el.src })}
                             onClick={() => {
                               onError(null);
                               onUseShape(el.src, el.label);
                             }}
-                            className="group aspect-square rounded-lg border border-neutral-700 bg-neutral-800/80 hover:border-violet-500 hover:bg-neutral-800 overflow-hidden cursor-pointer flex flex-col"
+                            className="group aspect-square rounded-lg border border-neutral-700 bg-neutral-800/80 hover:border-violet-500 hover:bg-neutral-800 overflow-hidden cursor-grab active:cursor-grabbing flex flex-col"
                           >
                             <div className="flex-1 flex items-center justify-center p-3">
-                              <img src={el.src} alt="" className="max-w-full max-h-full object-contain" />
+                              <img src={el.src} alt="" draggable={false} className="max-w-full max-h-full object-contain pointer-events-none" />
                             </div>
                             <span className="text-[10px] text-neutral-400 group-hover:text-neutral-200 py-1.5 px-2 truncate border-t border-neutral-700/80">
                               {el.label}
@@ -580,11 +583,16 @@ export const AssetsPanel = ({
                                 <button
                                   type="button"
                                   title="Adicionar ao vídeo"
+                                  draggable={!isVideo}
+                                  onDragStart={(e) => {
+                                    if (isVideo) return;
+                                    startZenithImageDrag(e, { src: asset.src });
+                                  }}
                                   onClick={() => {
                                     onError(null);
                                     onUseLibraryImage(asset.src);
                                   }}
-                                  className="flex-1 flex items-center justify-center p-2 cursor-pointer min-h-0"
+                                  className="flex-1 flex items-center justify-center p-2 cursor-grab active:cursor-grabbing min-h-0"
                                 >
                                   {isVideo ? (
                                     <video
@@ -597,7 +605,8 @@ export const AssetsPanel = ({
                                     <img
                                       src={url}
                                       alt=""
-                                      className="max-w-full max-h-full object-contain"
+                                      draggable={false}
+                                      className="max-w-full max-h-full object-contain pointer-events-none"
                                     />
                                   )}
                                 </button>
@@ -638,7 +647,7 @@ export const AssetsPanel = ({
                             </button>
                             <p className="text-sm font-medium text-neutral-100">{folder.label}</p>
                             <p className="text-xs text-neutral-500">
-                              {folder.items.length} poses. Clique para colocar no preview.
+                              {folder.items.length} poses. Clique para colocar. Arraste sobre outra imagem para trocar.
                             </p>
                             <div className="grid grid-cols-2 gap-2">
                               {folder.items.map((el) => (
@@ -646,17 +655,20 @@ export const AssetsPanel = ({
                                   key={el.src}
                                   type="button"
                                   title={poseLabel(el.label)}
+                                  draggable
+                                  onDragStart={(e) => startZenithImageDrag(e, { src: el.src })}
                                   onClick={() => {
                                     onError(null);
                                     onUseLibraryImage(el.src);
                                   }}
-                                  className="group aspect-square rounded-lg border border-neutral-700 bg-neutral-800/80 hover:border-violet-500 hover:bg-neutral-800 overflow-hidden cursor-pointer flex flex-col"
+                                  className="group aspect-square rounded-lg border border-neutral-700 bg-neutral-800/80 hover:border-violet-500 hover:bg-neutral-800 overflow-hidden cursor-grab active:cursor-grabbing flex flex-col"
                                 >
                                   <div className="flex-1 flex items-center justify-center p-1 bg-[radial-gradient(circle_at_center,#27272a_0%,#171717_70%)]">
                                     <img
                                       src={el.src}
                                       alt=""
-                                      className="max-w-full max-h-full object-contain"
+                                      draggable={false}
+                                      className="max-w-full max-h-full object-contain pointer-events-none"
                                       loading="lazy"
                                     />
                                   </div>
@@ -963,7 +975,7 @@ export const AssetsPanel = ({
                                 onClick={() => setOpenSfxFolder(f.id)}
                                 className="group rounded-lg border border-neutral-700 bg-neutral-800/80 hover:border-violet-500 hover:bg-neutral-800 overflow-hidden cursor-pointer flex flex-col text-left p-3"
                               >
-                                <Sparkles size={18} className="text-violet-400 mb-2" />
+                                <Megaphone size={18} className="text-violet-400 mb-2" />
                                 <span className="text-[11px] text-neutral-200 leading-tight">{f.label}</span>
                                 <span className="text-[10px] text-neutral-500 mt-1">
                                   {f.items.length} efeitos
@@ -1005,9 +1017,13 @@ const LibraryImageCard = ({
   onFundo: () => void;
   onRemove: () => void;
 }) => (
-  <div className="relative group rounded-lg border border-neutral-700 bg-neutral-800 overflow-hidden aspect-square">
+  <div
+    className="relative group rounded-lg border border-neutral-700 bg-neutral-800 overflow-hidden aspect-square"
+    draggable
+    onDragStart={(e) => startZenithImageDrag(e, { src: asset.src })}
+  >
     {url ? (
-      <img src={url} alt="" className="w-full h-full object-cover" />
+      <img src={url} alt="" draggable={false} className="w-full h-full object-cover pointer-events-none" />
     ) : (
       <div className="w-full h-full flex items-center justify-center bg-neutral-900">
         <ImageIcon size={24} className="text-neutral-600" />

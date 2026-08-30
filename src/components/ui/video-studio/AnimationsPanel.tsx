@@ -160,7 +160,6 @@ const AnimationSettings = ({ anim, onApply, onRemove }: SettingsProps) => {
           className="w-full accent-violet-500"
           {...historyGestureBind}
         />
-        />
       </div>
 
       <button

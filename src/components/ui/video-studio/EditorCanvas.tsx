@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { Stage, Layer, Image as KonvaImage, Text, Transformer, Rect, Group, Line } from 'react-konva';
 import type Konva from 'konva';
 import type { Layer as ProjectLayer } from '../../../types/video-project';
@@ -7,6 +7,7 @@ import { getElementAnimTransform } from '../../../lib/element-animations';
 import { effectKonvaProps } from '../../../lib/element-effects';
 import { isVideoSrc } from '../../../lib/video-assets';
 import { layerBox, snapLayerDrag, type GuideLine } from '../../../lib/canvas-guides';
+import { readZenithImageDrag, ZENITH_IMAGE_DRAG } from '../../../lib/canvas-image-drag';
 
 type TransitionBackground = {
   fromColor: string;
@@ -31,6 +32,8 @@ type EditorCanvasProps = {
   onSelectLayer: (id: string | null) => void;
   onSelectScene: (id: string) => void;
   onUpdateLayer: (id: string, patch: Partial<ProjectLayer>) => void;
+  onReplaceImageSrc?: (layerId: string, src: string) => void;
+  onDropAddImage?: (src: string, durationSec?: number) => void;
   resolveImageUrl: (src: string) => string;
   stylePaintArmed?: boolean;
 };
@@ -216,7 +219,7 @@ const pickTopLayerId = (stage: Konva.Stage, layers: ProjectLayer[]): string | nu
       if (!isSvg && img instanceof HTMLImageElement && img.naturalWidth > 0) {
         if (sampleImageAlpha(img, local.x, local.y, layer.w, layer.h) < ALPHA_MIN) continue;
       }
-      return realLayerId(layer.id);
+  return realLayerId(layer.id);
     }
     const box = node.getClientRect({ skipShadow: true });
     const pad = 10;
@@ -228,6 +231,22 @@ const pickTopLayerId = (stage: Konva.Stage, layers: ProjectLayer[]): string | nu
     ) {
       return realLayerId(layer.id);
     }
+  }
+  return null;
+};
+
+/** Soltar da biblioteca: usa a caixa inteira (sem furar alpha) pra ser facil trocar o personagem. */
+const pickTopImageLayerForDrop = (stage: Konva.Stage, layers: ProjectLayer[]): string | null => {
+  const pos = stage.getPointerPosition();
+  if (!pos) return null;
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const layer = layers[i];
+    if (layer.type !== 'image' || layer.id.startsWith('match:')) continue;
+    const node = stage.findOne((n: Konva.Node) => n.name() === nodeNameFor(layer.id));
+    if (!node || !node.visible()) continue;
+    const local = node.getAbsoluteTransform().copy().invert().point(pos);
+    if (local.x < 0 || local.y < 0 || local.x > layer.w || local.y > layer.h) continue;
+    return layer.id;
   }
   return null;
 };
@@ -554,6 +573,8 @@ export const EditorCanvas = ({
   onSelectLayer,
   onSelectScene,
   onUpdateLayer,
+  onReplaceImageSrc,
+  onDropAddImage,
   resolveImageUrl,
   stylePaintArmed = false,
 }: EditorCanvasProps) => {
@@ -656,6 +677,28 @@ export const EditorCanvas = ({
     window.addEventListener('pointerup', onUp);
   };
 
+  const onCanvasDragOver = (e: DragEvent<HTMLDivElement>) => {
+    const types = [...e.dataTransfer.types];
+    if (!types.includes(ZENITH_IMAGE_DRAG) && !types.includes('text/plain')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const onCanvasDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const payload = readZenithImageDrag(e);
+    if (!payload?.src) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    stage.setPointersPositions(e.nativeEvent);
+    const targetId = pickTopImageLayerForDrop(stage, sorted);
+    if (targetId && onReplaceImageSrc) {
+      onReplaceImageSrc(targetId, payload.src);
+      return;
+    }
+    onDropAddImage?.(payload.src, payload.durationSec);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -665,6 +708,8 @@ export const EditorCanvas = ({
         cursor: stylePaintArmed ? 'copy' : undefined,
       }}
       onPointerDown={onCanvasPointerDown}
+      onDragOver={onCanvasDragOver}
+      onDrop={onCanvasDrop}
     >
       <Stage
         ref={stageRef}

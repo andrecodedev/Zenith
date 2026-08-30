@@ -978,6 +978,8 @@ export const VideoStudioView = () => {
             }}
             onSelectScene={(id) => store.setActiveScene(id, { seekToStart: false })}
             onUpdateLayer={store.updateElement}
+            onReplaceImageSrc={(id, src) => store.updateElement(id, { src })}
+            onDropAddImage={(src, dur) => addImageElement(src, undefined, dur)}
             resolveImageUrl={resolveImageUrl}
             stylePaintArmed={store.stylePaintArmed}
           />
