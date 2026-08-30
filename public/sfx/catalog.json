@@ -1,0 +1,625 @@
+{
+  "folders": [
+    {
+      "id": "beeps-tecnologia",
+      "label": "Beeps & Tecnologia",
+      "items": [
+        {
+          "file": "beep-computador-longo.mp3",
+          "label": "Beep Computador Longo",
+          "src": "/sfx/beeps-tecnologia/beep-computador-longo.mp3"
+        },
+        {
+          "file": "beep-curto.mp3",
+          "label": "Beep Curto",
+          "src": "/sfx/beeps-tecnologia/beep-curto.mp3"
+        }
+      ]
+    },
+    {
+      "id": "camera-screenshot",
+      "label": "Camera & Screenshot",
+      "items": [
+        {
+          "file": "camera-shutter-print-tela.mp3",
+          "label": "Camera Shutter Print Tela",
+          "src": "/sfx/camera-screenshot/camera-shutter-print-tela.mp3"
+        }
+      ]
+    },
+    {
+      "id": "chat-mensagem",
+      "label": "Chat & Mensagem",
+      "items": [
+        {
+          "file": "chat-mensagem-enviada.mp3",
+          "label": "Chat Mensagem Enviada",
+          "src": "/sfx/chat-mensagem/chat-mensagem-enviada.mp3"
+        }
+      ]
+    },
+    {
+      "id": "contagem-tempo",
+      "label": "Contagem & Tempo",
+      "items": [
+        {
+          "file": "contagem-regressiva-beeps.mp3",
+          "label": "Contagem Regressiva Beeps",
+          "src": "/sfx/contagem-tempo/contagem-regressiva-beeps.mp3"
+        },
+        {
+          "file": "relogio-tick-unico.mp3",
+          "label": "Relogio Tick Unico",
+          "src": "/sfx/contagem-tempo/relogio-tick-unico.mp3"
+        }
+      ]
+    },
+    {
+      "id": "digitacao",
+      "label": "Digitacao",
+      "items": [
+        {
+          "file": "digitacao-teclado-lento.mp3",
+          "label": "Digitacao Teclado Lento",
+          "src": "/sfx/digitacao/digitacao-teclado-lento.mp3"
+        },
+        {
+          "file": "digitacao-teclado-longo.mp3",
+          "label": "Digitacao Teclado Longo",
+          "src": "/sfx/digitacao/digitacao-teclado-longo.mp3"
+        },
+        {
+          "file": "digitacao-teclado-mecanico.mp3",
+          "label": "Digitacao Teclado Mecanico",
+          "src": "/sfx/digitacao/digitacao-teclado-mecanico.mp3"
+        },
+        {
+          "file": "digitacao-teclado-rapido.mp3",
+          "label": "Digitacao Teclado Rapido",
+          "src": "/sfx/digitacao/digitacao-teclado-rapido.mp3"
+        }
+      ]
+    },
+    {
+      "id": "dramatico-comico",
+      "label": "Dramatico & Comico",
+      "items": [
+        {
+          "file": "corte-vinil-scratch-parada.mp3",
+          "label": "Corte Vinil Scratch Parada",
+          "src": "/sfx/dramatico-comico/corte-vinil-scratch-parada.mp3"
+        },
+        {
+          "file": "dramatico-dun-dun-dun-falha.mp3",
+          "label": "Dramatico Dun Dun Dun Falha",
+          "src": "/sfx/dramatico-comico/dramatico-dun-dun-dun-falha.mp3"
+        },
+        {
+          "file": "risada-robo-curta.mp3",
+          "label": "Risada Robo Curta",
+          "src": "/sfx/dramatico-comico/risada-robo-curta.mp3"
+        },
+        {
+          "file": "risada-robo-longa.mp3",
+          "label": "Risada Robo Longa",
+          "src": "/sfx/dramatico-comico/risada-robo-longa.mp3"
+        },
+        {
+          "file": "tambor-roll-anuncio.mp3",
+          "label": "Tambor Roll Anuncio",
+          "src": "/sfx/dramatico-comico/tambor-roll-anuncio.mp3"
+        }
+      ]
+    },
+    {
+      "id": "ecommerce-venda",
+      "label": "Ecommerce & Venda",
+      "items": [
+        {
+          "file": "venda-moeda-caixa-registradora.mp3",
+          "label": "Venda Moeda Caixa Registradora",
+          "src": "/sfx/ecommerce-venda/venda-moeda-caixa-registradora.mp3"
+        },
+        {
+          "file": "venda-moeda-melodica-01.mp3",
+          "label": "Venda Moeda Melodica 01",
+          "src": "/sfx/ecommerce-venda/venda-moeda-melodica-01.mp3"
+        },
+        {
+          "file": "venda-moedas-manuseio.mp3",
+          "label": "Venda Moedas Manuseio",
+          "src": "/sfx/ecommerce-venda/venda-moedas-manuseio.mp3"
+        },
+        {
+          "file": "venda-notificacao-moeda.mp3",
+          "label": "Venda Notificacao Moeda",
+          "src": "/sfx/ecommerce-venda/venda-notificacao-moeda.mp3"
+        }
+      ]
+    },
+    {
+      "id": "flashback-rewind",
+      "label": "Flashback & Rewind",
+      "items": [
+        {
+          "file": "flashback-transicao-voltar-tempo.mp3",
+          "label": "Flashback Transicao Voltar Tempo",
+          "src": "/sfx/flashback-rewind/flashback-transicao-voltar-tempo.mp3"
+        },
+        {
+          "file": "rewind-fita-cinematico.mp3",
+          "label": "Rewind Fita Cinematico",
+          "src": "/sfx/flashback-rewind/rewind-fita-cinematico.mp3"
+        },
+        {
+          "file": "rewind-fita-rapido.mp3",
+          "label": "Rewind Fita Rapido",
+          "src": "/sfx/flashback-rewind/rewind-fita-rapido.mp3"
+        },
+        {
+          "file": "rewind-rolo-fita-antiga.mp3",
+          "label": "Rewind Rolo Fita Antiga",
+          "src": "/sfx/flashback-rewind/rewind-rolo-fita-antiga.mp3"
+        }
+      ]
+    },
+    {
+      "id": "impacto-batida",
+      "label": "Impacto & Batida",
+      "items": [
+        {
+          "file": "impacto-baixo-slide.mp3",
+          "label": "Impacto Baixo Slide",
+          "src": "/sfx/impacto-batida/impacto-baixo-slide.mp3"
+        },
+        {
+          "file": "impacto-baixo-solo.mp3",
+          "label": "Impacto Baixo Solo",
+          "src": "/sfx/impacto-batida/impacto-baixo-solo.mp3"
+        },
+        {
+          "file": "impacto-golpe-seco.mp3",
+          "label": "Impacto Golpe Seco",
+          "src": "/sfx/impacto-batida/impacto-golpe-seco.mp3"
+        },
+        {
+          "file": "impacto-prato-cymbal-crash.mp3",
+          "label": "Impacto Prato Cymbal Crash",
+          "src": "/sfx/impacto-batida/impacto-prato-cymbal-crash.mp3"
+        },
+        {
+          "file": "impacto-sub-drop-grave.mp3",
+          "label": "Impacto Sub Drop Grave",
+          "src": "/sfx/impacto-batida/impacto-sub-drop-grave.mp3"
+        },
+        {
+          "file": "impacto-zoom-rapido.mp3",
+          "label": "Impacto Zoom Rapido",
+          "src": "/sfx/impacto-batida/impacto-zoom-rapido.mp3"
+        }
+      ]
+    },
+    {
+      "id": "intro-abertura",
+      "label": "Intro & Abertura",
+      "items": [
+        {
+          "file": "intro-sino-abertura.mp3",
+          "label": "Intro Sino Abertura",
+          "src": "/sfx/intro-abertura/intro-sino-abertura.mp3"
+        }
+      ]
+    },
+    {
+      "id": "loading-processando",
+      "label": "Loading & Processando",
+      "items": [
+        {
+          "file": "loading-calculo-dados-tech.mp3",
+          "label": "Loading Calculo Dados Tech",
+          "src": "/sfx/loading-processando/loading-calculo-dados-tech.mp3"
+        },
+        {
+          "file": "loading-scan-processando.mp3",
+          "label": "Loading Scan Processando",
+          "src": "/sfx/loading-processando/loading-scan-processando.mp3"
+        },
+        {
+          "file": "loading-sistema-processando.mp3",
+          "label": "Loading Sistema Processando",
+          "src": "/sfx/loading-processando/loading-sistema-processando.mp3"
+        }
+      ]
+    },
+    {
+      "id": "negativo-erro",
+      "label": "Negativo & Erro",
+      "items": [
+        {
+          "file": "aviso-alerta-notificacao.mp3",
+          "label": "Aviso Alerta Notificacao",
+          "src": "/sfx/negativo-erro/aviso-alerta-notificacao.mp3"
+        },
+        {
+          "file": "erro-computador-curto.mp3",
+          "label": "Erro Computador Curto",
+          "src": "/sfx/negativo-erro/erro-computador-curto.mp3"
+        },
+        {
+          "file": "erro-notificacao-curta-01.mp3",
+          "label": "Erro Notificacao Curta 01",
+          "src": "/sfx/negativo-erro/erro-notificacao-curta-01.mp3"
+        },
+        {
+          "file": "erro-notificacao-curta-02.mp3",
+          "label": "Erro Notificacao Curta 02",
+          "src": "/sfx/negativo-erro/erro-notificacao-curta-02.mp3"
+        },
+        {
+          "file": "erro-notificacao-negativa.mp3",
+          "label": "Erro Notificacao Negativa",
+          "src": "/sfx/negativo-erro/erro-notificacao-negativa.mp3"
+        },
+        {
+          "file": "erro-pc-crash.mp3",
+          "label": "Erro PC Crash",
+          "src": "/sfx/negativo-erro/erro-pc-crash.mp3"
+        },
+        {
+          "file": "erro-sistema-operacional.mp3",
+          "label": "Erro Sistema Operacional",
+          "src": "/sfx/negativo-erro/erro-sistema-operacional.mp3"
+        },
+        {
+          "file": "erro-tecnico-loop-longo.mp3",
+          "label": "Erro Tecnico Loop Longo",
+          "src": "/sfx/negativo-erro/erro-tecnico-loop-longo.mp3"
+        }
+      ]
+    },
+    {
+      "id": "pop-estouro",
+      "label": "Pop & Estouro",
+      "items": [
+        {
+          "file": "pop-agudo-seco.mp3",
+          "label": "Pop Agudo Seco",
+          "src": "/sfx/pop-estouro/pop-agudo-seco.mp3"
+        },
+        {
+          "file": "pop-balao-estourando.mp3",
+          "label": "Pop Balao Estourando",
+          "src": "/sfx/pop-estouro/pop-balao-estourando.mp3"
+        },
+        {
+          "file": "pop-bolha-estourando.mp3",
+          "label": "Pop Bolha Estourando",
+          "src": "/sfx/pop-estouro/pop-bolha-estourando.mp3"
+        },
+        {
+          "file": "pop-bubble-curto.mp3",
+          "label": "Pop Bubble Curto",
+          "src": "/sfx/pop-estouro/pop-bubble-curto.mp3"
+        },
+        {
+          "file": "pop-generico.mp3",
+          "label": "Pop Generico",
+          "src": "/sfx/pop-estouro/pop-generico.mp3"
+        },
+        {
+          "file": "pop-rolha-vinho-01.mp3",
+          "label": "Pop Rolha Vinho 01",
+          "src": "/sfx/pop-estouro/pop-rolha-vinho-01.mp3"
+        },
+        {
+          "file": "pop-rolha-vinho-02.mp3",
+          "label": "Pop Rolha Vinho 02",
+          "src": "/sfx/pop-estouro/pop-rolha-vinho-02.mp3"
+        }
+      ]
+    },
+    {
+      "id": "positivo-sucesso",
+      "label": "Positivo & Sucesso",
+      "items": [
+        {
+          "file": "sucesso-chime-cristal.mp3",
+          "label": "Sucesso Chime Cristal",
+          "src": "/sfx/positivo-sucesso/sucesso-chime-cristal.mp3"
+        },
+        {
+          "file": "sucesso-confirmacao-suave.mp3",
+          "label": "Sucesso Confirmacao Suave",
+          "src": "/sfx/positivo-sucesso/sucesso-confirmacao-suave.mp3"
+        },
+        {
+          "file": "sucesso-correto-curto.mp3",
+          "label": "Sucesso Correto Curto",
+          "src": "/sfx/positivo-sucesso/sucesso-correto-curto.mp3"
+        },
+        {
+          "file": "sucesso-game-glockenspiel.mp3",
+          "label": "Sucesso Game Glockenspiel",
+          "src": "/sfx/positivo-sucesso/sucesso-game-glockenspiel.mp3"
+        },
+        {
+          "file": "sucesso-magia-subida.mp3",
+          "label": "Sucesso Magia Subida",
+          "src": "/sfx/positivo-sucesso/sucesso-magia-subida.mp3"
+        },
+        {
+          "file": "sucesso-piano-logo-alegre.mp3",
+          "label": "Sucesso Piano Logo Alegre",
+          "src": "/sfx/positivo-sucesso/sucesso-piano-logo-alegre.mp3"
+        },
+        {
+          "file": "sucesso-positivo-medio.mp3",
+          "label": "Sucesso Positivo Medio",
+          "src": "/sfx/positivo-sucesso/sucesso-positivo-medio.mp3"
+        },
+        {
+          "file": "sucesso-videogame-nivel-completo.mp3",
+          "label": "Sucesso Videogame Nivel Completo",
+          "src": "/sfx/positivo-sucesso/sucesso-videogame-nivel-completo.mp3"
+        }
+      ]
+    },
+    {
+      "id": "reacoes",
+      "label": "Reacoes",
+      "items": [
+        {
+          "file": "reacao-aplausos-publico.mp3",
+          "label": "Reacao Aplausos Publico",
+          "src": "/sfx/reacoes/reacao-aplausos-publico.mp3"
+        },
+        {
+          "file": "reacao-miado-gato.mp3",
+          "label": "Reacao Miado Gato",
+          "src": "/sfx/reacoes/reacao-miado-gato.mp3"
+        },
+        {
+          "file": "reacao-plateia-boo.mp3",
+          "label": "Reacao Plateia Boo",
+          "src": "/sfx/reacoes/reacao-plateia-boo.mp3"
+        },
+        {
+          "file": "reacao-uau-surpresa.mp3",
+          "label": "Reacao Uau Surpresa",
+          "src": "/sfx/reacoes/reacao-uau-surpresa.mp3"
+        }
+      ]
+    },
+    {
+      "id": "suspense-tensao",
+      "label": "Suspense & Tensao",
+      "items": [
+        {
+          "file": "suspense-coracao-batida-unica.mp3",
+          "label": "Suspense Coracao Batida Unica",
+          "src": "/sfx/suspense-tensao/suspense-coracao-batida-unica.mp3"
+        }
+      ]
+    },
+    {
+      "id": "swipe-scroll",
+      "label": "Swipe & Scroll",
+      "items": [
+        {
+          "file": "swipe-zoom-rapido.mp3",
+          "label": "Swipe Zoom Rapido",
+          "src": "/sfx/swipe-scroll/swipe-zoom-rapido.mp3"
+        }
+      ]
+    },
+    {
+      "id": "tensao-riser",
+      "label": "Tensao & Riser",
+      "items": [
+        {
+          "file": "riser-cinematico-revelacao.mp3",
+          "label": "Riser Cinematico Revelacao",
+          "src": "/sfx/tensao-riser/riser-cinematico-revelacao.mp3"
+        }
+      ]
+    },
+    {
+      "id": "texturas-ambiente",
+      "label": "Texturas & Ambiente",
+      "items": [
+        {
+          "file": "efeito-brilho-magico.mp3",
+          "label": "Efeito Brilho Magico",
+          "src": "/sfx/texturas-ambiente/efeito-brilho-magico.mp3"
+        },
+        {
+          "file": "efeito-laser.mp3",
+          "label": "Efeito Laser",
+          "src": "/sfx/texturas-ambiente/efeito-laser.mp3"
+        },
+        {
+          "file": "pagina-documento-virar-01.mp3",
+          "label": "Pagina Documento Virar 01",
+          "src": "/sfx/texturas-ambiente/pagina-documento-virar-01.mp3"
+        },
+        {
+          "file": "pagina-documento-virar-02.mp3",
+          "label": "Pagina Documento Virar 02",
+          "src": "/sfx/texturas-ambiente/pagina-documento-virar-02.mp3"
+        },
+        {
+          "file": "textura-folha-papel.mp3",
+          "label": "Textura Folha Papel",
+          "src": "/sfx/texturas-ambiente/textura-folha-papel.mp3"
+        },
+        {
+          "file": "textura-rabisco-caneta.mp3",
+          "label": "Textura Rabisco Caneta",
+          "src": "/sfx/texturas-ambiente/textura-rabisco-caneta.mp3"
+        },
+        {
+          "file": "textura-ziper-roupa.mp3",
+          "label": "Textura Ziper Roupa",
+          "src": "/sfx/texturas-ambiente/textura-ziper-roupa.mp3"
+        }
+      ]
+    },
+    {
+      "id": "transicoes",
+      "label": "Transicoes",
+      "items": [
+        {
+          "file": "transicao-ar-whoosh-rapido.mp3",
+          "label": "Transicao Ar Whoosh Rapido",
+          "src": "/sfx/transicoes/transicao-ar-whoosh-rapido.mp3"
+        },
+        {
+          "file": "transicao-glitch-curta-01.mp3",
+          "label": "Transicao Glitch Curta 01",
+          "src": "/sfx/transicoes/transicao-glitch-curta-01.mp3"
+        },
+        {
+          "file": "transicao-glitch-digital-quebra.mp3",
+          "label": "Transicao Glitch Digital Quebra",
+          "src": "/sfx/transicoes/transicao-glitch-digital-quebra.mp3"
+        },
+        {
+          "file": "transicao-glitch-media-02.mp3",
+          "label": "Transicao Glitch Media 02",
+          "src": "/sfx/transicoes/transicao-glitch-media-02.mp3"
+        },
+        {
+          "file": "transicao-glitch-media.mp3",
+          "label": "Transicao Glitch Media",
+          "src": "/sfx/transicoes/transicao-glitch-media.mp3"
+        },
+        {
+          "file": "transicao-musical-vibrafone.mp3",
+          "label": "Transicao Musical Vibrafone",
+          "src": "/sfx/transicoes/transicao-musical-vibrafone.mp3"
+        },
+        {
+          "file": "transicao-sfx-curta.mp3",
+          "label": "Transicao SFX Curta",
+          "src": "/sfx/transicoes/transicao-sfx-curta.mp3"
+        },
+        {
+          "file": "transicao-swoosh-medio-01.mp3",
+          "label": "Transicao Swoosh Medio 01",
+          "src": "/sfx/transicoes/transicao-swoosh-medio-01.mp3"
+        },
+        {
+          "file": "transicao-swoosh-medio-02.mp3",
+          "label": "Transicao Swoosh Medio 02",
+          "src": "/sfx/transicoes/transicao-swoosh-medio-02.mp3"
+        },
+        {
+          "file": "transicao-whoosh-curta.mp3",
+          "label": "Transicao Whoosh Curta",
+          "src": "/sfx/transicoes/transicao-whoosh-curta.mp3"
+        },
+        {
+          "file": "transicao-whoosh-longa-suave.mp3",
+          "label": "Transicao Whoosh Longa Suave",
+          "src": "/sfx/transicoes/transicao-whoosh-longa-suave.mp3"
+        },
+        {
+          "file": "transicao-whoosh-minimal.mp3",
+          "label": "Transicao Whoosh Minimal",
+          "src": "/sfx/transicoes/transicao-whoosh-minimal.mp3"
+        },
+        {
+          "file": "transicao-whoosh-rapido.mp3",
+          "label": "Transicao Whoosh Rapido",
+          "src": "/sfx/transicoes/transicao-whoosh-rapido.mp3"
+        },
+        {
+          "file": "transicao-whoosh-suave.mp3",
+          "label": "Transicao Whoosh Suave",
+          "src": "/sfx/transicoes/transicao-whoosh-suave.mp3"
+        }
+      ]
+    },
+    {
+      "id": "ui-clicks-notificacoes",
+      "label": "UI, Clicks & Notificacoes",
+      "items": [
+        {
+          "file": "ui-click-curto.mp3",
+          "label": "UI Click Curto",
+          "src": "/sfx/ui-clicks-notificacoes/ui-click-curto.mp3"
+        },
+        {
+          "file": "ui-click-seco.mp3",
+          "label": "UI Click Seco",
+          "src": "/sfx/ui-clicks-notificacoes/ui-click-seco.mp3"
+        },
+        {
+          "file": "ui-confirmacao-bleep-tech.mp3",
+          "label": "UI Confirmacao Bleep Tech",
+          "src": "/sfx/ui-clicks-notificacoes/ui-confirmacao-bleep-tech.mp3"
+        },
+        {
+          "file": "ui-confirmacao-tom-suave.mp3",
+          "label": "UI Confirmacao Tom Suave",
+          "src": "/sfx/ui-clicks-notificacoes/ui-confirmacao-tom-suave.mp3"
+        },
+        {
+          "file": "ui-enter-confirmacao-01.mp3",
+          "label": "UI Enter Confirmacao 01",
+          "src": "/sfx/ui-clicks-notificacoes/ui-enter-confirmacao-01.mp3"
+        },
+        {
+          "file": "ui-enter-confirmacao-02.mp3",
+          "label": "UI Enter Confirmacao 02",
+          "src": "/sfx/ui-clicks-notificacoes/ui-enter-confirmacao-02.mp3"
+        },
+        {
+          "file": "ui-iniciar-programa.mp3",
+          "label": "UI Iniciar Programa",
+          "src": "/sfx/ui-clicks-notificacoes/ui-iniciar-programa.mp3"
+        },
+        {
+          "file": "ui-interface-menu.mp3",
+          "label": "UI Interface Menu",
+          "src": "/sfx/ui-clicks-notificacoes/ui-interface-menu.mp3"
+        },
+        {
+          "file": "ui-notificacao-bubble-pop.mp3",
+          "label": "UI Notificacao Bubble Pop",
+          "src": "/sfx/ui-clicks-notificacoes/ui-notificacao-bubble-pop.mp3"
+        },
+        {
+          "file": "ui-notificacao-moderna.mp3",
+          "label": "UI Notificacao Moderna",
+          "src": "/sfx/ui-clicks-notificacoes/ui-notificacao-moderna.mp3"
+        },
+        {
+          "file": "ui-notificacao-pc.mp3",
+          "label": "UI Notificacao PC",
+          "src": "/sfx/ui-clicks-notificacoes/ui-notificacao-pc.mp3"
+        },
+        {
+          "file": "ui-notificacao-pluck.mp3",
+          "label": "UI Notificacao Pluck",
+          "src": "/sfx/ui-clicks-notificacoes/ui-notificacao-pluck.mp3"
+        },
+        {
+          "file": "ui-notificacao-sino-campainha.mp3",
+          "label": "UI Notificacao Sino Campainha",
+          "src": "/sfx/ui-clicks-notificacoes/ui-notificacao-sino-campainha.mp3"
+        },
+        {
+          "file": "ui-notificacao-tech-moderna.mp3",
+          "label": "UI Notificacao Tech Moderna",
+          "src": "/sfx/ui-clicks-notificacoes/ui-notificacao-tech-moderna.mp3"
+        },
+        {
+          "file": "ui-popup-seco-alerta.mp3",
+          "label": "UI Popup Seco Alerta",
+          "src": "/sfx/ui-clicks-notificacoes/ui-popup-seco-alerta.mp3"
+        }
+      ]
+    }
+  ]
+}

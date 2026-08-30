@@ -11,7 +11,13 @@ import {
   ArrowLeft,
   Film,
   RefreshCw,
-  Type,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  ImageIcon,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { useVideoEditorStore } from '../../store/useVideoEditorStore';
 import {
@@ -23,11 +29,17 @@ import {
   saveVideoProject,
 } from '../../lib/video-projects';
 import type { VideoProjectSummary } from '../../types/video-project';
-import { PROJECT_HEIGHT, PROJECT_WIDTH } from '../../types/video-project';
+import { projectTotalDurationSec, sceneAtTime, createEmptyBanner } from '../../types/video-project';
+import { resolveAssetSrc, isVideoSrc } from '../../lib/video-assets';
+import { persistImageBlob, stripImageBackground } from '../../lib/remove-background';
+import { getMatchMoveAt, layersForPreview } from '../../lib/match-move';
 import { EditorCanvas } from './video-studio/EditorCanvas';
 import { Timeline } from './video-studio/Timeline';
 import { AssetsPanel } from './video-studio/AssetsPanel';
-import { PropertiesPanel } from './video-studio/PropertiesPanel';
+import { EditorToolbar, type ElementSidePanel } from './video-studio/EditorToolbar';
+import { ConfirmModal } from './ConfirmModal';
+import { usePreviewAudio } from './video-studio/usePreviewAudio';
+import { bannerFileName, downloadBlob, exportBannerPng4k } from '../../lib/export-banner';
 
 const API_URL =
   import.meta.env.VITE_VIDEO_API_URL ||
@@ -47,7 +59,29 @@ export const VideoStudioView = () => {
   const [hasFfmpeg, setHasFfmpeg] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingBanner, setExportingBanner] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [sidePanel, setSidePanel] = useState<
+    'none' | 'position' | 'audio' | 'transitions' | 'effects' | 'animate'
+  >('none');
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [transitionSceneId, setTransitionSceneId] = useState<string | null>(null);
+  const [removingBackground, setRemovingBackground] = useState(false);
+  const [removingBgHint, setRemovingBgHint] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [timelineH, setTimelineH] = useState(240);
+
+  const closeSidePanel = () => {
+    setSidePanel('none');
+    setTransitionSceneId(null);
+  };
+
+  const openTransitionPanel = (sceneId: string) => {
+    setTransitionSceneId(sceneId);
+    setSidePanel('transitions');
+    setSidebarExpanded(true);
+  };
 
   const refreshList = useCallback(async () => {
     setListLoading(true);
@@ -107,26 +141,156 @@ export const VideoStudioView = () => {
   }, [store.isDirty, store.project]);
 
   const resolveImageUrl = useCallback(
-    (src: string) => {
-      if (!store.project || !API_URL) return '';
-      if (src.startsWith('asset://')) {
-        return `${API_URL}/assets/${store.project.id}/${src.replace('asset://', '')}`;
-      }
-      if (src.startsWith('http')) return src;
-      return src;
-    },
+    (src: string) => resolveAssetSrc(src, store.project?.id, API_URL),
     [store.project],
   );
 
-  const activeScene = useMemo(
-    () => store.project?.scenes.find((s) => s.id === store.activeSceneId) ?? null,
-    [store.project, store.activeSceneId],
+  const previewAudio = usePreviewAudio(store.project?.id, API_URL, store.isPlaying);
+
+  useEffect(() => {
+    if (!store.project?.id) return;
+    setSidebarExpanded(false);
+    setSidePanel('none');
+    setTransitionSceneId(null);
+  }, [store.project?.id]);
+
+  useEffect(() => {
+    if (store.selectedClipId) {
+      setSidePanel('audio');
+      setTransitionSceneId(null);
+    }
+  }, [store.selectedClipId]);
+
+  useEffect(() => {
+    if (store.view !== 'editor' || !store.project) return;
+
+    const isTypingTarget = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        useVideoEditorStore.getState().deleteSelection();
+        return;
+      }
+      if (e.key === 'Escape') {
+        useVideoEditorStore.getState().cancelStylePaint();
+        return;
+      }
+      if (!e.ctrlKey && !e.metaKey) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        useVideoEditorStore.getState().redo();
+      } else if (key === 'z') {
+        e.preventDefault();
+        useVideoEditorStore.getState().undo();
+      } else if (key === 'y') {
+        e.preventDefault();
+        useVideoEditorStore.getState().redo();
+      } else if (key === 'x') {
+        e.preventDefault();
+        useVideoEditorStore.getState().cutSelection();
+      } else if (key === 'c') {
+        e.preventDefault();
+        useVideoEditorStore.getState().copySelection();
+      } else if (key === 'v') {
+        e.preventDefault();
+        useVideoEditorStore.getState().pasteSelection();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [store.view, store.project?.id]);
+
+  useEffect(() => {
+    if (!store.isPlaying) return;
+    let raf = 0;
+    let last = performance.now();
+    const loop = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      useVideoEditorStore.getState().tickPlayhead(dt);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [store.isPlaying]);
+
+  const totalDuration = store.project ? projectTotalDurationSec(store.project) : 0;
+
+  const fmtTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const isBanner = store.editorSurface === 'banner';
+
+  const previewScene = useMemo(() => {
+    if (!store.project) return null;
+    if (isBanner) return (store.project.banner ?? createEmptyBanner()).scene;
+    return sceneAtTime(store.project, store.playheadSec);
+  }, [store.project, store.playheadSec, isBanner]);
+
+  const matchMove = useMemo(
+    () =>
+      !isBanner && store.project
+        ? getMatchMoveAt(store.project, store.playheadSec)
+        : { active: false as const },
+    [store.project, store.playheadSec, isBanner],
   );
 
+  const previewElements = useMemo(() => {
+    if (!store.project) return [];
+    if (isBanner) return (store.project.banner ?? createEmptyBanner()).elements;
+    return layersForPreview(store.project, store.playheadSec, matchMove);
+  }, [store.project, store.playheadSec, matchMove, isBanner]);
+
+  const transitionBackground = useMemo(() => {
+    if (!matchMove.active) return null;
+    const p = matchMove.progress;
+    return {
+      fromColor: matchMove.fromScene.backgroundColor ?? '#ffffff',
+      fromSrc: matchMove.fromScene.backgroundSrc,
+      fromOpacity: 1 - p,
+      toColor: matchMove.toScene.backgroundColor ?? '#ffffff',
+      toSrc: matchMove.toScene.backgroundSrc,
+      toOpacity: p,
+    };
+  }, [matchMove]);
+
   const selectedLayer = useMemo(() => {
-    if (!activeScene || !store.selectedLayerId) return null;
-    return activeScene.layers.find((l) => l.id === store.selectedLayerId) ?? null;
-  }, [activeScene, store.selectedLayerId]);
+    if (!store.project || !store.selectedLayerId) return null;
+    const list = isBanner
+      ? (store.project.banner ?? createEmptyBanner()).elements
+      : store.project.elements;
+    return list.find((l) => l.id === store.selectedLayerId) ?? null;
+  }, [store.project, store.selectedLayerId, isBanner]);
+
+  const selectedScene = useMemo(() => {
+    if (!store.project || store.selectedLayerId || store.selectedClipId || !store.activeSceneId) {
+      return null;
+    }
+    if (isBanner) {
+      const scene = (store.project.banner ?? createEmptyBanner()).scene;
+      return scene.id === store.activeSceneId ? scene : null;
+    }
+    return store.project.scenes.find((s) => s.id === store.activeSceneId) ?? null;
+  }, [store.project, store.activeSceneId, store.selectedLayerId, store.selectedClipId, isBanner]);
+
+  const workingProject = useMemo(() => {
+    if (!store.project) return null;
+    if (!isBanner) return store.project;
+    const banner = store.project.banner ?? createEmptyBanner();
+    return { ...store.project, scenes: [banner.scene], elements: banner.elements };
+  }, [store.project, isBanner]);
 
   const selectedClipInfo = useMemo(() => {
     if (!store.project || !store.selectedClipId) return null;
@@ -136,6 +300,54 @@ export const VideoStudioView = () => {
     }
     return null;
   }, [store.project, store.selectedClipId]);
+
+  const handleRemoveBackground = async () => {
+    if (removingBackground) return;
+    const project = store.project;
+    if (!project) return;
+    const layer = selectedLayer;
+    const scene = selectedScene;
+    let src = '';
+    let apply: ((next: string) => void) | null = null;
+    if (layer?.type === 'image') {
+      src = resolveImageUrl(layer.src);
+      apply = (next) => store.updateElement(layer.id, { src: next, fillColor: 'transparent' });
+    } else if (scene?.backgroundSrc) {
+      src = resolveImageUrl(scene.backgroundSrc);
+      apply = (next) => store.setSceneBackground(scene.id, next);
+    }
+    if (!src || !apply) {
+      setActionError('Selecione uma imagem (ou um fundo com foto)');
+      return;
+    }
+    setRemovingBackground(true);
+    setActionError(null);
+    setRemovingBgHint('Preparando...');
+    try {
+      const blob = await stripImageBackground(src, setRemovingBgHint);
+      const stored = await persistImageBlob(blob, {
+        apiUrl: API_URL,
+        apiOnline,
+        projectId: project.id,
+      });
+      apply(stored);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Falha ao remover fundo');
+    } finally {
+      setRemovingBackground(false);
+      setRemovingBgHint(null);
+    }
+  };
+
+  const transitionScene = useMemo(() => {
+    if (!store.project || !transitionSceneId) return null;
+    return store.project.scenes.find((s) => s.id === transitionSceneId) ?? null;
+  }, [store.project, transitionSceneId]);
+
+  const transitionSceneIndex = useMemo(() => {
+    if (!store.project || !transitionSceneId) return -1;
+    return store.project.scenes.findIndex((s) => s.id === transitionSceneId);
+  }, [store.project, transitionSceneId]);
 
   const handleSaveNow = async () => {
     if (!store.project) return;
@@ -182,52 +394,100 @@ export const VideoStudioView = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir este projeto?')) return;
+  const handleDelete = (id: string) => {
+    const name = projects.find((p) => p.id === id)?.name ?? 'este projeto';
+    setPendingDelete({ id, name });
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!pendingDelete) return;
+    setDeletingProject(true);
+    setActionError(null);
     try {
-      await deleteVideoProject(id);
-      if (store.project?.id === id) store.closeProject();
+      await deleteVideoProject(pendingDelete.id);
+      if (store.project?.id === pendingDelete.id) store.closeProject();
+      setPendingDelete(null);
       await refreshList();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Falha ao excluir');
+    } finally {
+      setDeletingProject(false);
     }
   };
 
-  const addImageLayer = (src: string) => {
-    const maxZ = activeScene?.layers.reduce((m, l) => Math.max(m, l.zIndex), 0) ?? 0;
-    store.addLayer({
-      type: 'image',
-      id: crypto.randomUUID(),
-      src,
-      x: 100,
-      y: 100,
-      w: 640,
-      h: 360,
-      opacity: 1,
-      zIndex: maxZ + 1,
-    });
+  const addImageElement = (src: string, size?: { w: number; h: number }, durationSec?: number) => {
+    const place = (w: number, h: number) => {
+      store.addElement({
+        type: 'image',
+        id: crypto.randomUUID(),
+        src,
+        x: 160,
+        y: 80,
+        w,
+        h,
+        opacity: 1,
+        startSec: store.playheadSec,
+        durationSec: durationSec ?? (isVideoSrc(src) ? 8 : 5),
+        zIndex: 0,
+      });
+    };
+    if (size) {
+      place(size.w, size.h);
+      return;
+    }
+    if (src.startsWith('/personagem/')) {
+      const img = new Image();
+      img.onload = () => {
+        const maxH = 780;
+        const maxW = 900;
+        const s = Math.min(1, maxH / img.naturalHeight, maxW / img.naturalWidth);
+        place(Math.round(img.naturalWidth * s), Math.round(img.naturalHeight * s));
+      };
+      img.onerror = () => place(480, 640);
+      img.src = src;
+      return;
+    }
+    place(640, 360);
   };
 
-  const addTextLayer = () => {
-    const maxZ = activeScene?.layers.reduce((m, l) => Math.max(m, l.zIndex), 0) ?? 0;
-    store.addLayer({
+  const addShapeElement = (src: string) => {
+    addImageElement(src, { w: 320, h: 200 });
+  };
+
+  const setFundoBackground = (src: string) => {
+    const scene = previewScene ?? store.project?.scenes[0];
+    if (scene) store.setSceneBackground(scene.id, src);
+  };
+
+  const addTextLayer = (preset?: 'title' | 'subtitle' | 'body') => {
+    const presets = {
+      title: { text: 'Título', fontSize: 72, y: 140 },
+      subtitle: { text: 'Subtítulo', fontSize: 48, y: 240 },
+      body: { text: 'Seu texto aqui', fontSize: 32, y: 340 },
+    } as const;
+    const d = preset ? presets[preset] : { text: 'Novo texto', fontSize: 48, y: 200 };
+    store.addElement({
       type: 'text',
       id: crypto.randomUUID(),
-      text: 'Novo texto',
-      x: 200,
-      y: 200,
-      fontSize: 48,
+      text: d.text,
+      x: 160,
+      y: d.y,
+      fontSize: d.fontSize,
       fontFamily: 'sans-serif',
-      color: '#ffffff',
+      color: '#111827',
       align: 'left',
-      zIndex: maxZ + 1,
+      startSec: store.playheadSec,
+      durationSec: 5,
+      zIndex: 0,
     });
   };
 
   const addAudioClipToFirstTrack = (src: string, label: string, durationSec = 3) => {
-    const track = store.project?.audioTracks[0];
-    if (!track) return;
-    store.addAudioClip(track.id, {
+    if (!store.project) return;
+    if (!store.project.audioTracks[0]?.id) store.addAudioTrack('Áudio');
+    const trackId = useVideoEditorStore.getState().project?.audioTracks[0]?.id;
+    if (!trackId) return;
+    store.addAudioClip(trackId, {
       id: crypto.randomUUID(),
       src,
       startSec: store.playheadSec,
@@ -252,7 +512,7 @@ export const VideoStudioView = () => {
       const res = await fetch(`${API_URL}/render`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project: store.project }),
+        body: JSON.stringify({ project: store.project, uhd: true }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -286,7 +546,7 @@ export const VideoStudioView = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${store.project.name.replace(/\s+/g, '_')}.mp4`;
+      a.download = `${store.project.name.replace(/\s+/g, '_')}_4k.mp4`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -295,6 +555,25 @@ export const VideoStudioView = () => {
       setExporting(false);
       setExportProgress(0);
       if (pollRef.current) clearInterval(pollRef.current);
+    }
+  };
+
+  const handleExportBanner = async () => {
+    if (!store.project) return;
+    setActionError(null);
+    setExportingBanner(true);
+    try {
+      const banner = store.project.banner ?? createEmptyBanner();
+      const blob = await exportBannerPng4k({
+        scene: banner.scene,
+        elements: banner.elements,
+        resolveUrl: resolveImageUrl,
+      });
+      downloadBlob(blob, bannerFileName(store.project.name));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Falha ao gerar o PNG 4K');
+    } finally {
+      setExportingBanner(false);
     }
   };
 
@@ -404,141 +683,429 @@ export const VideoStudioView = () => {
             ))}
           </ul>
         )}
+
+        <ConfirmModal
+          open={pendingDelete != null}
+          title="Excluir este projeto?"
+          description={
+            pendingDelete
+              ? `"${pendingDelete.name}" vai sair da lista. Essa ação não tem volta.`
+              : undefined
+          }
+          confirmLabel="Excluir"
+          cancelLabel="Cancelar"
+          busy={deletingProject}
+          onCancel={() => {
+            if (!deletingProject) setPendingDelete(null);
+          }}
+          onConfirm={confirmDeleteProject}
+        />
       </div>
     );
   }
 
-  if (!store.project || !activeScene) return null;
+  if (!store.project || !previewScene) return null;
+
+  const openElementPanel = (panel: ElementSidePanel) => {
+    if (panel === 'none') {
+      closeSidePanel();
+      return;
+    }
+    setTransitionSceneId(null);
+    setSidePanel(panel);
+    setSidebarExpanded(true);
+  };
 
   return (
-    <div className="w-full flex flex-col gap-4 pb-8 min-h-[calc(100vh-8rem)]">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="w-full flex flex-col h-[calc(100vh-3.5rem)] min-h-0 bg-[#1a1a1a] text-neutral-100">
+      <header className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 bg-[#0d1117] border-b border-neutral-800">
         <button
           type="button"
           onClick={() => store.closeProject()}
-          className="flex items-center gap-1 text-sm text-text-tertiary hover:text-text-primary cursor-pointer"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-neutral-800 cursor-pointer"
         >
           <ArrowLeft size={16} /> Projetos
         </button>
         <input
-          className="flex-1 min-w-[180px] max-w-md bg-bg-secondary border border-border-base rounded-lg px-3 py-1.5 text-sm font-bold"
+          className="flex-1 min-w-[140px] max-w-xs bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-1.5 text-sm font-semibold text-neutral-100 outline-none focus:border-violet-500"
           value={store.project.name}
           onChange={(e) => store.setProjectName(e.target.value)}
         />
-        <span className="text-xs text-text-tertiary">
-          {store.saving ? 'Salvando...' : store.isDirty ? 'Alterações pendentes' : 'Salvo'}
+        <span className="text-xs text-neutral-500 hidden sm:inline">
+          {store.saving ? 'Salvando...' : store.isDirty ? 'Alterações pendentes' : 'Salvo na nuvem'}
         </span>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            title="Desfazer (Ctrl+Z)"
+            disabled={!store.historyPast.length}
+            onClick={() => store.undo()}
+            className="p-2 rounded-lg text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Undo2 size={16} />
+          </button>
+          <button
+            type="button"
+            title="Refazer (Ctrl+Shift+Z)"
+            disabled={!store.historyFuture.length}
+            onClick={() => store.redo()}
+            className="p-2 rounded-lg text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Redo2 size={16} />
+          </button>
+        </div>
+        <div className="flex rounded-lg border border-neutral-600 overflow-hidden">
+          <button
+            type="button"
+            title="Editar o vídeo"
+            onClick={() => store.setEditorSurface('video')}
+            className={
+              'flex items-center gap-1.5 px-3 py-1.5 text-sm cursor-pointer ' +
+              (!isBanner ? 'bg-violet-600 text-white' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700')
+            }
+          >
+            <Clapperboard size={14} />
+            Vídeo
+          </button>
+          <button
+            type="button"
+            title="Editar o banner (capa estática, sem timeline)"
+            onClick={() => store.setEditorSurface('banner')}
+            className={
+              'flex items-center gap-1.5 px-3 py-1.5 text-sm cursor-pointer ' +
+              (isBanner ? 'bg-violet-600 text-white' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700')
+            }
+          >
+            <ImageIcon size={14} />
+            Banner
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleSaveNow}
           disabled={store.saving}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-base bg-btn-bg text-sm hover:bg-elements cursor-pointer disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 border border-neutral-600 text-sm hover:bg-neutral-700 cursor-pointer disabled:opacity-50"
         >
-          {store.saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {store.saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
           Salvar
         </button>
+        {isBanner ? (
         <button
           type="button"
-          onClick={addTextLayer}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-base text-sm hover:bg-elements cursor-pointer"
+          onClick={handleExportBanner}
+          disabled={exportingBanner}
+          title="Baixar PNG em 3840×2160"
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Type size={14} /> Texto
+          {exportingBanner ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          Baixar PNG 4K
         </button>
+        ) : (
         <button
           type="button"
           onClick={handleExport}
           disabled={exporting || !apiOnline}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-amber-500/50 bg-amber-500/15 text-sm font-medium hover:bg-amber-500/25 cursor-pointer disabled:opacity-50"
+          title={!apiOnline ? 'Export requer api-video local' : 'Baixar MP4 em 3840×2160'}
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-          Exportar MP4
+          {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          {exporting ? `MP4 4K ${exportProgress}%` : 'Baixar MP4 4K'}
         </button>
-        <button type="button" onClick={refreshHealth} className="p-1.5 text-text-tertiary hover:text-text-primary">
-          <RefreshCw size={14} />
+        )}
+        <button
+          type="button"
+          onClick={refreshHealth}
+          className="p-2 text-neutral-500 hover:text-neutral-200 rounded-lg hover:bg-neutral-800"
+          title="Verificar API de vídeo"
+        >
+          <RefreshCw size={15} />
         </button>
-      </div>
+      </header>
 
       {actionError && (
-        <div className="flex items-start gap-2 p-3 rounded-xl border border-red-500/40 bg-red-500/10 text-sm text-red-300">
+        <div className="shrink-0 flex items-start gap-2 mx-3 mt-2 p-2.5 rounded-lg border border-red-500/40 bg-red-500/10 text-sm text-red-300">
           <AlertCircle size={16} className="shrink-0 mt-0.5" />
           {actionError}
         </div>
       )}
 
+      {removingBackground && (
+        <div className="shrink-0 mx-3 mt-2 rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-2 text-sm text-violet-200">
+          {removingBgHint || 'Removendo fundo...'}
+        </div>
+      )}
+
       {exporting && (
-        <div className="rounded-xl border border-border-base px-3 py-2">
-          <div className="flex justify-between text-xs mb-1">
-            <span>Exportando...</span>
+        <div className="shrink-0 mx-3 mt-2 rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2">
+          <div className="flex justify-between text-xs mb-1 text-neutral-400">
+            <span>Exportando vídeo...</span>
             <span>{exportProgress}%</span>
           </div>
-          <div className="h-2 rounded-full bg-elements overflow-hidden">
-            <div className="h-full bg-amber-400 transition-all" style={{ width: `${exportProgress}%` }} />
+          <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+            <div className="h-full bg-violet-500 transition-all" style={{ width: `${exportProgress}%` }} />
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-        <div className="lg:col-span-2 min-h-[200px] lg:min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div
+          className={
+            'shrink-0 flex flex-col min-h-0 border-r border-neutral-800 transition-[width] duration-200 relative z-20 ' +
+            (sidebarExpanded ? 'w-[320px]' : 'w-16')
+          }
+        >
           <AssetsPanel
             projectId={store.project.id}
             apiUrl={API_URL}
-            onImageUploaded={(src) => addImageLayer(src)}
-            onAudioPicked={(src, label, dur) => addAudioClipToFirstTrack(src, label, dur)}
-          />
-        </div>
-        <div className="lg:col-span-7 flex flex-col min-h-[280px]">
-          <div className="text-[10px] text-text-tertiary mb-1 text-center">
-            Preview {PROJECT_WIDTH}x{PROJECT_HEIGHT} (escala reduzida)
-          </div>
-          <EditorCanvas
-            layers={activeScene.layers}
-            selectedLayerId={store.selectedLayerId}
-            onSelectLayer={store.selectLayer}
-            onUpdateLayer={store.updateLayer}
-            resolveImageUrl={resolveImageUrl}
-          />
-        </div>
-        <div className="lg:col-span-3 min-h-[200px]">
-          <PropertiesPanel
+            apiOnline={apiOnline}
+            expanded={sidebarExpanded}
+            onToggleExpanded={() => setSidebarExpanded((v) => !v)}
+            library={store.project.library ?? []}
+            sidePanel={sidePanel}
+            onCloseSidePanel={closeSidePanel}
+            project={workingProject ?? store.project}
             layer={selectedLayer}
+            scene={selectedScene}
             clip={selectedClipInfo}
             selectedClipId={store.selectedClipId}
-            onUpdateLayer={store.updateLayer}
+            resolveAssetUrl={resolveImageUrl}
+            onAddLibraryAsset={store.addLibraryAsset}
+            onRemoveLibraryAsset={store.removeLibraryAsset}
+            onUseLibraryImage={(src, dur) => addImageElement(src, undefined, dur)}
+            onUseLibraryImageAsFundo={setFundoBackground}
+            onUseLibraryAudio={(src, label, dur) => addAudioClipToFirstTrack(src, label, dur)}
+            onUseShape={addShapeElement}
+            onAddText={addTextLayer}
+            onUpdateElement={store.updateElement}
             onUpdateClip={store.updateAudioClip}
-            onBringForward={store.bringLayerForward}
-            onSendBackward={store.sendLayerBackward}
-            onRemoveLayer={store.removeLayer}
+            onBringForward={store.bringElementForward}
+            onSendBackward={store.sendElementBackward}
+            onBringToFront={store.bringElementToFront}
+            onSendToBack={store.sendElementToBack}
+            onReorderLayers={store.reorderElementsFrontToBack}
+            onBringSceneForward={store.bringSceneForward}
+            onSendSceneBackward={store.sendSceneBackward}
+            onBringSceneToFront={store.bringSceneToFront}
+            onSendSceneToBack={store.sendSceneToBack}
+            onSelectLayer={(id) => {
+              if (id && store.project && !isBanner) {
+                const el = store.project.elements.find((e) => e.id === id);
+                if (el) {
+                  const t = store.playheadSec;
+                  if (t < el.startSec || t >= el.startSec + el.durationSec) {
+                    store.setPlayhead(el.startSec);
+                  }
+                }
+              }
+              store.selectLayer(id);
+            }}
+            onError={setActionError}
+            transitionScene={transitionScene}
+            transitionSceneIndex={transitionSceneIndex}
+            onSetSceneTransition={(id, t, d) => store.setSceneTransition(id, t, d)}
+            onApplyTransitionToAll={store.applyTransitionToAllScenes}
+            surface={store.editorSurface}
           />
         </div>
-      </div>
 
-      <Timeline
-        project={store.project}
-        activeSceneId={store.activeSceneId}
-        playheadSec={store.playheadSec}
-        selectedClipId={store.selectedClipId}
-        onSelectScene={store.setActiveScene}
-        onAddScene={() => store.addScene()}
-        onDuplicateScene={store.duplicateScene}
-        onRemoveScene={store.removeScene}
-        onRenameScene={store.renameScene}
-        onSetSceneDuration={store.setSceneDuration}
-        onReorderScene={store.reorderScene}
-        onSetPlayhead={store.setPlayhead}
-        onSelectClip={store.selectClip}
-        onAddAudioTrack={() => store.addAudioTrack(`Faixa ${store.project!.audioTracks.length + 1}`)}
-        onRemoveAudioTrack={store.removeAudioTrack}
-        onAddAudioClip={(trackId) => {
-          store.addAudioClip(trackId, {
-            id: crypto.randomUUID(),
-            src: '',
-            startSec: store.playheadSec,
-            durationSec: 2,
-            label: 'Novo clip (faça upload ou pick SFX)',
-          });
-        }}
-        onRemoveAudioClip={store.removeAudioClip}
-      />
+        <button
+          type="button"
+          title={sidebarExpanded ? 'Recolher menu' : 'Expandir menu'}
+          onClick={() => setSidebarExpanded((v) => !v)}
+          className="shrink-0 self-center z-30 -ml-px w-5 h-12 rounded-r-md bg-neutral-800 border border-neutral-600 border-l-0 flex items-center justify-center text-neutral-300 hover:text-white hover:bg-violet-600 hover:border-violet-500 cursor-pointer shadow-md"
+        >
+          {sidebarExpanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
+
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#1e1e1e]">
+          <div className="shrink-0 px-3 pt-2">
+            <EditorToolbar
+              layer={selectedLayer}
+              scene={selectedScene}
+              clip={selectedClipInfo}
+              selectedClipId={store.selectedClipId}
+              selectionCount={
+                store.selectedLayerIds.length + store.selectedClipIds.length + store.selectedSceneIds.length
+              }
+              playheadSec={store.playheadSec}
+              onUpdateLayer={store.updateElement}
+              onUpdateSceneDuration={store.setSceneDuration}
+              onUpdateSceneColor={store.setSceneColor}
+              onUpdateClip={store.updateAudioClip}
+              onSplitAtPlayhead={(id) => store.splitElementAtPlayhead(id, store.playheadSec)}
+              onOpenPanel={openElementPanel}
+              onOpenTransition={openTransitionPanel}
+              activePanel={
+                sidePanel === 'effects' || sidePanel === 'animate' || sidePanel === 'position'
+                  ? sidePanel
+                  : 'none'
+              }
+              onRemoveBackground={handleRemoveBackground}
+              removingBackground={removingBackground}
+              onDelete={() => store.deleteSelection()}
+              canDeleteScene={!isBanner && (store.project?.scenes.length ?? 0) > 1}
+              hideTimelineTools={isBanner}
+              stylePaintArmed={store.stylePaintArmed}
+              onToggleStylePaint={() => store.armStylePaint()}
+            />
+            {store.stylePaintArmed && (
+              <p className="text-center text-xs text-violet-300 pb-1">
+                Copiar estilo ligado: clique em outro elemento para aplicar. Esc cancela.
+              </p>
+            )}
+          </div>
+
+          <EditorCanvas
+            layers={previewElements}
+            sceneId={previewScene?.id ?? null}
+            backgroundSrc={previewScene?.backgroundSrc}
+            backgroundColor={previewScene?.backgroundColor ?? '#ffffff'}
+            transitionBackground={transitionBackground}
+            selectedLayerId={store.selectedLayerId}
+            selectedLayerIds={store.selectedLayerIds}
+            selectedSceneId={store.activeSceneId}
+            playheadSec={isBanner ? 0 : store.playheadSec}
+            onSelectLayer={(id) => {
+              store.selectLayer(id);
+              if (
+                id &&
+                sidePanel !== 'effects' &&
+                sidePanel !== 'animate' &&
+                sidePanel !== 'position'
+              ) {
+                closeSidePanel();
+              }
+            }}
+            onSelectScene={(id) => store.setActiveScene(id, { seekToStart: false })}
+            onUpdateLayer={store.updateElement}
+            resolveImageUrl={resolveImageUrl}
+            stylePaintArmed={store.stylePaintArmed}
+          />
+
+          {!isBanner && (
+          <>
+          <div className="shrink-0 flex items-center justify-center gap-3 py-2 border-t border-neutral-800 bg-[#171717]">
+            <button
+              type="button"
+              className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-neutral-200 cursor-pointer"
+              onClick={() => {
+                if (store.isPlaying) {
+                  store.setPlaying(false);
+                  previewAudio.onUserPause();
+                } else {
+                  previewAudio.onUserPlay();
+                  store.setPlaying(true);
+                }
+              }}
+              title={store.isPlaying ? 'Pausar' : 'Reproduzir preview'}
+            >
+              {store.isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
+            </button>
+            <span className="text-sm text-neutral-300 tabular-nums">
+              {fmtTime(store.playheadSec)} / {fmtTime(totalDuration)}
+            </span>
+            <span className="text-xs text-neutral-600 hidden sm:inline">1920 × 1080</span>
+          </div>
+
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            title="Arrastar para mudar a altura da timeline"
+            className="shrink-0 h-2 cursor-ns-resize bg-neutral-800 hover:bg-violet-600 border-y border-neutral-700"
+            onPointerDown={(e) => {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              const startY = e.clientY;
+              const startH = timelineH;
+              const onMove = (ev: PointerEvent) => {
+                const next = Math.min(
+                  Math.max(startH - (ev.clientY - startY), 140),
+                  Math.round(window.innerHeight * 0.72),
+                );
+                setTimelineH(next);
+              };
+              const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+              };
+              window.addEventListener('pointermove', onMove);
+              window.addEventListener('pointerup', onUp);
+            }}
+          />
+
+          <Timeline
+            heightPx={timelineH}
+            project={store.project}
+            activeSceneId={store.activeSceneId}
+            playheadSec={store.playheadSec}
+            selectedLayerId={store.selectedLayerId}
+            selectedClipId={store.selectedClipId}
+            selectedLayerIds={store.selectedLayerIds}
+            selectedClipIds={store.selectedClipIds}
+            selectedSceneIds={store.selectedSceneIds}
+            editingTransitionSceneId={sidePanel === 'transitions' ? transitionSceneId : null}
+            onSelectScene={(id) => store.setActiveScene(id, { seekToStart: true })}
+            onAddScene={() => store.addScene()}
+            onInsertSceneAfter={(id) => store.insertSceneAfter(id)}
+            onEditTransition={openTransitionPanel}
+            onRemoveScene={store.removeScene}
+            onRemoveElement={store.removeElement}
+            onSetPlayhead={store.setPlayhead}
+            onSelectLayer={(id) => {
+              if (id && store.project) {
+                const el = store.project.elements.find((e) => e.id === id);
+                if (el) {
+                  const t = store.playheadSec;
+                  if (t < el.startSec || t >= el.startSec + el.durationSec) {
+                    store.setPlayhead(el.startSec);
+                  }
+                }
+              }
+              store.selectLayer(id);
+            }}
+            onSelectClip={(id) => {
+              if (id && store.project) {
+                for (const track of store.project.audioTracks) {
+                  const clip = track.clips.find((c) => c.id === id);
+                  if (clip) {
+                    const t = store.playheadSec;
+                    if (t < clip.startSec || t >= clip.startSec + clip.durationSec) {
+                      store.setPlayhead(clip.startSec);
+                    }
+                    break;
+                  }
+                }
+              }
+              store.selectClip(id);
+            }}
+            onToggleLayer={store.toggleLayerInSelection}
+            onToggleClip={store.toggleClipInSelection}
+            onToggleScene={store.toggleSceneInSelection}
+            onSetTimelineSelection={store.setTimelineSelection}
+            onMoveSelectionStarts={store.moveSelectionStarts}
+            onUpdateElement={store.updateElement}
+            onUpdateSceneDuration={store.setSceneDuration}
+            onMoveScene={store.setSceneStart}
+            onTrimSceneLeft={store.trimSceneLeft}
+            onUpdateClip={(clipId, patch) => {
+              const track = store.project?.audioTracks.find((t) => t.clips.some((c) => c.id === clipId));
+              if (track) store.updateAudioClip(track.id, clipId, patch);
+            }}
+            onRemoveAudioClip={(clipId) => {
+              const track = store.project!.audioTracks[0];
+              if (track) store.removeAudioClip(track.id, clipId);
+            }}
+            onReorderLayers={store.reorderElementsFrontToBack}
+          />
+        </>
+          )}
+          {isBanner && (
+            <div className="shrink-0 flex items-center justify-center py-2 border-t border-neutral-800 bg-[#171717] text-xs text-neutral-500">
+              Banner 1920 × 1080
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

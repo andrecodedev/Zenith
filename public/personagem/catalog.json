@@ -1,0 +1,1047 @@
+{
+  "folders": [
+    {
+      "id": "apresentando-e-explicando",
+      "label": "Apresentando & Explicando",
+      "cover": "/personagem/apresentando-e-explicando/olhoabertoacenando-1-4x.png",
+      "items": [
+        {
+          "file": "olhoabertoacenando-1-4x.png",
+          "label": "olhoAbertoAcenando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoacenando-1-4x.png"
+        },
+        {
+          "file": "olhoabertoambosindicadoresapontandolados-1-4x.png",
+          "label": "olhoAbertoAmbosIndicadoresApontandoLados",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoambosindicadoresapontandolados-1-4x.png"
+        },
+        {
+          "file": "olhoabertoambosindicadorescima-1-4x.png",
+          "label": "olhoAbertoAmbosIndicadoresCima",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoambosindicadorescima-1-4x.png"
+        },
+        {
+          "file": "olhoabertoambospolegares-1-4x.png",
+          "label": "olhoAbertoAmbosPolegares",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoambospolegares-1-4x.png"
+        },
+        {
+          "file": "olhoabertoapontandolado-1-4x.png",
+          "label": "olhoAbertoApontandoLado",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoapontandolado-1-4x.png"
+        },
+        {
+          "file": "olhoabertoapontandoparavoce-1-4x.png",
+          "label": "olhoAbertoApontandoParaVoce",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoapontandoparavoce-1-4x.png"
+        },
+        {
+          "file": "olhoabertobracoapontando-1-1-4x.png",
+          "label": "olhoAbertoBracoApontando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertobracoapontando-1-1-4x.png"
+        },
+        {
+          "file": "olhoabertobracoestendido-1-4x.png",
+          "label": "olhoAbertoBracoEstendido",
+          "src": "/personagem/apresentando-e-explicando/olhoabertobracoestendido-1-4x.png"
+        },
+        {
+          "file": "olhoabertobracosapontando-1-1-4x.png",
+          "label": "olhoAbertoBracosApontando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertobracosapontando-1-1-4x.png"
+        },
+        {
+          "file": "olhoabertoduasmaosapontandodireita-1-4x.png",
+          "label": "olhoAbertoDuasMaosApontandoDireita",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoduasmaosapontandodireita-1-4x.png"
+        },
+        {
+          "file": "olhoabertoduasmaosapontandoesquerda-1-4x.png",
+          "label": "olhoAbertoDuasMaosApontandoEsquerda",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoduasmaosapontandoesquerda-1-4x.png"
+        },
+        {
+          "file": "olhoabertoexplicandoconteudo-1-4x.png",
+          "label": "olhoAbertoExplicandoConteudo",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoexplicandoconteudo-1-4x.png"
+        },
+        {
+          "file": "olhoabertoexplicandoquadro-1-4x.png",
+          "label": "olhoAbertoExplicandoQuadro",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoexplicandoquadro-1-4x.png"
+        },
+        {
+          "file": "olhoabertogesticulandoduasmaos-1-4x.png",
+          "label": "olhoAbertoGesticulandoDuasMaos",
+          "src": "/personagem/apresentando-e-explicando/olhoabertogesticulandoduasmaos-1-4x.png"
+        },
+        {
+          "file": "olhoabertogesticulandoexplicando-1-4x.png",
+          "label": "olhoAbertoGesticulandoExplicando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertogesticulandoexplicando-1-4x.png"
+        },
+        {
+          "file": "olhoabertoindicadorbochecha-1-4x.png",
+          "label": "olhoAbertoIndicadorBochecha",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoindicadorbochecha-1-4x.png"
+        },
+        {
+          "file": "olhoabertoindicadorlevantadoexplicando-1-4x.png",
+          "label": "olhoAbertoIndicadorLevantadoExplicando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoindicadorlevantadoexplicando-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaoabertaapresentando-1-4x.png",
+          "label": "olhoAbertoMaoAbertaApresentando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertomaoabertaapresentando-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaodireitaabertalado-1-4x.png",
+          "label": "olhoAbertoMaoDireitaAbertaLado",
+          "src": "/personagem/apresentando-e-explicando/olhoabertomaodireitaabertalado-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaosemmegafone-1-4x.png",
+          "label": "olhoAbertoMaosEmMegafone",
+          "src": "/personagem/apresentando-e-explicando/olhoabertomaosemmegafone-1-4x.png"
+        },
+        {
+          "file": "olhoabertopalmadamaofrente-1-4x.png",
+          "label": "olhoAbertoPalmaDaMaoFrente",
+          "src": "/personagem/apresentando-e-explicando/olhoabertopalmadamaofrente-1-4x.png"
+        },
+        {
+          "file": "olhoabertosegurindomarcadorquadro-1-4x.png",
+          "label": "olhoAbertoSegurindoMarcadorQuadro",
+          "src": "/personagem/apresentando-e-explicando/olhoabertosegurindomarcadorquadro-1-4x.png"
+        },
+        {
+          "file": "olhoabertotresdedoscontando-1-4x.png",
+          "label": "olhoAbertoTresDedosContando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertotresdedoscontando-1-4x.png"
+        },
+        {
+          "file": "olhoabertoumdedocontando-1-4x.png",
+          "label": "olhoAbertoUmDedoContando",
+          "src": "/personagem/apresentando-e-explicando/olhoabertoumdedocontando-1-4x.png"
+        },
+        {
+          "file": "olhofechadoapresentandocommaoaberta-1-4x.png",
+          "label": "olhoFechadoApresentandoComMaoAberta",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoapresentandocommaoaberta-1-4x.png"
+        },
+        {
+          "file": "olhofechadodedocimapontuando-1-4x.png",
+          "label": "olhoFechadoDedoCimaPontuando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadodedocimapontuando-1-4x.png"
+        },
+        {
+          "file": "olhofechadodejoelhosapresentando-1-4x.png",
+          "label": "olhoFechadoDeJoelhosApresentando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadodejoelhosapresentando-1-4x.png"
+        },
+        {
+          "file": "olhofechadodoisdedospontuando-1-4x.png",
+          "label": "olhoFechadoDoisDedosPontuando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadodoisdedospontuando-1-4x.png"
+        },
+        {
+          "file": "olhofechadoduasmaosapresentandobaixo-1-4x.png",
+          "label": "olhoFechadoDuasMaosApresentandoBaixo",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoduasmaosapresentandobaixo-1-4x.png"
+        },
+        {
+          "file": "olhofechadoempurrandomaosfrente-4x.png",
+          "label": "olhoFechadoEmpurrandoMaosFrente",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoempurrandomaosfrente-4x.png"
+        },
+        {
+          "file": "olhofechadoexplicandoapontando-4x.png",
+          "label": "olhoFechadoExplicandoApontando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoexplicandoapontando-4x.png"
+        },
+        {
+          "file": "olhofechadoexplicandobracosabertos-1-1-4x.png",
+          "label": "olhoFechadoExplicandoBracosAbertos",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoexplicandobracosabertos-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadoexplicandobracosapontando-1-1-4x.png",
+          "label": "olhoFechadoExplicandoBracosApontando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoexplicandobracosapontando-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadoexplicandocomcalma-1-4x.png",
+          "label": "olhoFechadoExplicandoComCalma",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoexplicandocomcalma-1-4x.png"
+        },
+        {
+          "file": "olhofechadoindicadornobochecha-1-4x.png",
+          "label": "olhoFechadoIndicadorNoBochecha",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoindicadornobochecha-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaoabertaexplicandocalmo-1-4x.png",
+          "label": "olhoFechadoMaoAbertaExplicandoCalmo",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomaoabertaexplicandocalmo-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaocinturaapresentando-4x.png",
+          "label": "olhoFechadoMaoCinturaApresentando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomaocinturaapresentando-4x.png"
+        },
+        {
+          "file": "olhofechadomaosbaixoapresentando-1-4x.png",
+          "label": "olhoFechadoMaosBaixoApresentando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomaosbaixoapresentando-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosjuntas-1-4x.png",
+          "label": "olhoFechadoMaosJuntas",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomaosjuntas-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosjuntasensinando-1-4x.png",
+          "label": "olhoFechadoMaosJuntasEnsinando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomaosjuntasensinando-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosunidas-1-4x.png",
+          "label": "olhoFechadoMaosUnidas",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomaosunidas-1-4x.png"
+        },
+        {
+          "file": "olhofechadomostrandotrestopicos-1-4x.png",
+          "label": "olhoFechadoMostrandoTresTopicos",
+          "src": "/personagem/apresentando-e-explicando/olhofechadomostrandotrestopicos-1-4x.png"
+        },
+        {
+          "file": "olhofechadopalmaspracimaduvida-4x.png",
+          "label": "olhoFechadoPalmasPraCimaDuvida",
+          "src": "/personagem/apresentando-e-explicando/olhofechadopalmaspracimaduvida-4x.png"
+        },
+        {
+          "file": "olhofechadosegurindocanetaquadro-1-4x.png",
+          "label": "olhoFechadoSegurindoCanetaQuadro",
+          "src": "/personagem/apresentando-e-explicando/olhofechadosegurindocanetaquadro-1-4x.png"
+        },
+        {
+          "file": "olhofechadotresdedoscontando-1-4x.png",
+          "label": "olhoFechadoTresDedosContando",
+          "src": "/personagem/apresentando-e-explicando/olhofechadotresdedoscontando-1-4x.png"
+        },
+        {
+          "file": "olhofechadoumdedolevantado-1-4x.png",
+          "label": "olhoFechadoUmDedoLevantado",
+          "src": "/personagem/apresentando-e-explicando/olhofechadoumdedolevantado-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "dispositivos-e-tecnologia",
+      "label": "Dispositivos & Tecnologia",
+      "cover": "/personagem/dispositivos-e-tecnologia/olhoabertomostrandocodigo-1-4x.png",
+      "items": [
+        {
+          "file": "olhoabertomostrandocodigo-1-4x.png",
+          "label": "olhoAbertoMostrandoCodigo",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertomostrandocodigo-1-4x.png"
+        },
+        {
+          "file": "olhoabertomostrandotela-1-4x.png",
+          "label": "olhoAbertoMostrandoTela",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertomostrandotela-1-4x.png"
+        },
+        {
+          "file": "olhoabertonotebookapresentando-1-4x.png",
+          "label": "olhoAbertoNotebookApresentando",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertonotebookapresentando-1-4x.png"
+        },
+        {
+          "file": "olhoabertonotebookumamao-1-4x.png",
+          "label": "olhoAbertoNotebookUmaMao",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertonotebookumamao-1-4x.png"
+        },
+        {
+          "file": "olhoabertosegurindocanecacodigo-1-4x.png",
+          "label": "olhoAbertoSegurindoCanecaCodigo",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertosegurindocanecacodigo-1-4x.png"
+        },
+        {
+          "file": "olhoabertosegurindogamepad-1-4x.png",
+          "label": "olhoAbertoSegurindoGamepad",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertosegurindogamepad-1-4x.png"
+        },
+        {
+          "file": "olhoabertosegurindotabletmostrando-1-4x.png",
+          "label": "olhoAbertoSegurindoTabletMostrando",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertosegurindotabletmostrando-1-4x.png"
+        },
+        {
+          "file": "olhoabertoselfie-1-4x.png",
+          "label": "olhoAbertoSelfie",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertoselfie-1-4x.png"
+        },
+        {
+          "file": "olhoabertosentadomouseteclado-1-4x.png",
+          "label": "olhoAbertoSentadoMouseTeclado",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertosentadomouseteclado-1-4x.png"
+        },
+        {
+          "file": "olhoabertosentadonocomputador-1-4x.png",
+          "label": "olhoAbertoSentadoNoComputador",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertosentadonocomputador-1-4x.png"
+        },
+        {
+          "file": "olhoabertosentadonotebookapontando-1-4x.png",
+          "label": "olhoAbertoSentadoNotebookApontando",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoabertosentadonotebookapontando-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidoapertandoteclas-1-4x.png",
+          "label": "olhoExpremidoApertandoTeclas",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoexpremidoapertandoteclas-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidoconcentradoteclando-1-4x.png",
+          "label": "olhoExpremidoConcentradoTeclando",
+          "src": "/personagem/dispositivos-e-tecnologia/olhoexpremidoconcentradoteclando-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaocotovelomesa-1-4x.png",
+          "label": "olhoFechadoMaoCotoveloMesa",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadomaocotovelomesa-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaonapernasentadorelaxado-1-4x.png",
+          "label": "olhoFechadoMaoNaPernaSentadoRelaxado",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadomaonapernasentadorelaxado-1-4x.png"
+        },
+        {
+          "file": "olhofechadonotebookdebaixobraco-1-4x.png",
+          "label": "olhoFechadoNotebookDebaixoBraco",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadonotebookdebaixobraco-1-4x.png"
+        },
+        {
+          "file": "olhofechadopernascruzadasnotebook-1-4x.png",
+          "label": "olhoFechadoPernasCruzadasNotebook",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadopernascruzadasnotebook-1-4x.png"
+        },
+        {
+          "file": "olhofechadosegurindocelular-1-4x.png",
+          "label": "olhoFechadoSegurindoCelular",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadosegurindocelular-1-4x.png"
+        },
+        {
+          "file": "olhofechadosentadocadeiradev-1-4x.png",
+          "label": "olhoFechadoSentadoCadeiraDev",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadosentadocadeiradev-1-4x.png"
+        },
+        {
+          "file": "olhofechadosentadocadeiragamer-1-4x.png",
+          "label": "olhoFechadoSentadoCadeiraGamer",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadosentadocadeiragamer-1-4x.png"
+        },
+        {
+          "file": "olhofechadosentadodigitandocalmo-1-4x.png",
+          "label": "olhoFechadoSentadoDigitandoCalmo",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadosentadodigitandocalmo-1-4x.png"
+        },
+        {
+          "file": "olhofechadosentadolendomonitor-1-4x.png",
+          "label": "olhoFechadoSentadoLendoMonitor",
+          "src": "/personagem/dispositivos-e-tecnologia/olhofechadosentadolendomonitor-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertoapoiadonamaosentado-1-4x.png",
+          "label": "olhoSemiAbertoApoiadoNaMaoSentado",
+          "src": "/personagem/dispositivos-e-tecnologia/olhosemiabertoapoiadonamaosentado-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertodigitandocelular-1-4x.png",
+          "label": "olhoSemiAbertoDigitandoCelular",
+          "src": "/personagem/dispositivos-e-tecnologia/olhosemiabertodigitandocelular-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertonotebookpensando-1-4x.png",
+          "label": "olhoSemiAbertoNotebookPensando",
+          "src": "/personagem/dispositivos-e-tecnologia/olhosemiabertonotebookpensando-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertotecladodigitando-1-4x.png",
+          "label": "olhoSemiAbertoTecladoDigitando",
+          "src": "/personagem/dispositivos-e-tecnologia/olhosemiabertotecladodigitando-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "expressoes-e-emocoes",
+      "label": "Expressoes & Emocoes",
+      "cover": "/personagem/expressoes-e-emocoes/olhoabertobracosabertosanimado-4x.png",
+      "items": [
+        {
+          "file": "olhoabertobracosabertosanimado-4x.png",
+          "label": "olhoAbertoBracosAbertosAnimado",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertobracosabertosanimado-4x.png"
+        },
+        {
+          "file": "olhoabertobracoslevantadoscelebrando-4x.png",
+          "label": "olhoAbertoBracosLevantadosCelebrando",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertobracoslevantadoscelebrando-4x.png"
+        },
+        {
+          "file": "olhoabertobracospracimacelebrando-4x.png",
+          "label": "olhoAbertoBracosPraCimaCelebrando",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertobracospracimacelebrando-4x.png"
+        },
+        {
+          "file": "olhoabertobravomaosnacintura-4x.png",
+          "label": "olhoAbertoBravoMaosNaCintura",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertobravomaosnacintura-4x.png"
+        },
+        {
+          "file": "olhoabertocorrendo-1-4x.png",
+          "label": "olhoAbertoCorrendo",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertocorrendo-1-4x.png"
+        },
+        {
+          "file": "olhoabertodedaoparabaixo-1-4x.png",
+          "label": "olhoAbertoDedaoParaBaixo",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertodedaoparabaixo-1-4x.png"
+        },
+        {
+          "file": "olhoabertoencolhendoombros-1-4x.png",
+          "label": "olhoAbertoEncolhendoOmbros",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertoencolhendoombros-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaonobracotimido-4x.png",
+          "label": "olhoAbertoMaoNoBracoTimido",
+          "src": "/personagem/expressoes-e-emocoes/olhoabertomaonobracotimido-4x.png"
+        },
+        {
+          "file": "olhoexpremidoflexionandobraco-1-4x.png",
+          "label": "olhoExpremidoFlexionandoBraco",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidoflexionandobraco-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidomaonaboca-1-4x.png",
+          "label": "olhoExpremidoMaoNaBoca",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidomaonaboca-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidomaonatesta-1-4x.png",
+          "label": "olhoExpremidoMaoNaTesta",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidomaonatesta-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidomaosnorosto-1-4x.png",
+          "label": "olhoExpremidoMaosNoRosto",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidomaosnorosto-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidosbracosabertos-1-1-4x.png",
+          "label": "olhoExpremidosBracosAbertos",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidosbracosabertos-1-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidosegurindocabeca-1-4x.png",
+          "label": "olhoExpremidoSegurindoCabeca",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidosegurindocabeca-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidosegurindocabecaduasmaos-1-4x.png",
+          "label": "olhoExpremidoSegurindoCabecaDuasMaos",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidosegurindocabecaduasmaos-1-4x.png"
+        },
+        {
+          "file": "olhoexpremidospunhoscerrados-1-4x.png",
+          "label": "olhoExpremidosPunhosCerrados",
+          "src": "/personagem/expressoes-e-emocoes/olhoexpremidospunhoscerrados-1-4x.png"
+        },
+        {
+          "file": "olhofechadobracoatrascostasprofessor-1-4x.png",
+          "label": "olhoFechadoBracoAtrasCostasProfessor",
+          "src": "/personagem/expressoes-e-emocoes/olhofechadobracoatrascostasprofessor-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosjuntasnamaste-4x.png",
+          "label": "olhoFechadoMaosJuntasNamaste",
+          "src": "/personagem/expressoes-e-emocoes/olhofechadomaosjuntasnamaste-4x.png"
+        },
+        {
+          "file": "olhofechadomaosjuntaspeito-4x.png",
+          "label": "olhoFechadoMaosJuntasPeito",
+          "src": "/personagem/expressoes-e-emocoes/olhofechadomaosjuntaspeito-4x.png"
+        },
+        {
+          "file": "olhofechadosentadomaonorosto-4x.png",
+          "label": "olhoFechadoSentadoMaoNoRosto",
+          "src": "/personagem/expressoes-e-emocoes/olhofechadosentadomaonorosto-4x.png"
+        },
+        {
+          "file": "olhopiscandoapresentandolado-1-4x.png",
+          "label": "olhoPiscandoApresentandoLado",
+          "src": "/personagem/expressoes-e-emocoes/olhopiscandoapresentandolado-1-4x.png"
+        },
+        {
+          "file": "olhopiscandojoinha-1-4x.png",
+          "label": "olhoPiscandoJoinha",
+          "src": "/personagem/expressoes-e-emocoes/olhopiscandojoinha-1-4x.png"
+        },
+        {
+          "file": "olhopiscandopaz-1-4x.png",
+          "label": "olhoPiscandoPaz",
+          "src": "/personagem/expressoes-e-emocoes/olhopiscandopaz-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "livros-e-leitura",
+      "label": "Livros & Leitura",
+      "cover": "/personagem/livros-e-leitura/olhoabertoescrevendonoar-1-4x.png",
+      "items": [
+        {
+          "file": "olhoabertoescrevendonoar-1-4x.png",
+          "label": "olhoAbertoEscrevendoNoAr",
+          "src": "/personagem/livros-e-leitura/olhoabertoescrevendonoar-1-4x.png"
+        },
+        {
+          "file": "olhoabertolivroapontandocima-1-4x.png",
+          "label": "olhoAbertoLivroApontandoCima",
+          "src": "/personagem/livros-e-leitura/olhoabertolivroapontandocima-1-4x.png"
+        },
+        {
+          "file": "olhoabertosegurindolivroabertopeito-1-4x.png",
+          "label": "olhoAbertoSegurindoLivroAbertoPeito",
+          "src": "/personagem/livros-e-leitura/olhoabertosegurindolivroabertopeito-1-4x.png"
+        },
+        {
+          "file": "olhofechadoabracandolivro-1-4x.png",
+          "label": "olhoFechadoAbracandoLivro",
+          "src": "/personagem/livros-e-leitura/olhofechadoabracandolivro-1-4x.png"
+        },
+        {
+          "file": "olhofechadodejoelhoslendo-1-4x.png",
+          "label": "olhoFechadoDeJoelhosLendo",
+          "src": "/personagem/livros-e-leitura/olhofechadodejoelhoslendo-1-4x.png"
+        },
+        {
+          "file": "olhofechadoescrevendo-1-4x.png",
+          "label": "olhoFechadoEscrevendo",
+          "src": "/personagem/livros-e-leitura/olhofechadoescrevendo-1-4x.png"
+        },
+        {
+          "file": "olhofechadolendolivrope-1-4x.png",
+          "label": "olhoFechadoLendoLivroPe",
+          "src": "/personagem/livros-e-leitura/olhofechadolendolivrope-1-4x.png"
+        },
+        {
+          "file": "olhofechadolivroabertoexplicando-1-4x.png",
+          "label": "olhoFechadoLivroAbertoExplicando",
+          "src": "/personagem/livros-e-leitura/olhofechadolivroabertoexplicando-1-4x.png"
+        },
+        {
+          "file": "olhofechadolivromostrandopagina-1-4x.png",
+          "label": "olhoFechadoLivroMostrandoPagina",
+          "src": "/personagem/livros-e-leitura/olhofechadolivromostrandopagina-1-4x.png"
+        },
+        {
+          "file": "olhofechadosentadochaolendolivro-4x.png",
+          "label": "olhoFechadoSentadoChaoLendoLivro",
+          "src": "/personagem/livros-e-leitura/olhofechadosentadochaolendolivro-4x.png"
+        },
+        {
+          "file": "olhofechadosentadolendolivro-1-4x.png",
+          "label": "olhoFechadoSentadoLendoLivro",
+          "src": "/personagem/livros-e-leitura/olhofechadosentadolendolivro-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertoapoiadonamesa-1-4x.png",
+          "label": "olhoSemiAbertoApoiadoNaMesa",
+          "src": "/personagem/livros-e-leitura/olhosemiabertoapoiadonamesa-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "logo-e-tag",
+      "label": "Logo & Tag",
+      "cover": "/personagem/logo-e-tag/logotagaberta-1-4x.png",
+      "items": [
+        {
+          "file": "logotagaberta-1-4x.png",
+          "label": "logoTagAberta",
+          "src": "/personagem/logo-e-tag/logotagaberta-1-4x.png"
+        },
+        {
+          "file": "logotagabertaabracando-1-4x.png",
+          "label": "logoTagAbertaAbracando",
+          "src": "/personagem/logo-e-tag/logotagabertaabracando-1-4x.png"
+        },
+        {
+          "file": "logotagabertaapoiadonatag-1-4x.png",
+          "label": "logoTagAbertaApoiadoNaTag",
+          "src": "/personagem/logo-e-tag/logotagabertaapoiadonatag-1-4x.png"
+        },
+        {
+          "file": "logotagabertaapontando-1-4x.png",
+          "label": "logoTagAbertaApontando",
+          "src": "/personagem/logo-e-tag/logotagabertaapontando-1-4x.png"
+        },
+        {
+          "file": "logotagabertaapresentando-1-4x.png",
+          "label": "logoTagAbertaApresentando",
+          "src": "/personagem/logo-e-tag/logotagabertaapresentando-1-4x.png"
+        },
+        {
+          "file": "logotagabertaatrasombro-1-4x.png",
+          "label": "logoTagAbertaAtrasOmbro",
+          "src": "/personagem/logo-e-tag/logotagabertaatrasombro-1-4x.png"
+        },
+        {
+          "file": "logotagabertacima-1-4x.png",
+          "label": "logoTagAbertaCima",
+          "src": "/personagem/logo-e-tag/logotagabertacima-1-4x.png"
+        },
+        {
+          "file": "logotagabertaduasmaos-1-4x.png",
+          "label": "logoTagAbertaDuasMaos",
+          "src": "/personagem/logo-e-tag/logotagabertaduasmaos-1-4x.png"
+        },
+        {
+          "file": "logotagabertajoinha-1-4x.png",
+          "label": "logoTagAbertaJoinha",
+          "src": "/personagem/logo-e-tag/logotagabertajoinha-1-4x.png"
+        },
+        {
+          "file": "logotagabertaladodireito-1-4x.png",
+          "label": "logoTagAbertaLadoDireito",
+          "src": "/personagem/logo-e-tag/logotagabertaladodireito-1-4x.png"
+        },
+        {
+          "file": "logotagabertamaoabertatag-1-4x.png",
+          "label": "logoTagAbertaMaoAbertaTag",
+          "src": "/personagem/logo-e-tag/logotagabertamaoabertatag-1-4x.png"
+        },
+        {
+          "file": "logotagabertaolhoaberto-1-4x.png",
+          "label": "logoTagAbertaOlhoAberto",
+          "src": "/personagem/logo-e-tag/logotagabertaolhoaberto-1-4x.png"
+        },
+        {
+          "file": "logotagabertaolhoabertoapresentando-1-4x.png",
+          "label": "logoTagAbertaOlhoAbertoApresentando",
+          "src": "/personagem/logo-e-tag/logotagabertaolhoabertoapresentando-1-4x.png"
+        },
+        {
+          "file": "logotagabertaolhoexpremido-1-4x.png",
+          "label": "logoTagAbertaOlhoExpremido",
+          "src": "/personagem/logo-e-tag/logotagabertaolhoexpremido-1-4x.png"
+        },
+        {
+          "file": "logotagabertaombrodireito-1-4x.png",
+          "label": "logoTagAbertaOmbroDireito",
+          "src": "/personagem/logo-e-tag/logotagabertaombrodireito-1-4x.png"
+        },
+        {
+          "file": "logotagabertaperfillado-1-4x.png",
+          "label": "logoTagAbertaPerfilLado",
+          "src": "/personagem/logo-e-tag/logotagabertaperfillado-1-4x.png"
+        },
+        {
+          "file": "logotagabertapiscando-1-4x.png",
+          "label": "logoTagAbertaPiscando",
+          "src": "/personagem/logo-e-tag/logotagabertapiscando-1-4x.png"
+        },
+        {
+          "file": "logotagabertasentado-1-4x.png",
+          "label": "logoTagAbertaSentado",
+          "src": "/personagem/logo-e-tag/logotagabertasentado-1-4x.png"
+        },
+        {
+          "file": "logotagabertasentadocomtag-1-4x.png",
+          "label": "logoTagAbertaSentadoComTag",
+          "src": "/personagem/logo-e-tag/logotagabertasentadocomtag-1-4x.png"
+        },
+        {
+          "file": "logotagabertasobrecabeca-1-4x.png",
+          "label": "logoTagAbertaSobreCabeca",
+          "src": "/personagem/logo-e-tag/logotagabertasobrecabeca-1-4x.png"
+        },
+        {
+          "file": "logotagabertatext-1-4x.png",
+          "label": "logoTagAbertaText",
+          "src": "/personagem/logo-e-tag/logotagabertatext-1-4x.png"
+        },
+        {
+          "file": "logotagabertatextolhoaberto-1-4x.png",
+          "label": "logoTagAbertaTextOlhoAberto",
+          "src": "/personagem/logo-e-tag/logotagabertatextolhoaberto-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "pensando-e-contemplando",
+      "label": "Pensando & Contemplando",
+      "cover": "/personagem/pensando-e-contemplando/olhoabertomaonacabecaconfuso-4x.png",
+      "items": [
+        {
+          "file": "olhoabertomaonacabecaconfuso-4x.png",
+          "label": "olhoAbertoMaoNaCabecaConfuso",
+          "src": "/personagem/pensando-e-contemplando/olhoabertomaonacabecaconfuso-4x.png"
+        },
+        {
+          "file": "olhoabertomaonanucaconfuso-4x.png",
+          "label": "olhoAbertoMaoNaNucaConfuso",
+          "src": "/personagem/pensando-e-contemplando/olhoabertomaonanucaconfuso-4x.png"
+        },
+        {
+          "file": "olhoabertomaonatesta-1-4x.png",
+          "label": "olhoAbertoMaoNaTesta",
+          "src": "/personagem/pensando-e-contemplando/olhoabertomaonatesta-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaonoqueixopensando-4x.png",
+          "label": "olhoAbertoMaoNoQueixoPensando",
+          "src": "/personagem/pensando-e-contemplando/olhoabertomaonoqueixopensando-4x.png"
+        },
+        {
+          "file": "olhoabertomaonoqueixopensandolado-4x.png",
+          "label": "olhoAbertoMaoNoQueixoPensandoLado",
+          "src": "/personagem/pensando-e-contemplando/olhoabertomaonoqueixopensandolado-4x.png"
+        },
+        {
+          "file": "olhoabertosbracospensando-1-1-4x.png",
+          "label": "olhoAbertosBracosPensando",
+          "src": "/personagem/pensando-e-contemplando/olhoabertosbracospensando-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadoapoiadonaparede-1-4x.png",
+          "label": "olhoFechadoApoiadoNaParede",
+          "src": "/personagem/pensando-e-contemplando/olhofechadoapoiadonaparede-1-4x.png"
+        },
+        {
+          "file": "olhofechadobraconoqueixopensativo-1-4x.png",
+          "label": "olhoFechadoBracoNoQueixoPensativo",
+          "src": "/personagem/pensando-e-contemplando/olhofechadobraconoqueixopensativo-1-4x.png"
+        },
+        {
+          "file": "olhofechadobracospensando-1-1-4x.png",
+          "label": "olhoFechadoBracosPensando",
+          "src": "/personagem/pensando-e-contemplando/olhofechadobracospensando-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadocotovelocruzado-1-4x.png",
+          "label": "olhoFechadoCotoveloCruzado",
+          "src": "/personagem/pensando-e-contemplando/olhofechadocotovelocruzado-1-4x.png"
+        },
+        {
+          "file": "olhofechadodedoindicadorlabio-1-4x.png",
+          "label": "olhoFechadoDedoIndicadorLabio",
+          "src": "/personagem/pensando-e-contemplando/olhofechadodedoindicadorlabio-1-4x.png"
+        },
+        {
+          "file": "olhofechadodedonatemporal-1-4x.png",
+          "label": "olhoFechadoDedoNaTemporal",
+          "src": "/personagem/pensando-e-contemplando/olhofechadodedonatemporal-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaoesquerdanoqueixodireitacintura-1-4x.png",
+          "label": "olhoFechadoMaoEsquerdaNoQueixoDireitaCintura",
+          "src": "/personagem/pensando-e-contemplando/olhofechadomaoesquerdanoqueixodireitacintura-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaonoqueixooutracintura-1-4x.png",
+          "label": "olhoFechadoMaoNoQueixoOutraCintura",
+          "src": "/personagem/pensando-e-contemplando/olhofechadomaonoqueixooutracintura-1-4x.png"
+        },
+        {
+          "file": "olhofechadopensandobracoscruzados-1-1-1-4x.png",
+          "label": "olhoFechadoPensandoBracosCruzados 1",
+          "src": "/personagem/pensando-e-contemplando/olhofechadopensandobracoscruzados-1-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadopensandobracoscruzados-1-1-4x.png",
+          "label": "olhoFechadoPensandoBracosCruzados",
+          "src": "/personagem/pensando-e-contemplando/olhofechadopensandobracoscruzados-1-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertobracocruzadoumamaoqueixo-1-4x.png",
+          "label": "olhoSemiAbertoBracoCruzadoUmaMaoQueixo",
+          "src": "/personagem/pensando-e-contemplando/olhosemiabertobracocruzadoumamaoqueixo-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertodebrucadomesa-1-4x.png",
+          "label": "olhoSemiAbertoDebrucadoMesa",
+          "src": "/personagem/pensando-e-contemplando/olhosemiabertodebrucadomesa-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertodeduradoparabaixo-1-4x.png",
+          "label": "olhoSemiAbertoDeduradoParaBaixo",
+          "src": "/personagem/pensando-e-contemplando/olhosemiabertodeduradoparabaixo-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertomaonacabeca-1-4x.png",
+          "label": "olhoSemiAbertoMaoNaCabeca",
+          "src": "/personagem/pensando-e-contemplando/olhosemiabertomaonacabeca-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertomaonoombro-1-4x.png",
+          "label": "olhoSemiAbertoMaoNoOmbro",
+          "src": "/personagem/pensando-e-contemplando/olhosemiabertomaonoombro-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertosentadopensando-1-4x.png",
+          "label": "olhoSemiAbertoSentadoPensando",
+          "src": "/personagem/pensando-e-contemplando/olhosemiabertosentadopensando-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "poses-gerais",
+      "label": "Poses Gerais",
+      "cover": "/personagem/poses-gerais/olhoabertoarregacandomangas-1-4x.png",
+      "items": [
+        {
+          "file": "olhoabertoarregacandomangas-1-4x.png",
+          "label": "olhoAbertoArregaçandoMangas",
+          "src": "/personagem/poses-gerais/olhoabertoarregacandomangas-1-4x.png"
+        },
+        {
+          "file": "olhoabertoheadsetmicrofone-1-4x.png",
+          "label": "olhoAbertoHeadsetMicrofone",
+          "src": "/personagem/poses-gerais/olhoabertoheadsetmicrofone-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaonacintura-1-4x.png",
+          "label": "olhoAbertoMaoNaCintura",
+          "src": "/personagem/poses-gerais/olhoabertomaonacintura-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaonaombreiradireita-1-4x.png",
+          "label": "olhoAbertoMaoNaOmbreiraDireita",
+          "src": "/personagem/poses-gerais/olhoabertomaonaombreiradireita-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaonaorelha-1-4x.png",
+          "label": "olhoAbertoMaoNaOrelha",
+          "src": "/personagem/poses-gerais/olhoabertomaonaorelha-1-4x.png"
+        },
+        {
+          "file": "olhoabertoolhandorelogio-1-4x.png",
+          "label": "olhoAbertoOlhandoRelogio",
+          "src": "/personagem/poses-gerais/olhoabertoolhandorelogio-1-4x.png"
+        },
+        {
+          "file": "olhoabertopalmaprafrenteparar-1-4x.png",
+          "label": "olhoAbertoPalmaPraFrenteParar",
+          "src": "/personagem/poses-gerais/olhoabertopalmaprafrenteparar-1-4x.png"
+        },
+        {
+          "file": "olhoabertosentadoapontandotela-1-4x.png",
+          "label": "olhoAbertoSentadoApontandoTela",
+          "src": "/personagem/poses-gerais/olhoabertosentadoapontandotela-1-4x.png"
+        },
+        {
+          "file": "olhofechadobraconopescoco-1-4x.png",
+          "label": "olhoFechadoBracoNoPescoco",
+          "src": "/personagem/poses-gerais/olhofechadobraconopescoco-1-4x.png"
+        },
+        {
+          "file": "olhofechadobracossemjeito-1-1-4x.png",
+          "label": "olhoFechadoBracosSemJeito",
+          "src": "/personagem/poses-gerais/olhofechadobracossemjeito-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadocomemorandodeploy-1-4x.png",
+          "label": "olhoFechadoComemorandoDeploy",
+          "src": "/personagem/poses-gerais/olhofechadocomemorandodeploy-1-4x.png"
+        },
+        {
+          "file": "olhofechadocotovelobracocruzadoprofessor-1-4x.png",
+          "label": "olhoFechadoCotoveloBracoCruzadoProfessor",
+          "src": "/personagem/poses-gerais/olhofechadocotovelobracocruzadoprofessor-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaocimapalmabaixo-1-4x.png",
+          "label": "olhoFechadoMaoCimaPalmaBaixo",
+          "src": "/personagem/poses-gerais/olhofechadomaocimapalmabaixo-1-4x.png"
+        },
+        {
+          "file": "olhofechadoumamaoatrasombrooutralado-1-4x.png",
+          "label": "olhoFechadoUmaMaoAtrasOmbroOutraLado",
+          "src": "/personagem/poses-gerais/olhofechadoumamaoatrasombrooutralado-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "relaxado-e-casual",
+      "label": "Relaxado & Casual",
+      "cover": "/personagem/relaxado-e-casual/olhoabertojoinhapracima-1-4x.png",
+      "items": [
+        {
+          "file": "olhoabertojoinhapracima-1-4x.png",
+          "label": "olhoAbertoJoinhaPraCima",
+          "src": "/personagem/relaxado-e-casual/olhoabertojoinhapracima-1-4x.png"
+        },
+        {
+          "file": "olhoabertomaopertopeitotimido-4x.png",
+          "label": "olhoAbertoMaoPertoPeitoTimido",
+          "src": "/personagem/relaxado-e-casual/olhoabertomaopertopeitotimido-4x.png"
+        },
+        {
+          "file": "olhoabertosegurandocanecaolhando-1-4x.png",
+          "label": "olhoAbertoSegurandoCanecaOlhando",
+          "src": "/personagem/relaxado-e-casual/olhoabertosegurandocanecaolhando-1-4x.png"
+        },
+        {
+          "file": "olhofechadobracosatrascorpo-1-4x.png",
+          "label": "olhoFechadoBracosAtrasCorpo",
+          "src": "/personagem/relaxado-e-casual/olhofechadobracosatrascorpo-1-4x.png"
+        },
+        {
+          "file": "olhofechadobracoscruzadoscalmo-4x.png",
+          "label": "olhoFechadoBracosCruzadosCalmo",
+          "src": "/personagem/relaxado-e-casual/olhofechadobracoscruzadoscalmo-4x.png"
+        },
+        {
+          "file": "olhofechadobracoscruzadossorriso-1-4x.png",
+          "label": "olhoFechadoBracosCruzadosSorriso",
+          "src": "/personagem/relaxado-e-casual/olhofechadobracoscruzadossorriso-1-4x.png"
+        },
+        {
+          "file": "olhofechadoencostadoparede-1-4x.png",
+          "label": "olhoFechadoEncostadoParede",
+          "src": "/personagem/relaxado-e-casual/olhofechadoencostadoparede-1-4x.png"
+        },
+        {
+          "file": "olhofechadofelizbracoscruzados-1-1-4x.png",
+          "label": "olhoFechadoFelizBracosCruzados",
+          "src": "/personagem/relaxado-e-casual/olhofechadofelizbracoscruzados-1-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaonacinturaconfiante-4x.png",
+          "label": "olhoFechadoMaoNaCinturaConfiante",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaonacinturaconfiante-4x.png"
+        },
+        {
+          "file": "olhofechadomaonocoracaograto-1-4x.png",
+          "label": "olhoFechadoMaoNoCoracaoGrato",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaonocoracaograto-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaonopescocorelaxado-1-4x.png",
+          "label": "olhoFechadoMaoNoPescocoRelaxado",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaonopescocorelaxado-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosatrasnuca-1-4x.png",
+          "label": "olhoFechadoMaosAtrasNuca",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaosatrasnuca-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosatrasrelaxado-1-4x.png",
+          "label": "olhoFechadoMaosAtrasRelaxado",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaosatrasrelaxado-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosjuntasfrente-4x.png",
+          "label": "olhoFechadoMaosJuntasFrente",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaosjuntasfrente-4x.png"
+        },
+        {
+          "file": "olhofechadomaosnobolso-1-4x.png",
+          "label": "olhoFechadoMaosNoBolso",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaosnobolso-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosnosbolsos-1-4x.png",
+          "label": "olhoFechadoMaosNosBolsos",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaosnosbolsos-1-4x.png"
+        },
+        {
+          "file": "olhofechadomaosnosbolsosconfiante-1-4x.png",
+          "label": "olhoFechadoMaosNosBolsosConfiante",
+          "src": "/personagem/relaxado-e-casual/olhofechadomaosnosbolsosconfiante-1-4x.png"
+        },
+        {
+          "file": "olhofechadomeditando-1-4x.png",
+          "label": "olhoFechadoMeditando",
+          "src": "/personagem/relaxado-e-casual/olhofechadomeditando-1-4x.png"
+        },
+        {
+          "file": "olhofechadoparadoolhandolado-4x.png",
+          "label": "olhoFechadoParadoOlhandoLado",
+          "src": "/personagem/relaxado-e-casual/olhofechadoparadoolhandolado-4x.png"
+        },
+        {
+          "file": "olhofechadosentadonochaorelaxado-1-4x.png",
+          "label": "olhoFechadoSentadoNoChaoRelaxado",
+          "src": "/personagem/relaxado-e-casual/olhofechadosentadonochaorelaxado-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertobebendocafe-1-4x.png",
+          "label": "olhoSemiAbertoBebendoCafe",
+          "src": "/personagem/relaxado-e-casual/olhosemiabertobebendocafe-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertocanecarelaxado-1-4x.png",
+          "label": "olhoSemiAbertoCanecaRelaxado",
+          "src": "/personagem/relaxado-e-casual/olhosemiabertocanecarelaxado-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertopernascruzadasbracoatras-1-4x.png",
+          "label": "olhoSemiAbertoPernasCruzadasBracoAtras",
+          "src": "/personagem/relaxado-e-casual/olhosemiabertopernascruzadasbracoatras-1-4x.png"
+        },
+        {
+          "file": "perfil-1-1-4x.png",
+          "label": "perfil",
+          "src": "/personagem/relaxado-e-casual/perfil-1-1-4x.png"
+        },
+        {
+          "file": "semexpressao-1-1-4x.png",
+          "label": "semExpressao",
+          "src": "/personagem/relaxado-e-casual/semexpressao-1-1-4x.png"
+        }
+      ]
+    },
+    {
+      "id": "sentado-e-poses",
+      "label": "Sentado & Poses",
+      "cover": "/personagem/sentado-e-poses/olhoexpremidosentadosurpreso-1.jpg",
+      "items": [
+        {
+          "file": "olhoexpremidosentadosurpreso-1.jpg",
+          "label": "olhoExpremidoSentadoSurpreso",
+          "src": "/personagem/sentado-e-poses/olhoexpremidosentadosurpreso-1.jpg"
+        },
+        {
+          "file": "olhofechadosentadobracocruzado-1.jpg",
+          "label": "olhoFechadoSentadoBracoCruzado",
+          "src": "/personagem/sentado-e-poses/olhofechadosentadobracocruzado-1.jpg"
+        },
+        {
+          "file": "olhofechadosentadopensandomaosjuntas-4x.png",
+          "label": "olhoFechadoSentadoPensandoMaosJuntas",
+          "src": "/personagem/sentado-e-poses/olhofechadosentadopensandomaosjuntas-4x.png"
+        },
+        {
+          "file": "olhofechadosentadopernacruzadaelegante-1-4x.png",
+          "label": "olhoFechadoSentadoPernaCruzadaElegante",
+          "src": "/personagem/sentado-e-poses/olhofechadosentadopernacruzadaelegante-1-4x.png"
+        },
+        {
+          "file": "olhofechadosentadopernascruzadas-1-4x.png",
+          "label": "olhoFechadoSentadoPernasCruzadas",
+          "src": "/personagem/sentado-e-poses/olhofechadosentadopernascruzadas-1-4x.png"
+        },
+        {
+          "file": "olhosemiabertodejoelhos-1-4x.png",
+          "label": "olhoSemiAbertoDeJoelhos",
+          "src": "/personagem/sentado-e-poses/olhosemiabertodejoelhos-1-4x.png"
+        }
+      ]
+    }
+  ]
+}

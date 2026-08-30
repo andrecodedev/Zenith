@@ -138,7 +138,7 @@ app.post('/render', async (req, res) => {
     });
   }
 
-  const { project } = req.body;
+  const { project, uhd = true } = req.body;
   if (!project?.scenes?.length) {
     return res.status(400).json({ error: 'Projeto inválido ou sem cenas' });
   }
@@ -168,14 +168,17 @@ app.post('/render', async (req, res) => {
             error: `Áudio não encontrado: ${clip.src}`,
           });
         }
-      } else if (clip.src && !existsSync(clip.src)) {
-        return res.status(400).json({ error: `Arquivo de áudio ausente: ${clip.src}` });
+      } else if (clip.src) {
+        const p = resolveAssetPath(clip.src, projectAssets);
+        if (!p) {
+          return res.status(400).json({ error: `Arquivo de áudio ausente: ${clip.src}` });
+        }
       }
     }
   }
 
   try {
-    const jobId = await enqueueRender(project, DATA_DIR, projectAssets);
+    const jobId = await enqueueRender(project, DATA_DIR, projectAssets, uhd !== false);
     res.json({ jobId });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
@@ -200,7 +203,7 @@ app.get('/render/download/:jobId', async (req, res) => {
     return res.status(400).json({ error: 'Render ainda não concluído' });
   }
   res.setHeader('Content-Type', 'video/mp4');
-  res.setHeader('Content-Disposition', `attachment; filename="zenith-${job.projectId.slice(0, 8)}.mp4"`);
+  res.setHeader('Content-Disposition', `attachment; filename="zenith-${job.projectId.slice(0, 8)}_4k.mp4"`);
   res.sendFile(job.outputPath);
 });
 

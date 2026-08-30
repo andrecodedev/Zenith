@@ -6,9 +6,14 @@ import sharp from 'sharp';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const WIDTH = 1920;
-const HEIGHT = 1080;
+const BASE_W = 1920;
+const BASE_H = 1080;
 const FPS = 30;
+
+const sizeFor = (uhd) => {
+  const S = uhd ? 2 : 1;
+  return { W: BASE_W * S, H: BASE_H * S, S };
+};
 
 const escapeXml = (s) =>
   String(s)
@@ -17,11 +22,17 @@ const escapeXml = (s) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
+const PUBLIC_ROOT = path.join(__dirname, '..', '..', 'public');
+
 const resolveAssetPath = (src, assetsDir) => {
   if (!src) return null;
   if (src.startsWith('asset://')) {
     const rel = src.slice('asset://'.length);
     return path.join(assetsDir, rel);
+  }
+  if (src.startsWith('/sfx/') || src.startsWith('/personagem/')) {
+    const bundled = path.join(PUBLIC_ROOT, src.replace(/^\//, ''));
+    if (existsSync(bundled)) return bundled;
   }
   if (path.isAbsolute(src) && existsSync(src)) return src;
   const fromAssets = path.join(assetsDir, src);
@@ -35,25 +46,50 @@ const textAnchor = (align) => {
   return 'start';
 };
 
-export const compositeScene = async (scene, assetsDir, outputPng) => {
-  const layers = [...(scene.layers || [])].sort((a, b) => a.zIndex - b.zIndex);
+const hexToRgba = (hex) => {
+  const raw = String(hex || '#ffffff').replace('#', '');
+  const n = raw.length === 3
+    ? raw.split('').map((c) => c + c).join('')
+    : raw.padEnd(6, '0').slice(0, 6);
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  return {
+    r: Number.isFinite(r) ? r : 255,
+    g: Number.isFinite(g) ? g : 255,
+    b: Number.isFinite(b) ? b : 255,
+    alpha: 1,
+  };
+};
+
+export const compositeScene = async (scene, assetsDir, outputPng, elements = [], uhd = true) => {
+  const { W, H, S } = sizeFor(uhd);
+  const layers = [...elements].sort((a, b) => a.zIndex - b.zIndex);
   let base = sharp({
     create: {
-      width: WIDTH,
-      height: HEIGHT,
+      width: W,
+      height: H,
       channels: 4,
-      background: { r: 18, g: 18, b: 24, alpha: 1 },
+      background: hexToRgba(scene.backgroundColor),
     },
   });
 
   const composites = [];
+
+  if (scene.backgroundSrc) {
+    const bgPath = resolveAssetPath(scene.backgroundSrc, assetsDir);
+    if (bgPath) {
+      const buf = await sharp(bgPath).resize(W, H, { fit: 'cover' }).png().toBuffer();
+      composites.push({ input: buf, left: 0, top: 0 });
+    }
+  }
 
   for (const layer of layers) {
     if (layer.type === 'image') {
       const filePath = resolveAssetPath(layer.src, assetsDir);
       if (!filePath) continue;
       const opacity = layer.opacity ?? 1;
-      let img = sharp(filePath).resize(Math.round(layer.w), Math.round(layer.h), {
+      let img = sharp(filePath).resize(Math.round(layer.w * S), Math.round(layer.h * S), {
         fit: 'fill',
       });
       if (layer.rotation) img = img.rotate(layer.rotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } });
@@ -66,19 +102,14 @@ export const compositeScene = async (scene, assetsDir, outputPng) => {
       const buf = await img.png().toBuffer();
       composites.push({
         input: buf,
-        left: Math.round(layer.x),
-        top: Math.round(layer.y),
+        left: Math.round(layer.x * S),
+        top: Math.round(layer.y * S),
       });
     } else if (layer.type === 'text') {
       const anchor = textAnchor(layer.align);
-      const x =
-        layer.align === 'center'
-          ? layer.x
-          : layer.align === 'right'
-            ? layer.x
-            : layer.x;
-      const svg = `<svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-        <text x="${x}" y="${layer.y + layer.fontSize}" font-family="${escapeXml(layer.fontFamily || 'sans-serif')}" font-size="${layer.fontSize}" fill="${escapeXml(layer.color || '#ffffff')}" text-anchor="${anchor}">${escapeXml(layer.text)}</text>
+      const x = (layer.x || 0) * S;
+      const svg = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+        <text x="${x}" y="${(layer.y || 0) * S + (layer.fontSize || 32) * S}" font-family="${escapeXml(layer.fontFamily || 'sans-serif')}" font-size="${(layer.fontSize || 32) * S}" fill="${escapeXml(layer.color || '#ffffff')}" text-anchor="${anchor}">${escapeXml(layer.text)}</text>
       </svg>`;
       const buf = await sharp(Buffer.from(svg)).png().toBuffer();
       composites.push({ input: buf, left: 0, top: 0 });
@@ -123,7 +154,8 @@ export const getFfmpegVersion = () =>
     proc.on('error', () => resolve(null));
   });
 
-export const renderProject = async (project, jobDir, onProgress) => {
+export const renderProject = async (project, jobDir, onProgress, uhd = true) => {
+  const { W, H } = sizeFor(uhd);
   const assetsDir = path.join(jobDir, 'assets');
   await mkdir(jobDir, { recursive: true });
   await mkdir(assetsDir, { recursive: true });
@@ -132,10 +164,17 @@ export const renderProject = async (project, jobDir, onProgress) => {
   if (!scenes.length) throw new Error('Projeto sem cenas');
 
   const scenePngs = [];
+  let sceneStart = 0;
   for (let i = 0; i < scenes.length; i++) {
+    const scene = scenes[i];
+    const sceneEnd = sceneStart + (scene.durationSec || 5);
+    const sceneEls = (project.elements || []).filter(
+      (e) => e.startSec < sceneEnd && e.startSec + e.durationSec > sceneStart,
+    );
     const png = path.join(jobDir, `scene_${i}.png`);
-    await compositeScene(scenes[i], assetsDir, png);
-    scenePngs.push({ png, duration: scenes[i].durationSec || 5 });
+    await compositeScene(scene, assetsDir, png, sceneEls, uhd);
+    scenePngs.push({ png, duration: scene.durationSec || 5 });
+    sceneStart = sceneEnd;
     onProgress?.(5 + (i / scenes.length) * 25);
   }
 
@@ -148,9 +187,11 @@ export const renderProject = async (project, jobDir, onProgress) => {
       '-t', String(scenePngs[i].duration),
       '-i', scenePngs[i].png,
       '-c:v', 'libx264',
+      '-preset', 'medium',
+      '-crf', '18',
       '-pix_fmt', 'yuv420p',
       '-r', String(FPS),
-      '-vf', `scale=${WIDTH}:${HEIGHT}`,
+      '-vf', `scale=${W}:${H}`,
       seg,
     ]);
     segmentPaths.push(seg);
@@ -234,6 +275,12 @@ export const saveProjectAssets = async (project, assetsDir) => {
   };
 
   for (const scene of project.scenes || []) {
+    if (scene.backgroundSrc) collectSrc(scene.backgroundSrc);
+  }
+  for (const el of project.elements || []) {
+    if (el.type === 'image') collectSrc(el.src);
+  }
+  for (const scene of project.scenes || []) {
     for (const layer of scene.layers || []) {
       if (layer.type === 'image') collectSrc(layer.src);
     }
@@ -245,4 +292,6 @@ export const saveProjectAssets = async (project, assetsDir) => {
   await writeFile(path.join(assetsDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 };
 
-export { WIDTH, HEIGHT, FPS, resolveAssetPath };
+export { FPS, resolveAssetPath };
+export const WIDTH = BASE_W;
+export const HEIGHT = BASE_H;

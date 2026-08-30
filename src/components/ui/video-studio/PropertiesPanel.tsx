@@ -1,207 +1,212 @@
-import type { Layer } from '../../../types/video-project';
+import type { ReactNode } from 'react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
+import type { ProjectElement } from '../../../types/video-project';
+import { historyGestureBind } from '../../../store/useVideoEditorStore';
 
 type PropertiesPanelProps = {
-  layer: Layer | null;
+  mode: 'none' | 'position' | 'audio';
+  layer: ProjectElement | null;
   clip: { trackId: string; label?: string; startSec: number; durationSec: number; volume?: number } | null;
-  onUpdateLayer: (id: string, patch: Partial<Layer>) => void;
-  onUpdateClip: (trackId: string, clipId: string, patch: Record<string, unknown>) => void;
   selectedClipId: string | null;
+  onClose: () => void;
+  onUpdateLayer: (id: string, patch: Partial<ProjectElement>) => void;
+  onUpdateClip: (trackId: string, clipId: string, patch: Record<string, unknown>) => void;
   onBringForward: (id: string) => void;
   onSendBackward: (id: string) => void;
-  onRemoveLayer: (id: string) => void;
 };
 
 export const PropertiesPanel = ({
+  mode,
   layer,
   clip,
+  selectedClipId,
+  onClose,
   onUpdateLayer,
   onUpdateClip,
-  selectedClipId,
   onBringForward,
   onSendBackward,
-  onRemoveLayer,
 }: PropertiesPanelProps) => {
-  if (!layer && !clip) {
-    return (
-      <div className="p-3 border border-border-base rounded-xl bg-bg-secondary/30 h-full text-sm text-text-tertiary">
-        Selecione um layer ou clip de áudio para editar propriedades.
-      </div>
-    );
-  }
-
-  if (clip && selectedClipId) {
-    return (
-      <div className="p-3 border border-border-base rounded-xl bg-bg-secondary/30 space-y-3 overflow-y-auto">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Clip de áudio</h3>
-        <label className="block text-xs text-text-secondary">
-          Início (s)
-          <input
-            type="number"
-            min={0}
-            step={0.1}
-            className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-            value={clip.startSec}
-            onChange={(e) =>
-              onUpdateClip(clip.trackId, selectedClipId, { startSec: Number(e.target.value) })
-            }
-          />
-        </label>
-        <label className="block text-xs text-text-secondary">
-          Duração (s)
-          <input
-            type="number"
-            min={0.1}
-            step={0.1}
-            className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-            value={clip.durationSec}
-            onChange={(e) =>
-              onUpdateClip(clip.trackId, selectedClipId, { durationSec: Number(e.target.value) })
-            }
-          />
-        </label>
-        <label className="block text-xs text-text-secondary">
-          Volume (0-1)
-          <input
-            type="number"
-            min={0}
-            max={1}
-            step={0.05}
-            className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-            value={clip.volume ?? 1}
-            onChange={(e) =>
-              onUpdateClip(clip.trackId, selectedClipId, { volume: Number(e.target.value) })
-            }
-          />
-        </label>
-        {clip.label && (
-          <p className="text-[10px] text-text-tertiary truncate" title={clip.label}>
-            {clip.label}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (!layer) return null;
+  if (mode === 'none') return null;
 
   return (
-    <div className="p-3 border border-border-base rounded-xl bg-bg-secondary/30 space-y-3 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-tertiary">
-          {layer.type === 'image' ? 'Imagem' : 'Texto'}
-        </h3>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            className="text-[10px] px-2 py-0.5 rounded border border-border-base hover:bg-elements"
-            onClick={() => onBringForward(layer.id)}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            className="text-[10px] px-2 py-0.5 rounded border border-border-base hover:bg-elements"
-            onClick={() => onSendBackward(layer.id)}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            className="text-[10px] px-2 py-0.5 rounded border border-red-500/40 text-red-400 hover:bg-red-500/10"
-            onClick={() => onRemoveLayer(layer.id)}
-          >
-            Remover
-          </button>
-        </div>
+    <div className="flex flex-col h-full min-h-0 bg-neutral-900">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
+        <h2 className="text-sm font-semibold text-neutral-100">
+          {mode === 'position' ? 'Posição' : 'Áudio na timeline'}
+        </h2>
+        <button type="button" onClick={onClose} className="text-xs text-violet-300 hover:text-violet-200 cursor-pointer px-2 py-1">
+          Voltar
+        </button>
       </div>
 
-      <label className="block text-xs text-text-secondary">
-        X
-        <input
-          type="number"
-          className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-          value={Math.round(layer.x)}
-          onChange={(e) => onUpdateLayer(layer.id, { x: Number(e.target.value) })}
-        />
-      </label>
-      <label className="block text-xs text-text-secondary">
-        Y
-        <input
-          type="number"
-          className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-          value={Math.round(layer.y)}
-          onChange={(e) => onUpdateLayer(layer.id, { y: Number(e.target.value) })}
-        />
-      </label>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
+        {mode === 'audio' && clip && selectedClipId && (
+          <>
+            <p className="text-xs text-neutral-500">Ajuste o clip selecionado na faixa de áudio.</p>
+            {clip.label && (
+              <p className="text-neutral-300 truncate" title={clip.label}>
+                {clip.label}
+              </p>
+            )}
+            <Field label="Início na timeline (segundos)">
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                className="field-input"
+                value={clip.startSec}
+                onChange={(e) => onUpdateClip(clip.trackId, selectedClipId, { startSec: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Duração (segundos)">
+              <input
+                type="number"
+                min={0.1}
+                step={0.1}
+                className="field-input"
+                value={clip.durationSec}
+                onChange={(e) => onUpdateClip(clip.trackId, selectedClipId, { durationSec: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Volume (0 a 1)">
+              <input
+                type="number"
+                min={0}
+                max={1}
+                step={0.05}
+                className="field-input"
+                value={clip.volume ?? 1}
+                onChange={(e) => onUpdateClip(clip.trackId, selectedClipId, { volume: Number(e.target.value) })}
+              />
+            </Field>
+          </>
+        )}
 
-      {layer.type === 'image' && (
-        <>
-          <label className="block text-xs text-text-secondary">
-            Largura
-            <input
-              type="number"
-              min={20}
-              className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-              value={Math.round(layer.w)}
-              onChange={(e) => onUpdateLayer(layer.id, { w: Number(e.target.value) })}
-            />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Altura
-            <input
-              type="number"
-              min={20}
-              className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-              value={Math.round(layer.h)}
-              onChange={(e) => onUpdateLayer(layer.id, { h: Number(e.target.value) })}
-            />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Opacidade
-            <input
-              type="number"
-              min={0}
-              max={1}
-              step={0.05}
-              className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-              value={layer.opacity ?? 1}
-              onChange={(e) => onUpdateLayer(layer.id, { opacity: Number(e.target.value) })}
-            />
-          </label>
-        </>
-      )}
+        {mode === 'position' && layer && (
+          <>
+            <p className="text-xs text-neutral-500">
+              Organize camadas e coordenadas do {layer.type === 'image' ? 'elemento' : 'texto'} na cena.
+            </p>
+            <Field label="Início na timeline (s)">
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                className="field-input"
+                value={layer.startSec}
+                onChange={(e) => onUpdateLayer(layer.id, { startSec: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Duração visível (s)">
+              <input
+                type="number"
+                min={0.5}
+                step={0.1}
+                className="field-input"
+                value={layer.durationSec}
+                onChange={(e) => onUpdateLayer(layer.id, { durationSec: Number(e.target.value) })}
+              />
+            </Field>
+            <div className="flex gap-2">
+              <button type="button" className="flex-1 btn-secondary" onClick={() => onBringForward(layer.id)}>
+                <ArrowUp size={14} className="inline mr-1" /> Para frente
+              </button>
+              <button type="button" className="flex-1 btn-secondary" onClick={() => onSendBackward(layer.id)}>
+                <ArrowDown size={14} className="inline mr-1" /> Para trás
+              </button>
+            </div>
+            <Field label="Posição X (px)">
+              <input
+                type="number"
+                className="field-input"
+                value={Math.round(layer.x)}
+                onChange={(e) => onUpdateLayer(layer.id, { x: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Posição Y (px)">
+              <input
+                type="number"
+                className="field-input"
+                value={Math.round(layer.y)}
+                onChange={(e) => onUpdateLayer(layer.id, { y: Number(e.target.value) })}
+              />
+            </Field>
+            {layer.type === 'image' && (
+              <>
+                <Field label="Largura (px)">
+                  <input
+                    type="number"
+                    min={20}
+                    className="field-input"
+                    value={Math.round(layer.w)}
+                    onChange={(e) => onUpdateLayer(layer.id, { w: Number(e.target.value) })}
+                  />
+                </Field>
+                <Field label="Altura (px)">
+                  <input
+                    type="number"
+                    min={20}
+                    className="field-input"
+                    value={Math.round(layer.h)}
+                    onChange={(e) => onUpdateLayer(layer.id, { h: Number(e.target.value) })}
+                  />
+                </Field>
+                <Field label="Opacidade">
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    className="w-full"
+                    value={layer.opacity ?? 1}
+                    onChange={(e) => onUpdateLayer(layer.id, { opacity: Number(e.target.value) })}
+                    {...historyGestureBind}
+                  />
+                </Field>
+              </>
+            )}
+            {layer.type === 'text' && (
+              <Field label="Conteúdo">
+                <textarea
+                  className="field-input min-h-[80px] resize-y"
+                  value={layer.text}
+                  onChange={(e) => onUpdateLayer(layer.id, { text: e.target.value })}
+                />
+              </Field>
+            )}
+          </>
+        )}
+      </div>
 
-      {layer.type === 'text' && (
-        <>
-          <label className="block text-xs text-text-secondary">
-            Texto
-            <textarea
-              className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm min-h-[60px]"
-              value={layer.text}
-              onChange={(e) => onUpdateLayer(layer.id, { text: e.target.value })}
-            />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Tamanho
-            <input
-              type="number"
-              min={8}
-              className="mt-1 w-full bg-bg-primary border border-border-base rounded px-2 py-1 text-sm"
-              value={layer.fontSize}
-              onChange={(e) => onUpdateLayer(layer.id, { fontSize: Number(e.target.value) })}
-            />
-          </label>
-          <label className="block text-xs text-text-secondary">
-            Cor
-            <input
-              type="color"
-              className="mt-1 w-full h-8 bg-bg-primary border border-border-base rounded cursor-pointer"
-              value={layer.color}
-              onChange={(e) => onUpdateLayer(layer.id, { color: e.target.value })}
-            />
-          </label>
-        </>
-      )}
+      <style>{`
+        .field-input {
+          width: 100%;
+          margin-top: 4px;
+          padding: 8px 10px;
+          border-radius: 8px;
+          background: #171717;
+          border: 1px solid #404040;
+          color: #f5f5f5;
+          font-size: 14px;
+        }
+        .btn-secondary {
+          padding: 8px 10px;
+          border-radius: 8px;
+          background: #262626;
+          border: 1px solid #404040;
+          color: #e5e5e5;
+          font-size: 12px;
+          cursor: pointer;
+        }
+        .btn-secondary:hover { background: #333; }
+      `}</style>
     </div>
   );
 };
+
+const Field = ({ label, children }: { label: string; children: ReactNode }) => (
+  <label className="block text-neutral-400 text-xs font-medium">
+    {label}
+    {children}
+  </label>
+);

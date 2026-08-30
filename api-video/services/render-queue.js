@@ -24,7 +24,7 @@ const copyProjectAssets = async (projectAssetsDir, jobAssetsDir) => {
   }
 };
 
-export const enqueueRender = async (project, dataDir, projectAssetsDir) => {
+export const enqueueRender = async (project, dataDir, projectAssetsDir, uhd = true) => {
   if (activeJobId) {
     const err = new Error('Render ocupado. Aguarde o job atual terminar.');
     err.status = 503;
@@ -56,7 +56,7 @@ export const enqueueRender = async (project, dataDir, projectAssetsDir) => {
 
       const outputPath = await renderProject(project, jobDir, (pct) => {
         job.progress = Math.min(99, Math.round(pct));
-      });
+      }, uhd);
 
       if (!existsSync(outputPath)) throw new Error('Arquivo de saída não gerado');
       job.state = 'done';
