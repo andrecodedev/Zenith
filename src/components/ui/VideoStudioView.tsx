@@ -39,7 +39,7 @@ import { AssetsPanel } from './video-studio/AssetsPanel';
 import { EditorToolbar, type ElementSidePanel } from './video-studio/EditorToolbar';
 import { ConfirmModal } from './ConfirmModal';
 import { usePreviewAudio } from './video-studio/usePreviewAudio';
-import { bannerFileName, downloadBlob, exportBannerPng4k } from '../../lib/export-banner';
+import { bannerFileName, downloadBlob, exportBannerJpg4k } from '../../lib/export-banner';
 
 const API_URL =
   import.meta.env.VITE_VIDEO_API_URL ||
@@ -571,14 +571,14 @@ export const VideoStudioView = () => {
     setExportingBanner(true);
     try {
       const banner = store.project.banner ?? createEmptyBanner();
-      const blob = await exportBannerPng4k({
+      const blob = await exportBannerJpg4k({
         scene: banner.scene,
         elements: banner.elements,
         resolveUrl: resolveImageUrl,
       });
       downloadBlob(blob, bannerFileName(store.project.name));
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Falha ao gerar o PNG 4K');
+      setActionError(err instanceof Error ? err.message : 'Falha ao gerar o JPG 4K');
     } finally {
       setExportingBanner(false);
     }
@@ -801,11 +801,11 @@ export const VideoStudioView = () => {
           type="button"
           onClick={handleExportBanner}
           disabled={exportingBanner}
-          title="Baixar PNG em 3840×2160"
+          title="Baixar JPG em 3840×2160"
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {exportingBanner ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-          Baixar PNG 4K
+          Baixar JPG 4K
         </button>
         ) : (
         <button

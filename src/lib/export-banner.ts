@@ -36,7 +36,7 @@ export const downloadBlob = (blob: Blob, fileName: string) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportBannerPng4k = async ({
+export const exportBannerJpg4k = async ({
   scene,
   elements,
   resolveUrl,
@@ -177,10 +177,15 @@ export const exportBannerPng4k = async ({
   }
 
   layer.draw();
-    const dataUrl = stage.toDataURL({ mimeType: 'image/png', pixelRatio: UHD_SCALE });
+    // JPEG: banner de midia social nao precisa de transparencia; arquivo menor que PNG.
+    const dataUrl = stage.toDataURL({
+      mimeType: 'image/jpeg',
+      quality: 0.92,
+      pixelRatio: UHD_SCALE,
+    });
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    if (!blob.size) throw new Error('Nao foi possivel gerar o PNG');
+    if (!blob.size) throw new Error('Nao foi possivel gerar o JPG');
     return blob;
   } finally {
     stage.destroy();
@@ -188,4 +193,4 @@ export const exportBannerPng4k = async ({
   }
 };
 
-export const bannerFileName = (projectName: string) => `${safeFileName(projectName)}_banner_4k.png`;
+export const bannerFileName = (projectName: string) => `${safeFileName(projectName)}_banner_4k.jpg`;
