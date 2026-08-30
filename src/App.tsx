@@ -237,10 +237,6 @@ function App() {
       if (!target || target.id !== 'main-scroll') return;
 
       const currentScrollY = target.scrollTop;
-      if (window.innerWidth >= 768) {
-        setHeaderVisible(true);
-        return;
-      }
 
       if (currentScrollY <= 0) {
         setHeaderVisible(true);
@@ -252,23 +248,17 @@ function App() {
       lastScrollY.current = currentScrollY;
     };
 
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setHeaderVisible(true);
-      }
-    };
-
     document.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleResize);
-    
-    // Initial check on mount
-    handleResize();
 
     return () => {
       document.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    setHeaderVisible(true);
+    lastScrollY.current = 0;
+  }, [currentView]);
   const currentViewRef = useRef<AppView>('hero');
   const sessionRef = useRef<Session | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -644,7 +634,9 @@ function App() {
             : 'top-6 -translate-y-24 opacity-0'
         }`}
       >
-        <header className="pointer-events-auto w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]">
+        <header className={`w-[90%] max-w-4xl bg-white/[0.06] border border-white/[0.12] rounded-2xl px-6 py-3 flex items-center justify-between backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] [html.light_&]:bg-black/[0.04] [html.light_&]:border-black/[0.10] [html.light_&]:shadow-[0_8px_32px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] ${
+          (headerVisible || currentView === 'chat') ? 'pointer-events-auto' : 'pointer-events-none'
+        }`}>
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer"
