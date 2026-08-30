@@ -220,10 +220,12 @@ const sampleImageAlpha = (
 };
 
 const isTransformerAnchor = (node: Konva.Node | null) => {
+  if (!node) return false;
+  const startName = node.name() || '';
   let n: Konva.Node | null = node;
   while (n) {
     if (n.getClassName() === 'Transformer') {
-      return /anchor/i.test(node.name() || '');
+      return /anchor/i.test(startName);
     }
     n = n.getParent();
   }

@@ -307,10 +307,11 @@ export const useVideoEditorStore = create<VideoEditorState>((rawSet, get) => {
       return;
     }
     if (rest.project && prev.project && rest.project !== prev.project) {
+      const snapshot = cloneProject(prev.project);
       const pushSnapshot = () => {
         rawSet({
           ...rest,
-          historyPast: [...prev.historyPast.slice(-49), cloneProject(prev.project)],
+          historyPast: [...prev.historyPast.slice(-49), snapshot],
           historyFuture: [],
         });
       };

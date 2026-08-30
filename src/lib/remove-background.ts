@@ -730,7 +730,9 @@ const stripByEdgeFlood = async (
   }
 
   if (!best) return null;
-  return imageDataToPng(new ImageData(best.data, image.width, image.height));
+  return imageDataToPng(
+    new ImageData(new Uint8ClampedArray(best.data), image.width, image.height),
+  );
 };
 
 const raceAbort = <T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> => {
@@ -770,7 +772,9 @@ export const stripImageBackground = async (
     onProgress?.('Recortando desenho (protegendo preenchimento)...');
     const sealed = stripBySealedInk(probe, signal);
     if (sealed) {
-      return imageDataToPng(new ImageData(sealed.data, probe.width, probe.height));
+      return imageDataToPng(
+        new ImageData(new Uint8ClampedArray(sealed.data), probe.width, probe.height),
+      );
     }
     onProgress?.('Tentando recorte por bordas...');
     const flooded = await stripByEdgeFlood(input, signal);
