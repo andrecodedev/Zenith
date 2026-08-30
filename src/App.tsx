@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { format, subDays, addDays, parseISO } from 'date-fns';
 import { useStore } from './store/useStore';
 import { getTodayStr, isTaskDueToday, generateWeek } from './utils/date';
@@ -32,7 +32,7 @@ import type { Routine, TaskStatus } from './types';
 import { supabase } from './lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { registerServiceWorker, sendTaskNotification, subscribeToPush } from './utils/notifications';
-import { viewFromPath, syncUrlForView } from './utils/app-routes';
+import { viewFromPath, syncUrlForView, viewFromBrowserLocation, rememberActivePath, resolveReturnPath, normalizePath, LAST_PATH_KEY } from './utils/app-routes';
 
 type AppView = 'hero' | 'sobre' | 'dashboard' | 'calendar' | 'stats' | 'notes' | 'finance' | 'investments' | 'hub' | 'music' | 'chat' | 'audio' | 'image_upscale' | 'voice_studio' | 'video_studio';
 
@@ -224,7 +224,7 @@ function App() {
   const [today] = useState(getTodayStr());
   const [selectedDate, setSelectedDate] = useState(today);
   const [currentView, setCurrentView] = useState<AppView>(() =>
-    viewFromPath(window.location.pathname, true),
+    viewFromBrowserLocation(window.location.pathname, true),
   );
   const [headerVisible, setHeaderVisible] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -270,21 +270,47 @@ function App() {
     };
   }, []);
   const currentViewRef = useRef<AppView>('hero');
+  const sessionRef = useRef<Session | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const weekDays = generateWeek(selectedDate);
+
+  const applyViewFromBrowser = useCallback((fixUrlFromSaved = false) => {
+    const loggedIn = !!sessionRef.current;
+    const currentPath = normalizePath(window.location.pathname);
+    const resolvedPath = resolveReturnPath(window.location.pathname, loggedIn);
+    if (fixUrlFromSaved && loggedIn && resolvedPath !== currentPath) {
+      window.history.replaceState(null, '', resolvedPath);
+    }
+    setCurrentView(viewFromPath(resolvedPath, loggedIn));
+  }, []);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   useEffect(() => {
     currentViewRef.current = currentView;
     syncUrlForView(currentView);
+    rememberActivePath(currentView);
   }, [currentView]);
 
   useEffect(() => {
-    const onPopState = () => {
-      setCurrentView(viewFromPath(window.location.pathname, !!session));
+    const onPopState = () => applyViewFromBrowser(false);
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) applyViewFromBrowser(true);
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') applyViewFromBrowser(true);
     };
     window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [session]);
+    window.addEventListener('pageshow', onPageShow);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('pageshow', onPageShow);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [applyViewFromBrowser]);
 
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('theme') === 'light';
@@ -306,11 +332,12 @@ function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
+      sessionRef.current = session;
       setSession(session);
       if (session) {
         useStore.getState().fetchData();
         useStore.getState().fetchNotes();
-        setCurrentView(viewFromPath(window.location.pathname, true));
+        setCurrentView(viewFromBrowserLocation(window.location.pathname, true));
       } else {
         const guestView = viewFromPath(window.location.pathname, false);
         setCurrentView(guestView === 'sobre' ? 'sobre' : 'hero');
@@ -321,18 +348,18 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      sessionRef.current = session;
       setSession(session);
       if (session) {
         if (event === 'SIGNED_IN') {
           useStore.getState().fetchData();
           useStore.getState().fetchNotes();
-          setCurrentView('hub');
-          syncUrlForView('hub', true);
           if (notificationsEnabled) subscribeToPush();
+          // Não redireciona: SIGNED_IN também dispara ao voltar na aba (refresh token)
         }
-        // TOKEN_REFRESHED / USER_UPDATED: mantém a tela atual (ex.: transcrições)
       } else if (event === 'SIGNED_OUT') {
         useStore.setState({ categories: [], routines: [], taskInstances: [] });
+        sessionStorage.removeItem(LAST_PATH_KEY);
         setCurrentView('hero');
         syncUrlForView('hero', true);
       }
