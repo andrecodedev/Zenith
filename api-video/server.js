@@ -317,9 +317,10 @@ app.get('/render/download/:jobId', async (req, res) => {
   res.sendFile(job.outputPath);
 });
 
+const HOST = process.env.VIDEO_HOST || '127.0.0.1';
 const PORT = process.env.VIDEO_PORT || 3335;
-const server = app.listen(PORT, () => {
-  console.log(`Zenith Video API na porta ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Zenith Video API em http://${HOST}:${PORT}`);
   console.log(ffmpegOk ? `FFmpeg ${ffmpegVersion}` : 'FFmpeg ausente - instale com sudo apt install ffmpeg');
   console.log(`SFX root: ${existsSync(SFX_ROOT) ? SFX_ROOT : '(não encontrado)'}`);
 });

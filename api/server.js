@@ -264,9 +264,10 @@ app.get('/health', (_, res) =>
   }),
 );
 
+const HOST = process.env.HOST || '127.0.0.1';
 const PORT = process.env.PORT || 3333;
-app.listen(PORT, () => {
-  console.log(`🚀 Zenith API rodando na porta ${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Zenith API rodando em http://${HOST}:${PORT}`);
   console.log(
     hasUpscaleEngine()
       ? '✅ Real-ESRGAN disponível'
