@@ -1,4 +1,4 @@
-"""Motor TTS: Coqui XTTS v2 em CPU (fallback sem NVIDIA)."""
+"""Motor TTS: OmniVoice (k2-fsa) — clone de voz zero-shot multi-idioma."""
 
 from __future__ import annotations
 
@@ -10,81 +10,17 @@ from typing import Callable
 
 logger = logging.getLogger("zenith-tts")
 
-_tts = None
-_tts_lock = threading.Lock()
+_model = None
+_model_lock = threading.Lock()
 _load_error: str | None = None
-_torchaudio_patched = False
 
+# OmniVoice pede referência curta (3-10s); mais que isso piora o clone
+# (inverso do XTTS, que preferia várias amostras longas em média).
+REF_MAX_SEC = 10
 
-def _patch_torchaudio_load() -> None:
-    """
-    torchaudio 2.9+ redireciona load() para torchcodec.
-    No Zenith (CPU, sem torchcodec) lemos com soundfile; MP3 etc. via ffmpeg.
-    """
-    global _torchaudio_patched
-    if _torchaudio_patched:
-        return
-
-    import tempfile
-
-    import numpy as np
-    import soundfile as sf
-    import torch
-    import torchaudio
-
-    def load(  # noqa: ANN001
-        uri,
-        frame_offset: int = 0,
-        num_frames: int = -1,
-        normalize: bool = True,
-        channels_first: bool = True,
-        format=None,
-        buffer_size: int = 4096,
-        backend=None,
-    ):
-        del normalize, format, buffer_size, backend  # API compat
-        path = str(uri)
-
-        def _from_array(data: np.ndarray, sr: int):
-            if data.ndim == 1:
-                data = data[np.newaxis, :]
-            else:
-                data = data.T
-            waveform = torch.from_numpy(np.ascontiguousarray(data, dtype=np.float32))
-            if frame_offset:
-                waveform = waveform[:, frame_offset:]
-            if num_frames is not None and num_frames > 0:
-                waveform = waveform[:, :num_frames]
-            if not channels_first:
-                waveform = waveform.transpose(0, 1)
-            return waveform, int(sr)
-
-        try:
-            data, sr = sf.read(path, dtype="float32", always_2d=True)
-            return _from_array(data, sr)
-        except Exception:
-            fd, tmp_name = tempfile.mkstemp(suffix=".wav")
-            import os as _os
-
-            _os.close(fd)
-            try:
-                subprocess.run(
-                    [
-                        "ffmpeg", "-y", "-i", path,
-                        "-ac", "1", "-ar", "24000",
-                        tmp_name,
-                    ],
-                    check=True,
-                    capture_output=True,
-                )
-                data, sr = sf.read(tmp_name, dtype="float32", always_2d=True)
-                return _from_array(data, sr)
-            finally:
-                Path(tmp_name).unlink(missing_ok=True)
-
-    torchaudio.load = load  # type: ignore[assignment]
-    _torchaudio_patched = True
-    logger.info("torchaudio.load patchado (soundfile/ffmpeg, sem torchcodec)")
+# CPU sem GPU dedicada: menos passos de difusão = mais rápido, troca um pouco de qualidade.
+CPU_NUM_STEP = 16
+GPU_NUM_STEP = 32
 
 
 def cuda_available() -> bool:
@@ -96,80 +32,101 @@ def cuda_available() -> bool:
         return False
 
 
+def _mps_available() -> bool:
+    try:
+        import torch
+
+        return bool(torch.backends.mps.is_available())
+    except Exception:
+        return False
+
+
+def _device() -> str:
+    if cuda_available():
+        return "cuda:0"
+    if _mps_available():
+        return "mps"
+    return "cpu"
+
+
 def engine_status() -> dict:
     """Estado do motor para /health."""
-    global _tts, _load_error
+    global _model, _load_error
+    device = _device()
     return {
-        "engine": "xtts_v2",
-        "loaded": _tts is not None,
+        "engine": "omnivoice",
+        "loaded": _model is not None,
         "cuda": cuda_available(),
-        "device": "cuda" if cuda_available() else "cpu",
+        "device": device.split(":")[0],
         "loadError": _load_error,
     }
 
 
 def load_engine() -> None:
     """Carrega o modelo na primeira necessidade (lazy)."""
-    global _tts, _load_error
-    if _tts is not None:
+    global _model, _load_error
+    if _model is not None:
         return
-    with _tts_lock:
-        if _tts is not None:
+    with _model_lock:
+        if _model is not None:
             return
         try:
-            import os
-            from pathlib import Path
-
-            # Modelos no projeto (não em ~/.local/share/tts)
-            base = Path(__file__).resolve().parents[1]
-            tts_home = base / "data" / "tts-models"
-            tts_home.mkdir(parents=True, exist_ok=True)
-            os.environ.setdefault("TTS_HOME", str(tts_home))
-            os.environ.setdefault("COQUI_TOS_AGREED", "1")
-            mpl = base / "data" / "mpl-cache"
-            mpl.mkdir(parents=True, exist_ok=True)
-            os.environ.setdefault("MPLCONFIGDIR", str(mpl))
-
-            # PyTorch >= 2.6: torch.load default weights_only=True quebra o checkpoint XTTS.
             import torch
 
-            _torch_load = torch.load
+            from omnivoice import OmniVoice
 
-            def _torch_load_compat(*args, **kwargs):
-                kwargs.setdefault("weights_only", False)
-                return _torch_load(*args, **kwargs)
-
-            torch.load = _torch_load_compat  # type: ignore[method-assign]
-
-            # torchaudio >= 2.9 exige torchcodec; no CPU local usamos soundfile/ffmpeg.
-            _patch_torchaudio_load()
-
-            from TTS.api import TTS
-
-            device = "cuda" if cuda_available() else "cpu"
-            logger.info("Carregando XTTS v2 em %s (pode demorar na 1ª vez)...", device)
-            _tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-            # Clone: usar mais áudio de referência + amostragem um pouco mais natural.
-            # (API Coqui sobrescreve kwargs com estes valores do config.)
-            try:
-                cfg = _tts.synthesizer.tts_config
-                cfg.gpt_cond_len = 30
-                cfg.gpt_cond_chunk_len = 6
-                cfg.max_ref_len = 30
-                cfg.temperature = 0.6
-                cfg.repetition_penalty = 5.0
-            except Exception:  # noqa: BLE001
-                logger.warning("Não foi possível ajustar config XTTS; usando defaults")
+            device = _device()
+            dtype = torch.float16 if device.startswith("cuda") else torch.float32
+            logger.info(
+                "Carregando OmniVoice em %s (1ª vez baixa o checkpoint do HF)...", device
+            )
+            _model = OmniVoice.from_pretrained(
+                "k2-fsa/OmniVoice", device_map=device, dtype=dtype
+            )
             _load_error = None
-            logger.info("XTTS v2 pronto.")
+            logger.info("OmniVoice pronto.")
         except Exception as exc:  # noqa: BLE001
             _load_error = str(exc)
-            logger.exception("Falha ao carregar XTTS")
+            logger.exception("Falha ao carregar OmniVoice")
             raise RuntimeError(
-                "Motor XTTS indisponível. No api-tts: "
-                "pip install TTS==0.22.0 && python setup-models.py "
-                "(depois reinicie o uvicorn)"
+                "Motor OmniVoice indisponível. No api-tts: "
+                "pip install omnivoice (depois reinicie o uvicorn)"
             ) from exc
+
+
+def _probe_duration(path: Path) -> float | None:
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return float(result.stdout.strip())
+    except (subprocess.CalledProcessError, ValueError, OSError):
+        return None
+
+
+def _pick_reference(speaker_wav: Path | list[Path]) -> Path:
+    """OmniVoice clona a partir de 1 clipe só; usa o melhor (já ordenado por voice_store)
+    e recorta se passar de REF_MAX_SEC."""
+    clip = speaker_wav[0] if isinstance(speaker_wav, list) else speaker_wav
+    dur = _probe_duration(clip)
+    if dur is None or dur <= REF_MAX_SEC:
+        return clip
+
+    trimmed = clip.parent / f"_ref_trim_{clip.stem}.wav"
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", str(clip), "-t", str(REF_MAX_SEC), str(trimmed)],
+        check=True,
+        capture_output=True,
+    )
+    return trimmed
 
 
 def synthesize_chunk(
@@ -180,10 +137,12 @@ def synthesize_chunk(
     speed: float = 1.0,
     temperature: float | None = None,
 ) -> None:
+    import soundfile as sf
+
     from services.text_prep import prepare_tts_text
 
     load_engine()
-    assert _tts is not None
+    assert _model is not None
     out_wav.parent.mkdir(parents=True, exist_ok=True)
 
     text = prepare_tts_text(text)
@@ -193,45 +152,20 @@ def synthesize_chunk(
     if not text:
         raise ValueError("Chunk de texto vazio após limpeza de pontuação")
 
-    # Lista de clips: XTTS média embeddings (bem melhor que 1 WAV de 90s).
-    if isinstance(speaker_wav, list):
-        speaker_arg: str | list[str] = [str(p) for p in speaker_wav]
-    else:
-        speaker_arg = str(speaker_wav)
+    ref = _pick_reference(speaker_wav)
+    num_step = GPU_NUM_STEP if _device() != "cpu" else CPU_NUM_STEP
 
-    prev_temp = None
-    if temperature is not None:
-        try:
-            cfg = _tts.synthesizer.tts_config
-            prev_temp = getattr(cfg, "temperature", None)
-            cfg.temperature = float(temperature)
-        except Exception:  # noqa: BLE001
-            logger.warning("Não foi possível ajustar temperature=%.2f", temperature)
-
-    kwargs = {
-        "text": text,
-        "file_path": str(out_wav),
-        "speaker_wav": speaker_arg,
-        "language": language if language in {"pt", "en", "es", "fr", "de", "it"} else "pt",
-        # Já fatiamos no chunker; split interno do Coqui recoloca pontuação e fala "ponto"
-        "split_sentences": False,
-    }
-    try:
-        # Coqui API: tts_to_file
-        try:
-            _tts.tts_to_file(**kwargs, speed=speed)
-        except TypeError:
-            kwargs.pop("split_sentences", None)
-            try:
-                _tts.tts_to_file(**kwargs, speed=speed)
-            except TypeError:
-                _tts.tts_to_file(**kwargs)
-    finally:
-        if prev_temp is not None:
-            try:
-                _tts.synthesizer.tts_config.temperature = prev_temp
-            except Exception:  # noqa: BLE001
-                pass
+    audio = _model.generate(
+        text=text,
+        language=language,
+        ref_audio=str(ref),
+        # ref_text omitido: OmniVoice transcreve a referência sozinho via Whisper.
+        speed=speed,
+        num_step=num_step,
+        # class_temperature: 0 = clone estável e determinístico; sobe = mais variação.
+        class_temperature=temperature if temperature is not None else 0.0,
+    )
+    sf.write(str(out_wav), audio[0], 24000)
 
 
 def concat_wavs(chunk_paths: list[Path], output_path: Path) -> None:

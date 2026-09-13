@@ -1,6 +1,6 @@
 """
 Zenith Voice Studio API — FastAPI local (porta 3334).
-Clone de voz + TTS com XTTS v2 (CPU ok, lento sem NVIDIA).
+Clone de voz + TTS com OmniVoice (k2-fsa). CPU ok, lento sem GPU CUDA/MPS.
 """
 
 from __future__ import annotations
@@ -26,13 +26,10 @@ from services import tts_engine
 from services import voice_store
 
 BASE_DIR = Path(__file__).resolve().parent
+# Checkpoint do OmniVoice fica no projeto, não em ~/.cache/huggingface
 _TTS_HOME = BASE_DIR / "data" / "tts-models"
 _TTS_HOME.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("TTS_HOME", str(_TTS_HOME))
-os.environ.setdefault("COQUI_TOS_AGREED", "1")
-_MPL = BASE_DIR / "data" / "mpl-cache"
-_MPL.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("MPLCONFIGDIR", str(_MPL))
+os.environ.setdefault("HF_HOME", str(_TTS_HOME))
 
 DATA_DIR = Path(os.getenv("TTS_DATA_DIR", str(BASE_DIR / "data" / "voices"))).resolve()
 JOBS_DIR = (BASE_DIR / "data" / "jobs").resolve()
